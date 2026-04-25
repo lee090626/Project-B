@@ -56,7 +56,7 @@ function App:keypressed(key)
         return
     end
 
-    if self.state.mode == "run_end" then
+    if self.state.mode == "run_end_tree" then
         if key == "r" then
             Service.restartRun(self.state)
             return
@@ -80,11 +80,8 @@ function App:mousepressed(x, y, button)
         return
     end
 
-    if self.state.mode == "run_end" then
-        local idx = Service.metaUpgradeIndexAtScreen(self.state, x, y)
-        if idx then
-            Service.tryBuyMetaUpgrade(self.state, idx)
-        end
+    if self.state.mode == "run_end_tree" then
+        Service.beginMetaTreePointer(self.state, x, y)
         return
     end
 
@@ -96,17 +93,35 @@ function App:mousepressed(x, y, button)
     end
 end
 
-function App:mousereleased(_, _, button)
-    if button == 1 then
-        Service.stopTreeDrag(self.state)
+function App:mousereleased(x, y, button)
+    if button ~= 1 then
+        return
     end
+
+    if self.state.mode == "run_end_tree" then
+        local idx = Service.endMetaTreePointer(self.state, x, y)
+        if idx then
+            Service.tryBuyMetaUpgrade(self.state, idx)
+        end
+        return
+    end
+
+    Service.stopTreeDrag(self.state)
 end
 
-function App:mousemoved(_, _, dx, dy)
+function App:mousemoved(x, y, dx, dy)
+    if self.state.mode == "run_end_tree" then
+        Service.updateMetaTreePointer(self.state, x, y, dx, dy)
+        return
+    end
     Service.panTree(self.state, dx, dy)
 end
 
 function App:wheelmoved(_, y)
+    if self.state.mode == "run_end_tree" then
+        Service.zoomMetaTree(self.state, y)
+        return
+    end
     Service.zoomTree(self.state, y)
 end
 
