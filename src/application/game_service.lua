@@ -214,10 +214,15 @@ function Service.tryUnlockTreeNodeAtScreen(state, sx, sy)
         return false, "no-node"
     end
 
-    local ok, err = SkillTree.tryUnlock(tree, node.id, state)
+    local ok, err, info = SkillTree.tryUnlock(tree, node.id, state)
     if ok then
-        state.message = "Unlocked " .. node.name
-        state.bonuses = SkillTree.computeBonuses(state.skillTree)
+        if info and info.maxLevel and info.maxLevel > 1 then
+            state.message = string.format("Upgraded %s Lv.%d/%d", node.name, info.level, info.maxLevel)
+        else
+            state.message = "Unlocked " .. node.name
+        end
+        local skillBonuses = SkillTree.computeBonuses(state.skillTree)
+        state.bonuses = mergeBonuses(skillBonuses, state.metaBonuses)
         MapSystem.updateUnlocks(state.maps, state.skillTree.unlockedCount)
         return true, nil
     end
