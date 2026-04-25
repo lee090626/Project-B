@@ -66,6 +66,7 @@ function GameState.new(loadResult, loadErr)
         events = {},
         autosaveTimer = C.AUTOSAVE_INTERVAL,
         mode = saved.mode or "game",
+        showHelp = false,
         treeDrag = false,
         treeDragX = 0,
         treeDragY = 0,

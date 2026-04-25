@@ -112,17 +112,14 @@ local function drawHUD(state, fonts, ui)
 
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(0, 0, 0, 0.42)
-    love.graphics.rectangle("fill", 12, 12, 460, 216, 8, 8)
+    love.graphics.rectangle("fill", 12, 12, 460, 170, 8, 8)
 
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(string.format("Time Left: %s", formatTime(state.runTimeLeft)), 24, 24)
     love.graphics.print(string.format("Meta Essence: %d", state.meta.essence), 24, 48)
-    love.graphics.print(string.format("Nutrition: %.0f", state.resources.nutrition), 24, 72)
-    love.graphics.print(string.format("Growth: %.0f", state.resources.growth), 24, 96)
-    love.graphics.print(string.format("Consumed: %d", state.food.consumedTotal), 24, 120)
-    love.graphics.print(string.format("Runs: %d", state.meta.totalRuns), 24, 144)
-    love.graphics.print(string.format("Map: %s (%d/%d)", mapData.name, unlockedMaps, #C.MAPS), 24, 168)
-    love.graphics.print("[1-4] Map  [B] Boss  [F5/F9] Save/Load  [F10] Reset", 24, 192)
+    love.graphics.print(string.format("Runs: %d", state.meta.totalRuns), 24, 76)
+    love.graphics.print(string.format("Map: %s (%d/%d)", mapData.name, unlockedMaps, #C.MAPS), 24, 100)
+    love.graphics.print("[H] Help", 24, 124)
 
     ui.saveBtn.x = sw - 146
     ui.saveBtn.y = 20
@@ -150,6 +147,51 @@ local function drawHUD(state, fonts, ui)
         love.graphics.rectangle("fill", 12, love.graphics.getHeight() - 70, 760, 30, 6, 6)
         love.graphics.setColor(1, 0.9, 0.7)
         love.graphics.print(state.message, 20, love.graphics.getHeight() - 62)
+    end
+end
+
+local function drawHelpPanel(state, fonts)
+    if not state.showHelp then
+        return
+    end
+
+    local sw = love.graphics.getWidth()
+    local sh = love.graphics.getHeight()
+    local w = math.min(760, sw - 60)
+    local h = 220
+    local x = (sw - w) * 0.5
+    local y = (sh - h) * 0.5
+
+    love.graphics.setColor(0, 0, 0, 0.86)
+    love.graphics.rectangle("fill", x, y, w, h, 10, 10)
+    love.graphics.setColor(0.85, 0.92, 1.0)
+    love.graphics.rectangle("line", x, y, w, h, 10, 10)
+
+    love.graphics.setFont(fonts.big)
+    love.graphics.setColor(1, 0.95, 0.8)
+    love.graphics.printf("HELP", x, y + 14, w, "center")
+
+    love.graphics.setFont(fonts.hud)
+    love.graphics.setColor(1, 1, 1)
+    if state.mode == "run_end_tree" then
+        love.graphics.printf(
+            string.format("Reason: %s | Reward: +%d essence | Current: %d essence", state.runEndedReason or "unknown", state.lastRunReward, state.meta.essence),
+            x + 24,
+            y + 62,
+            w - 48,
+            "left"
+        )
+        love.graphics.printf("[Drag] Pan view", x + 24, y + 86, w - 48, "left")
+        love.graphics.printf("[Wheel] Zoom in/out", x + 24, y + 110, w - 48, "left")
+        love.graphics.printf("[Click] Buy upgrade  |  [R] Start new run", x + 24, y + 134, w - 48, "left")
+        love.graphics.printf("New nodes appear after unlocking prerequisite nodes", x + 24, y + 158, w - 48, "left")
+        love.graphics.printf("[H] Close help", x + 24, y + 182, w - 48, "left")
+    else
+        love.graphics.printf("[1-4] Switch map", x + 24, y + 62, w - 48, "left")
+        love.graphics.printf("[B] Enter boss", x + 24, y + 86, w - 48, "left")
+        love.graphics.printf("[F5/F9] Save / Load", x + 24, y + 110, w - 48, "left")
+        love.graphics.printf("[F10] Reset all data", x + 24, y + 134, w - 48, "left")
+        love.graphics.printf("[H] Close help", x + 24, y + 158, w - 48, "left")
     end
 end
 
@@ -293,20 +335,7 @@ local function drawRunEndTreeFullscreen(state, fonts)
     love.graphics.setFont(fonts.big)
     love.graphics.setColor(1, 0.95, 0.78)
     love.graphics.printf("RUN ENDED", 0, 24, sw, "center")
-
     love.graphics.setFont(fonts.hud)
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.printf(
-        string.format(
-            "Reason: %s | Reward: +%d essence | Current: %d essence",
-            state.runEndedReason or "unknown",
-            state.lastRunReward,
-            state.meta.essence
-        ),
-        28, 74, sw - 56, "center"
-    )
-    love.graphics.setColor(0.78, 0.86, 1.0)
-    love.graphics.printf("Drag to pan | Wheel to zoom | Click node to buy | R to start new run", 28, 98, sw - 56, "center")
 
     local mx, my = love.mouse.getPosition()
     local hoveredIndex
@@ -438,20 +467,18 @@ local function drawRunEndTreeFullscreen(state, fonts)
         love.graphics.printf("Hover a node to inspect details", tooltipX, tooltipY + tooltipH * 0.35, tooltipW, "center")
     end
 
-    love.graphics.setColor(1, 0.95, 0.75)
-    love.graphics.printf("Click node to buy, R to start new run", 0, sh - 44, sw, "center")
-    love.graphics.setColor(0.75, 0.85, 1.0)
-    love.graphics.printf("New nodes appear after unlocking prerequisite nodes", 0, sh - 24, sw, "center")
 end
 
 function Renderer.draw(state, fonts, ui, assets, treeWorldFromScreen)
     if state.mode == "run_end_tree" then
         drawRunEndTreeFullscreen(state, fonts)
+        drawHelpPanel(state, fonts)
         return
     end
 
     drawWorld(state, assets)
     drawHUD(state, fonts, ui)
+    drawHelpPanel(state, fonts)
 end
 
 return Renderer

@@ -41,6 +41,11 @@ function App:draw()
 end
 
 function App:keypressed(key)
+    if key == "h" then
+        Service.toggleHelp(self.state)
+        return
+    end
+
     if key == "f5" then
         Service.save(self.state, "manual")
         return

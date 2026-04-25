@@ -140,6 +140,10 @@ function Service.save(state, reason)
     GameState.saveNow(state, reason)
 end
 
+function Service.toggleHelp(state)
+    state.showHelp = not state.showHelp
+end
+
 function Service.trySwitchMap(state, mapId)
     if state.runEnded then
         return false
