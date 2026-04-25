@@ -30,6 +30,20 @@ local function updateCamera(state)
     state.camera.y = Utils.clamp(state.camera.y, 0, maxY)
 end
 
+local function mergeBonuses(skill, meta)
+    local out = {
+        speed = skill.speed + meta.speed,
+        reach = skill.reach + meta.reach,
+        nutritionMult = skill.nutritionMult + (meta.gainMult - 1),
+        xpMult = skill.xpMult + (meta.gainMult - 1),
+        rareBonus = skill.rareBonus,
+        eliteBonus = skill.eliteBonus,
+        bite = skill.bite + meta.bite,
+        magnet = skill.magnet,
+    }
+    return out
+end
+
 function Service.loadState()
     local state = GameState.loadOrDefault()
     state.camera.zoom = 1.0
@@ -45,8 +59,18 @@ end
 function Service.tick(state, dt)
     state.totalPlayTime = state.totalPlayTime + dt
 
-    if state.mode == "game" then
-        state.bonuses = SkillTree.computeBonuses(state.skillTree)
+    if not state.runEnded then
+        state.runTimeLeft = math.max(0, state.runTimeLeft - dt)
+        if state.runTimeLeft <= 0 then
+            if GameState.endRun(state, "time") then
+                GameState.saveNow(state, "run-timeout")
+            end
+        end
+    end
+
+    if state.mode == "game" and not state.runEnded then
+        local skillBonuses = SkillTree.computeBonuses(state.skillTree)
+        state.bonuses = mergeBonuses(skillBonuses, state.metaBonuses)
 
         local mx, my = love.mouse.getPosition()
         local wx, wy = screenToWorld(state, mx, my)
@@ -74,6 +98,12 @@ function Service.tick(state, dt)
             GameState.saveNow(state, "boss-defeated")
         end
 
+        if GameState.checkEnding(state) then
+            if GameState.endRun(state, "victory") then
+                GameState.saveNow(state, "run-victory")
+            end
+        end
+
         updateCamera(state)
     end
 
@@ -82,11 +112,12 @@ function Service.tick(state, dt)
         GameState.saveNow(state, "autosave")
         state.autosaveTimer = C.AUTOSAVE_INTERVAL
     end
-
-    GameState.checkEnding(state)
 end
 
 function Service.toggleMode(state)
+    if state.runEnded then
+        return
+    end
     state.mode = state.mode == "game" and "tree" or "game"
 end
 
@@ -95,6 +126,9 @@ function Service.save(state, reason)
 end
 
 function Service.trySwitchMap(state, mapId)
+    if state.runEnded then
+        return false
+    end
     if not C.MAPS[mapId] then
         return false
     end
@@ -108,6 +142,10 @@ function Service.trySwitchMap(state, mapId)
 end
 
 function Service.tryEnterBoss(state)
+    if state.runEnded then
+        return false
+    end
+
     if Boss.canEnter(state) then
         local entered = Boss.enter(state)
         if entered then
@@ -117,6 +155,41 @@ function Service.tryEnterBoss(state)
         return entered
     end
     return false
+end
+
+function Service.tryBuyMetaUpgrade(state, index)
+    local ok, err = GameState.tryBuyMetaUpgrade(state, index)
+    if ok then
+        GameState.saveNow(state, "meta-upgrade")
+    else
+        state.message = "Meta upgrade failed: " .. tostring(err)
+    end
+    return ok
+end
+
+function Service.restartRun(state)
+    GameState.startNewRun(state)
+    GameState.saveNow(state, "run-restart")
+end
+
+function Service.metaUpgradeIndexAtScreen(_, sx, sy)
+    local sw = love.graphics.getWidth()
+    local sh = love.graphics.getHeight()
+    local positions = {
+        [1] = { x = sw * 0.5, y = sh * 0.34 },
+        [2] = { x = sw * 0.38, y = sh * 0.47 },
+        [3] = { x = sw * 0.62, y = sh * 0.47 },
+        [4] = { x = sw * 0.3, y = sh * 0.62 },
+        [5] = { x = sw * 0.5, y = sh * 0.62 },
+        [6] = { x = sw * 0.7, y = sh * 0.62 },
+    }
+
+    for idx, p in pairs(positions) do
+        if (math.abs(sx - p.x) + math.abs(sy - p.y)) <= 34 then
+            return idx
+        end
+    end
+    return nil
 end
 
 function Service.skillTreeWorldPosition(state, sx, sy)
@@ -129,6 +202,10 @@ function Service.skillTreeWorldPosition(state, sx, sy)
 end
 
 function Service.tryUnlockTreeNodeAtScreen(state, sx, sy)
+    if state.runEnded then
+        return false, "run ended"
+    end
+
     local wx, wy = Service.skillTreeWorldPosition(state, sx, sy)
     local tree = state.skillTree
     local node = SkillTree.nodeAtWorldPosition(tree, wx, wy)
