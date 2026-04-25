@@ -61,11 +61,6 @@ function App:keypressed(key)
             Service.restartRun(self.state)
             return
         end
-
-        local idx = tonumber(key)
-        if idx and idx >= 1 and idx <= 6 then
-            Service.tryBuyMetaUpgrade(self.state, idx)
-        end
         return
     end
 

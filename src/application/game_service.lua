@@ -6,6 +6,8 @@ local Food = require("src.food_system")
 local MapSystem = require("src.map_system")
 local SkillTree = require("src.skill_tree_system")
 local Boss = require("src.boss_system")
+local Meta = require("src.meta_system")
+local MetaTreeLayout = require("src.meta_tree_layout")
 
 local Service = {}
 
@@ -186,24 +188,18 @@ function Service.restartRun(state)
     GameState.saveNow(state, "run-restart")
 end
 
-function Service.metaUpgradeIndexAtScreen(_, sx, sy)
+function Service.metaUpgradeIndexAtScreen(state, sx, sy)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
-    local positions = {
-        [1] = { x = sw * 0.5, y = sh * 0.34 },
-        [2] = { x = sw * 0.38, y = sh * 0.47 },
-        [3] = { x = sw * 0.62, y = sh * 0.47 },
-        [4] = { x = sw * 0.3, y = sh * 0.62 },
-        [5] = { x = sw * 0.5, y = sh * 0.62 },
-        [6] = { x = sw * 0.7, y = sh * 0.62 },
-    }
-
-    for idx, p in pairs(positions) do
-        if (math.abs(sx - p.x) + math.abs(sy - p.y)) <= 34 then
-            return idx
+    local rows = Meta.getUpgradeInfo(state.meta)
+    local visibleIndices = {}
+    for _, row in ipairs(rows) do
+        if row.visible then
+            visibleIndices[row.index] = true
         end
     end
-    return nil
+    local projected = MetaTreeLayout.build(sw, sh, Meta.getTreeLayout(), visibleIndices)
+    return projected.hitTest(sx, sy)
 end
 
 function Service.skillTreeWorldPosition(state, sx, sy)

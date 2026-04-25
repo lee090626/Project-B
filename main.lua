@@ -16,6 +16,12 @@ function love.draw()
 end
 
 function love.keypressed(key)
+    local ctrlOrCmd = love.keyboard.isDown("lctrl", "rctrl", "lgui", "rgui")
+    if ctrlOrCmd and key == "r" then
+        love.event.quit("restart")
+        return
+    end
+
     app:keypressed(key)
 end
 

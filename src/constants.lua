@@ -66,4 +66,19 @@ C.FOOD_BY_TIER = {
 
 C.MAX_FOOD = 125
 
+C.RUN_END_TREE_UI = {
+    panel = { x = 0.12, y = 0.1, w = 0.76, h = 0.8 },
+    sections = {
+        header = 0.16,
+        tree = 0.56,
+        tooltip = 0.2,
+        footer = 0.08,
+    },
+    sectionGap = 10,
+    contentInset = 24,
+    safePadding = 36,
+    nodeRadius = 30,
+    hitRadius = 34,
+}
+
 return C

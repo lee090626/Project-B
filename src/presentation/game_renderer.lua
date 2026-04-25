@@ -3,6 +3,8 @@ local Player = require("src.player_controller")
 local MapSystem = require("src.map_system")
 local SkillTree = require("src.skill_tree_system")
 local GameState = require("src.game_state")
+local Meta = require("src.meta_system")
+local MetaTreeLayout = require("src.meta_tree_layout")
 
 local Renderer = {}
 local ICON_LABELS = {
@@ -267,109 +269,160 @@ local function drawRunEndOverlay(state, fonts)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
     local upgrades = GameState.getMetaUpgradeRows(state)
+    local treeLayout = Meta.getTreeLayout()
     local byIndex = {}
+    local visibleIndices = {}
     for _, row in ipairs(upgrades) do
         byIndex[row.index] = row
+        if row.visible then
+            visibleIndices[row.index] = true
+        end
     end
-
-    local nodePositions = {
-        [1] = { x = sw * 0.5, y = sh * 0.34 },
-        [2] = { x = sw * 0.38, y = sh * 0.47 },
-        [3] = { x = sw * 0.62, y = sh * 0.47 },
-        [4] = { x = sw * 0.3, y = sh * 0.62 },
-        [5] = { x = sw * 0.5, y = sh * 0.62 },
-        [6] = { x = sw * 0.7, y = sh * 0.62 },
-    }
+    local projected = MetaTreeLayout.build(sw, sh, treeLayout, visibleIndices)
+    local ui = C.RUN_END_TREE_UI
+    local panel = projected.panel
+    local header = projected.headerRect
+    local tooltipRect = projected.tooltipRect
+    local footer = projected.footerRect
 
     love.graphics.setColor(0, 0, 0, 0.82)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
 
     love.graphics.setColor(0.1, 0.1, 0.12, 0.95)
-    love.graphics.rectangle("fill", sw * 0.12, sh * 0.1, sw * 0.76, sh * 0.8, 12, 12)
+    love.graphics.rectangle("fill", panel.x, panel.y, panel.w, panel.h, 12, 12)
 
     love.graphics.setFont(fonts.big)
     love.graphics.setColor(1, 0.95, 0.78)
-    love.graphics.printf("RUN ENDED", sw * 0.12, sh * 0.14, sw * 0.76, "center")
+    love.graphics.printf("RUN ENDED", header.x, header.y + 2, header.w, "center")
 
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(1, 1, 1)
-    love.graphics.printf(string.format("Reason: %s | Reward: +%d essence | Current: %d essence", state.runEndedReason or "unknown", state.lastRunReward, state.meta.essence), sw * 0.14, sh * 0.22, sw * 0.72, "left")
+    love.graphics.printf(
+        string.format(
+            "Reason: %s | Reward: +%d essence | Current: %d essence",
+            state.runEndedReason or "unknown",
+            state.lastRunReward,
+            state.meta.essence
+        ),
+        header.x,
+        header.y + header.h * 0.62,
+        header.w,
+        "left"
+    )
 
     for _, row in ipairs(upgrades) do
-        if row.deps and #row.deps > 0 then
-            local p1 = nodePositions[row.index]
+        if row.visible and row.deps and #row.deps > 0 then
+            local p1 = projected.project(row.index)
             for _, dep in ipairs(row.deps) do
-                local p0 = nodePositions[dep]
-                if p0 and p1 then
-                    local depRow = byIndex[dep]
-                    if depRow and depRow.level > 0 then
-                        love.graphics.setColor(0.35, 1.0, 0.55, 0.9)
-                    else
-                        love.graphics.setColor(0.25, 0.95, 1.0, 0.45)
+                if visibleIndices[dep] then
+                    local p0 = projected.project(dep)
+                    if p0 and p1 then
+                        local depRow = byIndex[dep]
+                        if depRow and depRow.level > 0 then
+                            love.graphics.setColor(0.35, 1.0, 0.55, 0.9)
+                        else
+                            love.graphics.setColor(0.25, 0.95, 1.0, 0.45)
+                        end
+                        love.graphics.setLineWidth(3)
+                        love.graphics.line(p0.x, p0.y, p1.x, p1.y)
                     end
-                    love.graphics.setLineWidth(3)
-                    love.graphics.line(p0.x, p0.y, p1.x, p1.y)
                 end
             end
         end
     end
 
     local mx, my = love.mouse.getPosition()
-    local hovered
-    for _, row in ipairs(upgrades) do
-        local p = nodePositions[row.index]
-        if p and (math.abs(mx - p.x) + math.abs(my - p.y) <= 34) then
-            hovered = row
-            break
+    local hoveredIndex = projected.hitTest(mx, my)
+    local hovered = hoveredIndex and byIndex[hoveredIndex] or nil
+    if hovered and hovered.reason == "BUY" then
+        love.graphics.setColor(0.35, 1.0, 0.55, 0.1)
+        local p = projected.project(hovered.index)
+        if p then
+            love.graphics.circle("fill", p.x, p.y, ui.nodeRadius + 8)
         end
     end
 
     for _, row in ipairs(upgrades) do
-        local p = nodePositions[row.index]
-        if p then
-            local s = 30
-            if row.maxed then
-                love.graphics.setColor(0.12, 0.2, 0.12, 0.95)
-            elseif row.canBuy then
-                love.graphics.setColor(0.08, 0.2, 0.14, 0.95)
-            elseif row.reason == "LOCKED" then
-                love.graphics.setColor(0.12, 0.12, 0.12, 0.95)
-            else
-                love.graphics.setColor(0.1, 0.1, 0.12, 0.95)
+        if row.visible then
+            local p = projected.project(row.index)
+            if p then
+                local s = ui.nodeRadius
+                if row.maxed then
+                    love.graphics.setColor(0.12, 0.2, 0.12, 0.95)
+                elseif row.canBuy then
+                    love.graphics.setColor(0.08, 0.2, 0.14, 0.95)
+                elseif row.reason == "LOCKED" then
+                    love.graphics.setColor(0.12, 0.12, 0.12, 0.95)
+                else
+                    love.graphics.setColor(0.1, 0.1, 0.12, 0.95)
+                end
+
+                love.graphics.polygon("fill", p.x, p.y - s, p.x + s, p.y, p.x, p.y + s, p.x - s, p.y)
+
+                if row.maxed then
+                    love.graphics.setColor(0.45, 1.0, 0.6)
+                elseif row.canBuy then
+                    love.graphics.setColor(0.35, 1.0, 0.55)
+                else
+                    love.graphics.setColor(0.25, 0.95, 1.0)
+                end
+                love.graphics.setLineWidth(3)
+                love.graphics.polygon("line", p.x, p.y - s, p.x + s, p.y, p.x, p.y + s, p.x - s, p.y)
+
+                love.graphics.setColor(0.95, 0.95, 0.95)
+                local icon = row.icon or tostring(row.index)
+                local iconWidth = fonts.hud:getWidth(icon)
+                love.graphics.print(icon, p.x - iconWidth * 0.5, p.y - 10)
+                love.graphics.setColor(0.9, 0.95, 0.55)
+                love.graphics.printf(string.format("%d/%d", row.level, row.maxLevel), p.x - 24, p.y + s + 4, 48, "center")
             end
-
-            love.graphics.polygon("fill", p.x, p.y - s, p.x + s, p.y, p.x, p.y + s, p.x - s, p.y)
-
-            if row.maxed then
-                love.graphics.setColor(0.45, 1.0, 0.6)
-            elseif row.canBuy then
-                love.graphics.setColor(0.35, 1.0, 0.55)
-            else
-                love.graphics.setColor(0.25, 0.95, 1.0)
-            end
-            love.graphics.setLineWidth(3)
-            love.graphics.polygon("line", p.x, p.y - s, p.x + s, p.y, p.x, p.y + s, p.x - s, p.y)
-
-            love.graphics.setColor(0.95, 0.95, 0.95)
-            love.graphics.printf(tostring(row.index), p.x - 10, p.y - 8, 20, "center")
-            love.graphics.setColor(0.9, 0.95, 0.55)
-            love.graphics.printf(string.format("%d/%d", row.level, row.maxLevel), p.x - 24, p.y + s + 4, 48, "center")
         end
     end
 
     if hovered then
         local costText = hovered.cost and tostring(hovered.cost) or "MAX"
         local status = hovered.reason
-        love.graphics.setColor(0, 0, 0, 0.82)
-        love.graphics.rectangle("fill", sw * 0.22, sh * 0.73, sw * 0.56, 96, 8, 8)
+        local statusColor = { 1, 1, 1 }
+        if status == "BUY" then
+            statusColor = { 0.45, 1.0, 0.55 }
+        elseif status == "LOCKED" then
+            statusColor = { 1.0, 0.65, 0.65 }
+        elseif status == "NEED ESSENCE" then
+            statusColor = { 1.0, 0.85, 0.45 }
+        elseif status == "MAX" then
+            statusColor = { 0.65, 1.0, 0.75 }
+        end
+
+        love.graphics.setColor(0, 0, 0, 0.85)
+        love.graphics.rectangle("fill", tooltipRect.x, tooltipRect.y, tooltipRect.w, tooltipRect.h, 8, 8)
         love.graphics.setColor(1, 1, 1)
-        love.graphics.printf(string.format("[%d] %s  Lv.%d/%d", hovered.index, hovered.name, hovered.level, hovered.maxLevel), sw * 0.24, sh * 0.75, sw * 0.52, "left")
-        love.graphics.printf(hovered.desc, sw * 0.24, sh * 0.78, sw * 0.52, "left")
-        love.graphics.printf(string.format("Cost: %s | Status: %s", costText, status), sw * 0.24, sh * 0.81, sw * 0.52, "left")
+        love.graphics.printf(
+            string.format("[%d] %s  Lv.%d/%d", hovered.index, hovered.name, hovered.level, hovered.maxLevel),
+            tooltipRect.x + 14,
+            tooltipRect.y + 12,
+            tooltipRect.w - 28,
+            "left"
+        )
+        love.graphics.printf(hovered.desc, tooltipRect.x + 14, tooltipRect.y + 36, tooltipRect.w - 28, "left")
+        love.graphics.setColor(statusColor)
+        love.graphics.printf(
+            string.format("Cost: %s | Status: %s", costText, status),
+            tooltipRect.x + 14,
+            tooltipRect.y + 60,
+            tooltipRect.w - 28,
+            "left"
+        )
+    else
+        love.graphics.setColor(0, 0, 0, 0.45)
+        love.graphics.rectangle("fill", tooltipRect.x, tooltipRect.y, tooltipRect.w, tooltipRect.h, 8, 8)
+        love.graphics.setColor(0.85, 0.86, 0.9)
+        love.graphics.printf("Hover a node to inspect details", tooltipRect.x, tooltipRect.y + tooltipRect.h * 0.35, tooltipRect.w, "center")
     end
 
     love.graphics.setColor(1, 0.95, 0.75)
-    love.graphics.printf("Press 1-6 to buy upgrade, R to start new run", sw * 0.14, sh * 0.9, sw * 0.72, "center")
+    love.graphics.printf("Click node to buy, R to start new run", footer.x, footer.y, footer.w, "center")
+    love.graphics.setColor(0.75, 0.85, 1.0)
+    love.graphics.printf("New nodes appear after unlocking prerequisite nodes", footer.x, footer.y + 18, footer.w, "center")
 end
 
 function Renderer.draw(state, fonts, ui, assets, treeWorldFromScreen)
