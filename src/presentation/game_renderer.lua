@@ -111,16 +111,17 @@ local function drawHUD(state, fonts, ui)
 
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(0, 0, 0, 0.42)
-    love.graphics.rectangle("fill", 12, 12, 420, 190, 8, 8)
+    love.graphics.rectangle("fill", 12, 12, 460, 216, 8, 8)
 
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print(string.format("Nutrition: %.0f", state.resources.nutrition), 24, 24)
-    love.graphics.print(string.format("Growth: %.0f", state.resources.growth), 24, 48)
-    love.graphics.print(string.format("Consumed: %d", state.food.consumedTotal), 24, 72)
-    love.graphics.print(string.format("Skills: %d / %d", state.skillTree.unlockedCount, #state.skillTree.nodes), 24, 96)
-    love.graphics.print(string.format("Map: %s (%d/%d)", mapData.name, unlockedMaps, #C.MAPS), 24, 120)
-    love.graphics.print("[TAB] Skill Tree  [1-4] Map  [B] Boss", 24, 144)
-    love.graphics.print("[F5] Save  [F9] Load", 24, 168)
+    love.graphics.print(string.format("Time Left: %s", formatTime(state.runTimeLeft)), 24, 24)
+    love.graphics.print(string.format("Meta Essence: %d", state.meta.essence), 24, 48)
+    love.graphics.print(string.format("Nutrition: %.0f", state.resources.nutrition), 24, 72)
+    love.graphics.print(string.format("Growth: %.0f", state.resources.growth), 24, 96)
+    love.graphics.print(string.format("Consumed: %d", state.food.consumedTotal), 24, 120)
+    love.graphics.print(string.format("Skills: %d / %d", state.skillTree.unlockedCount, #state.skillTree.nodes), 24, 144)
+    love.graphics.print(string.format("Map: %s (%d/%d)", mapData.name, unlockedMaps, #C.MAPS), 24, 168)
+    love.graphics.print("[TAB] Skill Tree  [1-4] Map  [B] Boss  [F5/F9] Save/Load  [F10] Reset", 24, 192)
 
     ui.saveBtn.x = sw - 146
     ui.saveBtn.y = 20
@@ -145,19 +146,9 @@ local function drawHUD(state, fonts, ui)
 
     if state.message then
         love.graphics.setColor(0, 0, 0, 0.65)
-        love.graphics.rectangle("fill", 12, love.graphics.getHeight() - 70, 680, 30, 6, 6)
+        love.graphics.rectangle("fill", 12, love.graphics.getHeight() - 70, 760, 30, 6, 6)
         love.graphics.setColor(1, 0.9, 0.7)
         love.graphics.print(state.message, 20, love.graphics.getHeight() - 62)
-    end
-
-    if state.endingReached then
-        love.graphics.setColor(0, 0, 0, 0.7)
-        love.graphics.rectangle("fill", sw * 0.2, love.graphics.getHeight() * 0.35, sw * 0.6, 120, 10, 10)
-        love.graphics.setColor(1, 0.95, 0.75)
-        love.graphics.setFont(fonts.big)
-        love.graphics.printf("ENDING CLEARED", sw * 0.2, love.graphics.getHeight() * 0.39, sw * 0.6, "center")
-        love.graphics.setFont(fonts.hud)
-        love.graphics.printf("All skills + all maps + final boss complete", sw * 0.2, love.graphics.getHeight() * 0.45, sw * 0.6, "center")
     end
 end
 

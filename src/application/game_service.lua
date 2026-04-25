@@ -56,6 +56,16 @@ function Service.reloadState()
     return state
 end
 
+function Service.resetAllData()
+    love.filesystem.remove(C.SAVE_FILE)
+    love.filesystem.remove(C.BACKUP_FILE)
+
+    local state = Service.loadState()
+    state.message = "All progress reset"
+    GameState.saveNow(state, "reset-all")
+    return state
+end
+
 function Service.tick(state, dt)
     state.totalPlayTime = state.totalPlayTime + dt
 
@@ -83,6 +93,7 @@ function Service.tick(state, dt)
 
         Food.update(state.food, dt, mapData, state.bonuses, state.player)
         local nutrition, xp, consumed = Food.consumeNearby(state.food, state.player, eatRadius, mapData.reward, state.bonuses)
+
         state.resources.nutrition = state.resources.nutrition + nutrition
         state.resources.growth = state.resources.growth + xp
         state.resources.consumed = state.resources.consumed + consumed
