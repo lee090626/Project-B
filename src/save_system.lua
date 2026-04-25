@@ -55,12 +55,20 @@ function Save.snapshot(state)
     return {
         version = C.SAVE_VERSION,
         totalPlayTime = state.totalPlayTime,
+        mode = state.mode,
+        runTimeLeft = state.runTimeLeft,
+        runDuration = state.runDuration,
+        runEnded = state.runEnded,
+        runEndedReason = state.runEndedReason,
+        lastRunReward = state.lastRunReward,
+        endingReached = state.endingReached,
         resources = state.resources,
         player = state.modules.playerExport(state.player),
         food = state.modules.foodExport(state.food),
         maps = state.modules.mapExport(state.maps),
         skills = state.modules.skillExport(state.skillTree),
         boss = state.modules.bossExport(state.boss),
+        meta = state.modules.metaExport(state.meta),
     }
 end
 
