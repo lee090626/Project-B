@@ -8,6 +8,7 @@ function App.new()
     return setmetatable({
         state = nil,
         fonts = {},
+        assets = {},
         ui = { saveBtn = { x = 0, y = 0, w = 120, h = 32 } },
     }, App)
 end
@@ -19,6 +20,13 @@ function App:load()
     self.fonts.hud = love.graphics.newFont(15)
     self.fonts.big = love.graphics.newFont(30)
 
+    local ok, playerImage = pcall(love.graphics.newImage, "BabyDragon.png")
+    if ok and playerImage then
+        self.assets.playerSprite = playerImage
+    else
+        self.assets.playerSprite = nil
+    end
+
     self.state = Service.loadState()
 end
 
@@ -27,7 +35,7 @@ function App:update(dt)
 end
 
 function App:draw()
-    Renderer.draw(self.state, self.fonts, self.ui, function(sx, sy)
+    Renderer.draw(self.state, self.fonts, self.ui, self.assets, function(sx, sy)
         return Service.skillTreeWorldPosition(self.state, sx, sy)
     end)
 end

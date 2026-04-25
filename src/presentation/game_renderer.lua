@@ -34,7 +34,7 @@ local function currentMapColor(mapId)
     return { 0.08, 0.05, 0.1 }, { 0.19, 0.1, 0.25 }
 end
 
-local function drawWorld(state)
+local function drawWorld(state, assets)
     local mapData = MapSystem.getCurrentMap(state.maps)
     local bgA, bgB = currentMapColor(mapData.id)
     local sw = love.graphics.getWidth()
@@ -77,10 +77,21 @@ local function drawWorld(state)
     love.graphics.setColor(0.9, 0.8, 0.2, 0.12)
     love.graphics.circle("fill", state.player.x, state.player.y, magnetRadius)
 
-    love.graphics.setColor(0.9, 0.45, 0.3)
-    love.graphics.circle("fill", state.player.x, state.player.y, state.player.radius)
-    love.graphics.setColor(1, 0.9, 0.75)
-    love.graphics.circle("fill", state.player.x + 5, state.player.y - 4, 2)
+    if assets and assets.playerSprite then
+        local sprite = assets.playerSprite
+        local iw = sprite:getWidth()
+        local ih = sprite:getHeight()
+        local targetSize = state.player.radius * 3
+        local sx = targetSize / iw
+        local sy = targetSize / ih
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.draw(sprite, state.player.x, state.player.y, 0, sx, sy, iw * 0.5, ih * 0.5)
+    else
+        love.graphics.setColor(0.9, 0.45, 0.3)
+        love.graphics.circle("fill", state.player.x, state.player.y, state.player.radius)
+        love.graphics.setColor(1, 0.9, 0.75)
+        love.graphics.circle("fill", state.player.x + 5, state.player.y - 4, 2)
+    end
 
     love.graphics.setColor(0.95, 0.7, 0.3, 0.25)
     love.graphics.circle("line", state.player.x, state.player.y, eatRadius)
@@ -370,8 +381,8 @@ local function drawRunEndOverlay(state, fonts)
     love.graphics.printf("Press 1-6 to buy upgrade, R to start new run", sw * 0.14, sh * 0.9, sw * 0.72, "center")
 end
 
-function Renderer.draw(state, fonts, ui, treeWorldFromScreen)
-    drawWorld(state)
+function Renderer.draw(state, fonts, ui, assets, treeWorldFromScreen)
+    drawWorld(state, assets)
     drawHUD(state, fonts, ui)
 
     if state.mode == "tree" then
