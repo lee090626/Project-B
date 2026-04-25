@@ -10,15 +10,48 @@ local CATEGORIES = {
 }
 
 local EFFECT_ROTATION = {
-    { stat = "speed", add = 4 },
-    { stat = "reach", add = 1.2 },
-    { stat = "nutritionMult", add = 0.03 },
-    { stat = "xpMult", add = 0.03 },
-    { stat = "rareBonus", add = 0.004 },
-    { stat = "eliteBonus", add = 0.0022 },
-    { stat = "bite", add = 0.9 },
-    { stat = "magnet", add = 2.0 },
+    { stat = "speed", perLevel = 4, iconId = "spd" },
+    { stat = "reach", perLevel = 1.2, iconId = "rng" },
+    { stat = "nutritionMult", perLevel = 0.03, iconId = "nut" },
+    { stat = "xpMult", perLevel = 0.03, iconId = "xp" },
+    { stat = "rareBonus", perLevel = 0.004, iconId = "rar" },
+    { stat = "eliteBonus", perLevel = 0.0022, iconId = "elt" },
+    { stat = "bite", perLevel = 0.9, iconId = "dmg" },
+    { stat = "magnet", perLevel = 2.0, iconId = "mag" },
 }
+
+local function recomputeUnlockedCount(tree)
+    local count = 0
+    for _, node in ipairs(tree.nodes) do
+        if node.level > 0 then
+            count = count + 1
+        end
+    end
+    tree.unlockedCount = count
+end
+
+local function buildAnchorSet(nodes)
+    local byCategory = {}
+    for _, cat in ipairs(CATEGORIES) do
+        byCategory[cat.id] = {}
+    end
+
+    for _, node in ipairs(nodes) do
+        if node.gridRow == 2 or node.gridRow == 5 or node.gridRow == 8 then
+            byCategory[node.category][#byCategory[node.category] + 1] = node.id
+        end
+    end
+
+    local anchorSet = {}
+    for _, cat in ipairs(CATEGORIES) do
+        local ids = byCategory[cat.id]
+        for i = 1, math.min(3, #ids) do
+            anchorSet[ids[i]] = true
+        end
+    end
+
+    return anchorSet
+end
 
 local function createNodes()
     local nodes = {}
@@ -53,17 +86,59 @@ local function createNodes()
                 categoryColor = cat.color,
                 x = startX + (col - 1) * xSpacing + ((row % 2) * 20),
                 y = startY + (row - 1) * ySpacing,
-                cost = baseCost,
+                gridRow = row,
                 deps = deps,
-                effect = effect,
-                unlocked = false,
+                iconId = effect.iconId,
+                isAnchor = false,
+                level = 0,
+                maxLevel = 1,
+                costBase = baseCost,
+                costScale = 1.0,
+                effect = {
+                    stat = effect.stat,
+                    perLevel = effect.perLevel,
+                },
             }
             index = index + 1
         end
     end
 
-    nodes[1].cost = 0
+    local anchorSet = buildAnchorSet(nodes)
+    for _, node in ipairs(nodes) do
+        if anchorSet[node.id] then
+            node.isAnchor = true
+            node.maxLevel = 10
+            node.costScale = 1.33
+        end
+    end
+
+    nodes[1].level = 1
     return nodes
+end
+
+local function applySaved(tree, savedSkills)
+    if not savedSkills then
+        return
+    end
+
+    if savedSkills.nodes then
+        for _, entry in ipairs(savedSkills.nodes) do
+            local node = tree.nodes[entry.id]
+            if node then
+                node.level = Utils.clamp(entry.level or 0, 0, node.maxLevel)
+            end
+        end
+        return
+    end
+
+    if savedSkills.unlocked then
+        for _, nodeId in ipairs(savedSkills.unlocked) do
+            local node = tree.nodes[nodeId]
+            if node then
+                node.level = math.max(node.level, 1)
+            end
+        end
+    end
 end
 
 function SkillTree.new(savedSkills)
@@ -76,40 +151,43 @@ function SkillTree.new(savedSkills)
         zoom = 0.65,
     }
 
-    if savedSkills and savedSkills.unlocked then
-        for _, nodeId in ipairs(savedSkills.unlocked) do
-            local node = tree.nodes[nodeId]
-            if node and not node.unlocked then
-                node.unlocked = true
-                tree.unlockedCount = tree.unlockedCount + 1
-            end
-        end
-    else
-        tree.nodes[1].unlocked = true
-        tree.unlockedCount = 1
+    applySaved(tree, savedSkills)
+
+    if savedSkills then
+        tree.cameraX = savedSkills.cameraX or tree.cameraX
+        tree.cameraY = savedSkills.cameraY or tree.cameraY
+        tree.zoom = savedSkills.zoom or tree.zoom
     end
 
-    if tree.unlockedCount == 0 then
-        tree.nodes[1].unlocked = true
-        tree.unlockedCount = 1
+    if tree.nodes[1].level <= 0 then
+        tree.nodes[1].level = 1
     end
 
+    recomputeUnlockedCount(tree)
     return tree
 end
 
 function SkillTree.export(tree)
-    local unlocked = {}
+    local nodeLevels = {}
     for _, node in ipairs(tree.nodes) do
-        if node.unlocked then
-            unlocked[#unlocked + 1] = node.id
+        if node.level > 0 then
+            nodeLevels[#nodeLevels + 1] = {
+                id = node.id,
+                level = node.level,
+            }
         end
     end
+
     return {
-        unlocked = unlocked,
+        nodes = nodeLevels,
         cameraX = tree.cameraX,
         cameraY = tree.cameraY,
         zoom = tree.zoom,
     }
+end
+
+function SkillTree.isUnlocked(node)
+    return node.level > 0
 end
 
 function SkillTree.allUnlocked(tree)
@@ -122,41 +200,74 @@ function SkillTree.depSatisfied(tree, node)
     end
     for _, depId in ipairs(node.deps) do
         local dep = tree.nodes[depId]
-        if not dep or not dep.unlocked then
+        if not dep or dep.level <= 0 then
             return false
         end
     end
     return true
 end
 
-function SkillTree.canUnlock(tree, node, growth)
-    if node.unlocked then
-        return false, "already unlocked"
+function SkillTree.getNextCost(node)
+    if node.level >= node.maxLevel then
+        return nil
     end
+    local scalePow = node.isAnchor and node.level or 0
+    return math.floor(node.costBase * (node.costScale ^ scalePow))
+end
+
+function SkillTree.getCurrentValue(node)
+    return node.effect.perLevel * node.level
+end
+
+function SkillTree.getNextValue(node)
+    local nextLevel = math.min(node.level + 1, node.maxLevel)
+    return node.effect.perLevel * nextLevel
+end
+
+function SkillTree.canUnlock(tree, node, growth)
     if not SkillTree.depSatisfied(tree, node) then
         return false, "dependency missing"
     end
-    if growth < node.cost then
+
+    if node.level >= node.maxLevel then
+        return false, node.isAnchor and "max level" or "already unlocked"
+    end
+
+    local cost = SkillTree.getNextCost(node)
+    if not cost or growth < cost then
         return false, "need more growth"
     end
+
     return true, nil
 end
 
 function SkillTree.tryUnlock(tree, nodeId, state)
     local node = tree.nodes[nodeId]
     if not node then
-        return false, "node not found"
+        return false, "node not found", nil
     end
 
     local ok, err = SkillTree.canUnlock(tree, node, state.resources.growth)
     if not ok then
-        return false, err
+        return false, err, nil
     end
 
-    state.resources.growth = state.resources.growth - node.cost
-    node.unlocked = true
-    tree.unlockedCount = tree.unlockedCount + 1
-    return true, nil
+    local cost = SkillTree.getNextCost(node)
+    local wasUnlocked = node.level > 0
+
+    state.resources.growth = state.resources.growth - cost
+    node.level = node.level + 1
+
+    if not wasUnlocked and node.level > 0 then
+        tree.unlockedCount = tree.unlockedCount + 1
+    end
+
+    return true, nil, {
+        level = node.level,
+        maxLevel = node.maxLevel,
+        cost = cost,
+        isAnchor = node.isAnchor,
+    }
 end
 
 function SkillTree.computeBonuses(tree)
@@ -172,9 +283,9 @@ function SkillTree.computeBonuses(tree)
     }
 
     for _, node in ipairs(tree.nodes) do
-        if node.unlocked then
+        if node.level > 0 then
             local effect = node.effect
-            bonuses[effect.stat] = bonuses[effect.stat] + effect.add
+            bonuses[effect.stat] = bonuses[effect.stat] + (effect.perLevel * node.level)
         end
     end
 
@@ -182,13 +293,28 @@ function SkillTree.computeBonuses(tree)
 end
 
 function SkillTree.nodeAtWorldPosition(tree, wx, wy)
-    local hitRadius = 22
+    local hitRadius = 24
     for _, node in ipairs(tree.nodes) do
-        if Utils.distance(wx, wy, node.x, node.y) <= hitRadius then
+        local dx = math.abs(wx - node.x)
+        local dy = math.abs(wy - node.y)
+        if (dx + dy) <= hitRadius then
             return node
         end
     end
     return nil
+end
+
+function SkillTree.getTooltipInfo(tree, node, growth)
+    local canBuy, reason = SkillTree.canUnlock(tree, node, growth)
+    return {
+        canBuy = canBuy,
+        reason = reason,
+        currentLevel = node.level,
+        maxLevel = node.maxLevel,
+        cost = SkillTree.getNextCost(node),
+        currentValue = SkillTree.getCurrentValue(node),
+        nextValue = SkillTree.getNextValue(node),
+    }
 end
 
 return SkillTree
