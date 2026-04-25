@@ -147,13 +147,12 @@ function GameState.checkEnding(state)
         return true
     end
 
-    local allSkills = SkillTree.allUnlocked(state.skillTree)
     local allMaps = MapSystem.allMapsUnlocked(state.maps)
     local bossDefeated = state.boss.defeated
 
-    if allSkills and allMaps and bossDefeated then
+    if allMaps and bossDefeated then
         state.endingReached = true
-        state.events[#state.events + 1] = "Ending reached: All skills + all maps + boss defeated"
+        state.events[#state.events + 1] = "Ending reached: All maps + boss defeated"
         return true
     end
     return false

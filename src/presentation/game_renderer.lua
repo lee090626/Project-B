@@ -119,9 +119,9 @@ local function drawHUD(state, fonts, ui)
     love.graphics.print(string.format("Nutrition: %.0f", state.resources.nutrition), 24, 72)
     love.graphics.print(string.format("Growth: %.0f", state.resources.growth), 24, 96)
     love.graphics.print(string.format("Consumed: %d", state.food.consumedTotal), 24, 120)
-    love.graphics.print(string.format("Skills: %d / %d", state.skillTree.unlockedCount, #state.skillTree.nodes), 24, 144)
+    love.graphics.print(string.format("Runs: %d", state.meta.totalRuns), 24, 144)
     love.graphics.print(string.format("Map: %s (%d/%d)", mapData.name, unlockedMaps, #C.MAPS), 24, 168)
-    love.graphics.print("[TAB] Skill Tree  [1-4] Map  [B] Boss  [F5/F9] Save/Load  [F10] Reset", 24, 192)
+    love.graphics.print("[1-4] Map  [B] Boss  [F5/F9] Save/Load  [F10] Reset", 24, 192)
 
     ui.saveBtn.x = sw - 146
     ui.saveBtn.y = 20
@@ -376,9 +376,7 @@ function Renderer.draw(state, fonts, ui, assets, treeWorldFromScreen)
     drawWorld(state, assets)
     drawHUD(state, fonts, ui)
 
-    if state.mode == "tree" then
-        drawSkillTreeOverlay(state, fonts, treeWorldFromScreen)
-    elseif state.mode == "run_end" then
+    if state.mode == "run_end" then
         drawRunEndOverlay(state, fonts)
     end
 end

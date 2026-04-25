@@ -69,11 +69,6 @@ function App:keypressed(key)
         return
     end
 
-    if key == "tab" then
-        Service.toggleMode(self.state)
-        return
-    end
-
     if key == "b" then
         Service.tryEnterBoss(self.state)
         return
@@ -94,14 +89,6 @@ function App:mousepressed(x, y, button)
         local idx = Service.metaUpgradeIndexAtScreen(self.state, x, y)
         if idx then
             Service.tryBuyMetaUpgrade(self.state, idx)
-        end
-        return
-    end
-
-    if self.state.mode == "tree" then
-        local unlocked = Service.tryUnlockTreeNodeAtScreen(self.state, x, y)
-        if not unlocked then
-            Service.startTreeDrag(self.state, x, y)
         end
         return
     end

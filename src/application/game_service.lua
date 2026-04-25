@@ -98,9 +98,12 @@ function Service.tick(state, dt)
         state.resources.growth = state.resources.growth + xp
         state.resources.consumed = state.resources.consumed + consumed
 
-        local unlockedAny = MapSystem.updateUnlocks(state.maps, state.skillTree.unlockedCount)
+        local progressionScore = state.resources.consumed
+            + math.floor(state.resources.growth * 0.15)
+            + math.floor(state.meta.totalRuns * 2)
+        local unlockedAny = MapSystem.updateUnlocks(state.maps, progressionScore)
         if unlockedAny then
-            state.message = "New map unlocked from skill progress"
+            state.message = "New map unlocked from run progress"
         end
 
         local wasDefeated = state.boss.defeated
@@ -225,7 +228,7 @@ function Service.tryUnlockTreeNodeAtScreen(state, sx, sy)
         return false, "no-node"
     end
 
-    local ok, err, info = SkillTree.tryUnlock(tree, node.id, state)
+        local ok, err, info = SkillTree.tryUnlock(tree, node.id, state)
     if ok then
         if info and info.maxLevel and info.maxLevel > 1 then
             state.message = string.format("Upgraded %s Lv.%d/%d", node.name, info.level, info.maxLevel)
