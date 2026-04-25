@@ -9,6 +9,18 @@ local Save = require("src.save_system")
 
 local GameState = {}
 
+local function resetMetaTreeView(state)
+    state.metaTreeView = {
+        cameraX = 0.5,
+        cameraY = 0.5,
+        zoom = 1.0,
+        pointerDown = false,
+        moved = false,
+        pressX = 0,
+        pressY = 0,
+    }
+end
+
 local function createResources(saved, startGrowth)
     return {
         nutrition = saved and saved.nutrition or 0,
@@ -44,6 +56,7 @@ local function resetRunState(state)
     state.runEndedReason = nil
     state.endingReached = false
     state.mode = "game"
+    resetMetaTreeView(state)
 end
 
 function GameState.new(loadResult, loadErr)
@@ -57,6 +70,7 @@ function GameState.new(loadResult, loadErr)
         treeDragX = 0,
         treeDragY = 0,
         camera = { x = 0, y = 0, zoom = 1.0 },
+        metaTreeView = nil,
         message = loadErr and ("Save warning: " .. tostring(loadErr)) or nil,
         endingReached = saved.endingReached or false,
         runEnded = saved.runEnded or false,
@@ -76,6 +90,7 @@ function GameState.new(loadResult, loadErr)
     state.boss = Boss.new(saved.boss)
 
     state.runTimeLeft = saved.runTimeLeft or state.runDuration
+    resetMetaTreeView(state)
 
     state.modules = {
         playerExport = Player.export,
@@ -90,7 +105,7 @@ function GameState.new(loadResult, loadErr)
     MapSystem.updateUnlocks(state.maps, state.skillTree.unlockedCount)
 
     if state.runEnded then
-        state.mode = "run_end"
+        state.mode = "run_end_tree"
     end
 
     return state
@@ -113,7 +128,8 @@ function GameState.endRun(state, reason)
 
     state.runEnded = true
     state.runEndedReason = reason
-    state.mode = "run_end"
+    state.mode = "run_end_tree"
+    resetMetaTreeView(state)
 
     local reward = Meta.calculateRunReward(state)
     state.lastRunReward = reward

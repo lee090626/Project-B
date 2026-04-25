@@ -7,7 +7,6 @@ local MapSystem = require("src.map_system")
 local SkillTree = require("src.skill_tree_system")
 local Boss = require("src.boss_system")
 local Meta = require("src.meta_system")
-local MetaTreeLayout = require("src.meta_tree_layout")
 
 local Service = {}
 
@@ -189,17 +188,45 @@ function Service.restartRun(state)
 end
 
 function Service.metaUpgradeIndexAtScreen(state, sx, sy)
+    return Service.metaTreeNodeAtScreen(state, sx, sy)
+end
+
+function Service.metaTreeScreenToWorld(state, sx, sy)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
+    local view = state.metaTreeView
+    local scale = C.RUN_END_TREE_UI.worldScale
+    local wx = (sx - sw * 0.5) / (view.zoom * scale) + view.cameraX
+    local wy = (sy - sh * 0.5) / (view.zoom * scale) + view.cameraY
+    return wx, wy
+end
+
+function Service.metaTreeNodeAtScreen(state, sx, sy)
+    local wx, wy = Service.metaTreeScreenToWorld(state, sx, sy)
     local rows = Meta.getUpgradeInfo(state.meta)
-    local visibleIndices = {}
+    local layout = Meta.getTreeLayout()
+    local scale = C.RUN_END_TREE_UI.worldScale
+    local view = state.metaTreeView
+    local radius = C.RUN_END_TREE_UI.nodeRadius / (view.zoom * scale)
+    local best
+    local bestDistSq = radius * radius
+
     for _, row in ipairs(rows) do
         if row.visible then
-            visibleIndices[row.index] = true
+            local p = layout[row.index]
+            if p then
+                local dx = wx - p.x
+                local dy = wy - p.y
+                local distSq = dx * dx + dy * dy
+                if distSq <= bestDistSq then
+                    bestDistSq = distSq
+                    best = row.index
+                end
+            end
         end
     end
-    local projected = MetaTreeLayout.build(sw, sh, Meta.getTreeLayout(), visibleIndices)
-    return projected.hitTest(sx, sy)
+
+    return best
 end
 
 function Service.skillTreeWorldPosition(state, sx, sy)
@@ -261,6 +288,13 @@ function Service.panTree(state, dx, dy)
     tree.cameraY = tree.cameraY - dy / tree.zoom
 end
 
+function Service.panMetaTree(state, dx, dy)
+    local view = state.metaTreeView
+    local scale = C.RUN_END_TREE_UI.worldScale
+    view.cameraX = view.cameraX - dx / (view.zoom * scale)
+    view.cameraY = view.cameraY - dy / (view.zoom * scale)
+end
+
 function Service.zoomTree(state, wheelY)
     if state.mode ~= "tree" then
         return
@@ -269,6 +303,72 @@ function Service.zoomTree(state, wheelY)
     local tree = state.skillTree
     local zoomStep = wheelY > 0 and 1.1 or 0.9
     tree.zoom = Utils.clamp(tree.zoom * zoomStep, 0.35, 1.45)
+end
+
+function Service.zoomMetaTree(state, wheelY)
+    if wheelY == 0 then
+        return
+    end
+
+    local view = state.metaTreeView
+    local oldZoom = view.zoom
+    local zoomStep = wheelY > 0 and C.RUN_END_TREE_UI.zoomStepUp or C.RUN_END_TREE_UI.zoomStepDown
+    local newZoom = Utils.clamp(oldZoom * zoomStep, C.RUN_END_TREE_UI.minZoom, C.RUN_END_TREE_UI.maxZoom)
+    if oldZoom == newZoom then
+        return
+    end
+
+    local mx, my = love.mouse.getPosition()
+    local wx, wy = Service.metaTreeScreenToWorld(state, mx, my)
+    view.zoom = newZoom
+
+    local sw = love.graphics.getWidth()
+    local sh = love.graphics.getHeight()
+    local scale = C.RUN_END_TREE_UI.worldScale
+    view.cameraX = wx - (mx - sw * 0.5) / (newZoom * scale)
+    view.cameraY = wy - (my - sh * 0.5) / (newZoom * scale)
+end
+
+function Service.beginMetaTreePointer(state, x, y)
+    local view = state.metaTreeView
+    view.pointerDown = true
+    view.moved = false
+    view.pressX = x
+    view.pressY = y
+end
+
+function Service.updateMetaTreePointer(state, _, _, dx, dy)
+    local view = state.metaTreeView
+    if not view.pointerDown then
+        return
+    end
+
+    local mx, my = love.mouse.getPosition()
+    local movedDx = mx - view.pressX
+    local movedDy = my - view.pressY
+    local threshold = C.RUN_END_TREE_UI.clickThreshold
+
+    if not view.moved and (movedDx * movedDx + movedDy * movedDy) >= (threshold * threshold) then
+        view.moved = true
+    end
+
+    if view.moved then
+        Service.panMetaTree(state, dx, dy)
+    end
+end
+
+function Service.endMetaTreePointer(state, x, y)
+    local view = state.metaTreeView
+    if not view.pointerDown then
+        return nil
+    end
+
+    view.pointerDown = false
+    if view.moved then
+        return nil
+    end
+
+    return Service.metaTreeNodeAtScreen(state, x, y)
 end
 
 return Service
