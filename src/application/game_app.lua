@@ -33,11 +33,6 @@ function App:draw()
 end
 
 function App:keypressed(key)
-    if key == "tab" then
-        Service.toggleMode(self.state)
-        return
-    end
-
     if key == "f5" then
         Service.save(self.state, "manual")
         return
@@ -45,6 +40,29 @@ function App:keypressed(key)
 
     if key == "f9" then
         self.state = Service.reloadState()
+        return
+    end
+
+    if key == "f10" then
+        self.state = Service.resetAllData()
+        return
+    end
+
+    if self.state.mode == "run_end" then
+        if key == "r" then
+            Service.restartRun(self.state)
+            return
+        end
+
+        local idx = tonumber(key)
+        if idx and idx >= 1 and idx <= 6 then
+            Service.tryBuyMetaUpgrade(self.state, idx)
+        end
+        return
+    end
+
+    if key == "tab" then
+        Service.toggleMode(self.state)
         return
     end
 
@@ -61,6 +79,14 @@ end
 
 function App:mousepressed(x, y, button)
     if button ~= 1 then
+        return
+    end
+
+    if self.state.mode == "run_end" then
+        local idx = Service.metaUpgradeIndexAtScreen(self.state, x, y)
+        if idx then
+            Service.tryBuyMetaUpgrade(self.state, idx)
+        end
         return
     end
 
