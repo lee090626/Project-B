@@ -11,8 +11,8 @@ local GameState = {}
 
 local function resetMetaTreeView(state)
     state.metaTreeView = {
-        cameraX = 0.5,
-        cameraY = 0.5,
+        cameraX = 0,
+        cameraY = 0,
         zoom = 1.0,
         pointerDown = false,
         moved = false,
@@ -21,9 +21,21 @@ local function resetMetaTreeView(state)
     }
 end
 
+local function resetPassiveState(state)
+    state.passives = {
+        lightningTimer = 0.35,
+        fireballTimer = 0.6,
+        frostPulseTimer = 0.9,
+        lightningFx = nil,
+        fireballFx = nil,
+        frostFxTimer = 0,
+        frostFxRadius = 0,
+    }
+end
+
 local function recomputeMetaBonuses(state)
     state.metaBonuses = Meta.computeBonuses(state.meta)
-    state.runDuration = C.RUN_TIME_LIMIT_SECONDS + state.metaBonuses.extraTime
+    state.runDuration = C.RUN_TIME_LIMIT_SECONDS
 end
 
 local function resetRunState(state)
@@ -48,6 +60,7 @@ local function resetRunState(state)
     state.endingReached = false
     state.mode = "game"
     resetMetaTreeView(state)
+    resetPassiveState(state)
 end
 
 function GameState.new(loadResult, loadErr)
@@ -86,6 +99,7 @@ function GameState.new(loadResult, loadErr)
 
     state.runTimeLeft = saved.runTimeLeft or state.runDuration
     resetMetaTreeView(state)
+    resetPassiveState(state)
 
     state.modules = {
         playerExport = Player.export,
@@ -127,9 +141,9 @@ function GameState.endRun(state, reason)
     state.runEndedReason = reason
     state.mode = "run_end_result"
     resetMetaTreeView(state)
+    resetPassiveState(state)
 
-    local reward = 0
-    state.lastRunReward = reward
+    state.lastRunReward = 0
     state.runRewardPreview = 0
     state.meta.totalRuns = state.meta.totalRuns + 1
     state.message = "Run ended"
