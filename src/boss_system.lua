@@ -72,18 +72,12 @@ function Boss.update(state, dt)
 
     if boss.attackTimer >= 0.65 then
         boss.attackTimer = 0
-        if dist <= player.radius + boss.radius + 18 then
-            state.resources.nutrition = math.max(0, state.resources.nutrition - 4)
-            state.resources.growth = math.max(0, state.resources.growth - 2)
-        end
     end
 
     if boss.hp <= 0 then
         boss.hp = 0
         boss.active = false
         boss.defeated = true
-        state.resources.nutrition = state.resources.nutrition + 550
-        state.resources.growth = state.resources.growth + 220
         state.events[#state.events + 1] = "Final boss defeated!"
     end
 end

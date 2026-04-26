@@ -103,7 +103,6 @@ function App:mousepressed(x, y, button)
     local inSaveButton = x >= saveBtn.x and x <= saveBtn.x + saveBtn.w and y >= saveBtn.y and y <= saveBtn.y + saveBtn.h
     if inSaveButton then
         Service.save(self.state, "manual-button")
-        self.state.message = "Manual save complete"
     end
 end
 

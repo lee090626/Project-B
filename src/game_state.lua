@@ -21,14 +21,6 @@ local function resetMetaTreeView(state)
     }
 end
 
-local function createResources(saved, startGrowth)
-    return {
-        nutrition = saved and saved.nutrition or 0,
-        growth = saved and saved.growth or startGrowth or 0,
-        consumed = saved and saved.consumed or 0,
-    }
-end
-
 local function recomputeMetaBonuses(state)
     state.metaBonuses = Meta.computeBonuses(state.meta)
     state.runDuration = C.RUN_TIME_LIMIT_SECONDS + state.metaBonuses.extraTime
@@ -37,7 +29,6 @@ end
 local function resetRunState(state)
     recomputeMetaBonuses(state)
 
-    state.resources = createResources(nil, state.metaBonuses.startGrowth)
     state.player = Player.new(nil)
     state.food = Food.new(nil)
     state.maps = MapSystem.new(nil)
@@ -67,6 +58,9 @@ function GameState.new(loadResult, loadErr)
         autosaveTimer = C.AUTOSAVE_INTERVAL,
         mode = saved.mode or "game",
         showHelp = false,
+        uiToastTimer = 0,
+        uiAutosaveTimer = 0,
+        uiLastMessage = nil,
         treeDrag = false,
         treeDragX = 0,
         treeDragY = 0,
@@ -84,7 +78,6 @@ function GameState.new(loadResult, loadErr)
 
     recomputeMetaBonuses(state)
 
-    state.resources = createResources(saved.resources, state.metaBonuses.startGrowth)
     state.player = Player.new(saved.player)
     state.food = Food.new(saved.food)
     state.maps = MapSystem.new(saved.maps)

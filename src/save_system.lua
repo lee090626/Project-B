@@ -62,7 +62,6 @@ function Save.snapshot(state)
         runEndedReason = state.runEndedReason,
         lastRunReward = state.lastRunReward,
         endingReached = state.endingReached,
-        resources = state.resources,
         player = state.modules.playerExport(state.player),
         food = state.modules.foodExport(state.food),
         maps = state.modules.mapExport(state.maps),
