@@ -46,6 +46,36 @@ local function mergeBonuses(skill, meta)
         eliteValue = meta.eliteValue or 1,
     }
 
+    out.lightningEnabled = (meta.lightningEnabled or 0) > 0
+    out.lightningDamage = C.PASSIVE_BASES.lightning.damage + (meta.lightningDamage or 0)
+    out.lightningChain = math.max(1, 1 + math.floor(meta.lightningChain or 0))
+    out.lightningInterval = Utils.clamp(
+        C.PASSIVE_BASES.lightning.interval - (meta.lightningIntervalCut or 0),
+        0.24,
+        3.2
+    )
+
+    out.fireballEnabled = (meta.fireballEnabled or 0) > 0
+    out.fireballDamage = C.PASSIVE_BASES.fireball.damage + (meta.fireballDamage or 0)
+    out.fireballCount = math.max(1, 1 + math.floor(meta.fireballCount or 0) + math.floor(meta.fireballSplit or 0))
+    out.fireballRadius = C.PASSIVE_BASES.fireball.radius + (meta.fireballRadius or 0)
+    out.fireballInterval = Utils.clamp(
+        C.PASSIVE_BASES.fireball.interval - (meta.fireballIntervalCut or 0),
+        0.26,
+        3.4
+    )
+
+    out.frostEnabled = (meta.frostEnabled or 0) > 0
+    out.frostDamage = C.PASSIVE_BASES.frost.damage + (meta.frostDamage or 0)
+    out.frostRadius = C.PASSIVE_BASES.frost.radius + (meta.frostRadius or 0)
+    out.frostSlow = Utils.clamp(C.PASSIVE_BASES.frost.slow + (meta.frostSlow or 0), 0.05, 0.85)
+    out.frostDuration = C.PASSIVE_BASES.frost.duration + (meta.frostDuration or 0)
+    out.frostInterval = Utils.clamp(
+        C.PASSIVE_BASES.frost.interval - (meta.frostIntervalCut or 0),
+        0.28,
+        3.6
+    )
+
     return out
 end
 
@@ -70,6 +100,49 @@ local function addEssence(state, rawAmount)
     state.meta.essence = state.meta.essence + math.max(1, math.floor(rawAmount + 0.5))
 end
 
+local function pushLightningFx(state, fromX, fromY, toX, toY)
+    state.passives.lightningFx = {
+        fromX = fromX,
+        fromY = fromY,
+        toX = toX,
+        toY = toY,
+        timer = 0.12,
+    }
+end
+
+local function pushFireballFx(state, fromX, fromY, toX, toY, radius)
+    state.passives.fireballFx = {
+        fromX = fromX,
+        fromY = fromY,
+        toX = toX,
+        toY = toY,
+        radius = radius,
+        timer = 0.2,
+    }
+end
+
+local function triggerFrostFx(state, radius)
+    state.passives.frostFxTimer = 0.22
+    state.passives.frostFxRadius = radius
+end
+
+local function updatePassiveFx(state, dt)
+    local p = state.passives
+    if p.lightningFx then
+        p.lightningFx.timer = p.lightningFx.timer - dt
+        if p.lightningFx.timer <= 0 then
+            p.lightningFx = nil
+        end
+    end
+    if p.fireballFx then
+        p.fireballFx.timer = p.fireballFx.timer - dt
+        if p.fireballFx.timer <= 0 then
+            p.fireballFx = nil
+        end
+    end
+    p.frostFxTimer = math.max(0, p.frostFxTimer - dt)
+end
+
 function Service.loadState()
     local state = GameState.loadOrDefault()
     state.camera.zoom = 1.0
@@ -92,10 +165,160 @@ function Service.resetAllData()
     return state
 end
 
+local function findNearestHostile(state, fromX, fromY)
+    local best = nil
+    local foodIndex, foodItem, foodDist = Food.findNearestTarget(state.food, fromX, fromY)
+    if foodItem then
+        best = {
+            kind = "food",
+            index = foodIndex,
+            item = foodItem,
+            dist = foodDist,
+            x = foodItem.x,
+            y = foodItem.y,
+        }
+    end
+
+    if state.boss.active and not state.boss.defeated then
+        local bossDist = Boss.distanceTo(state.boss, fromX, fromY)
+        if (not best) or bossDist < best.dist then
+            best = {
+                kind = "boss",
+                dist = bossDist,
+                x = state.boss.x,
+                y = state.boss.y,
+            }
+        end
+    end
+
+    return best
+end
+
+local function triggerLightning(state, mapData)
+    local target = findNearestHostile(state, state.player.x, state.player.y)
+    if not target then
+        return
+    end
+
+    pushLightningFx(state, state.player.x, state.player.y, target.x, target.y)
+    if target.kind == "boss" then
+        Boss.applyDamage(state, state.bonuses.lightningDamage)
+        return
+    end
+
+    local reward = 0
+    reward = reward + select(1, Food.chainLightning(
+        state.food,
+        target.index,
+        state.bonuses.lightningDamage,
+        state.bonuses.lightningChain,
+        C.PASSIVE_BASES.lightning.chainRadius,
+        mapData,
+        state.bonuses
+    ))
+    addEssence(state, reward)
+end
+
+local function triggerFireball(state, mapData)
+    local projectiles = state.bonuses.fireballCount
+    for _ = 1, projectiles do
+        local target = findNearestHostile(state, state.player.x, state.player.y)
+        if not target then
+            return
+        end
+
+        pushFireballFx(state, state.player.x, state.player.y, target.x, target.y, state.bonuses.fireballRadius)
+        if target.kind == "boss" then
+            Boss.applyDamage(state, state.bonuses.fireballDamage)
+            local reward = Food.damagePulse(
+                state.food,
+                target.x,
+                target.y,
+                state.bonuses.fireballRadius,
+                state.bonuses.fireballDamage * 0.6,
+                mapData,
+                state.bonuses,
+                nil,
+                nil,
+                math.max(2, projectiles)
+            )
+            addEssence(state, reward)
+        else
+            local reward = Food.damagePulse(
+                state.food,
+                target.x,
+                target.y,
+                state.bonuses.fireballRadius,
+                state.bonuses.fireballDamage,
+                mapData,
+                state.bonuses,
+                nil,
+                nil,
+                math.max(3, projectiles + 1)
+            )
+            addEssence(state, reward)
+        end
+    end
+end
+
+local function triggerFrost(state, mapData)
+    triggerFrostFx(state, state.bonuses.frostRadius)
+    local reward = Food.damagePulse(
+        state.food,
+        state.player.x,
+        state.player.y,
+        state.bonuses.frostRadius,
+        state.bonuses.frostDamage,
+        mapData,
+        state.bonuses,
+        state.bonuses.frostSlow,
+        state.bonuses.frostDuration,
+        nil
+    )
+    addEssence(state, reward)
+
+    if state.boss.active and not state.boss.defeated then
+        local dist = Boss.distanceTo(state.boss, state.player.x, state.player.y)
+        if dist <= state.bonuses.frostRadius + state.boss.radius then
+            Boss.applyDamage(state, state.bonuses.frostDamage * 0.7)
+        end
+    end
+end
+
+local function updatePassives(state, dt, mapData)
+    local p = state.passives
+    local b = state.bonuses
+
+    if b.lightningEnabled then
+        p.lightningTimer = p.lightningTimer - dt
+        while p.lightningTimer <= 0 do
+            p.lightningTimer = p.lightningTimer + b.lightningInterval
+            triggerLightning(state, mapData)
+        end
+    end
+
+    if b.fireballEnabled then
+        p.fireballTimer = p.fireballTimer - dt
+        while p.fireballTimer <= 0 do
+            p.fireballTimer = p.fireballTimer + b.fireballInterval
+            triggerFireball(state, mapData)
+        end
+    end
+
+    if b.frostEnabled then
+        p.frostPulseTimer = p.frostPulseTimer - dt
+        while p.frostPulseTimer <= 0 do
+            p.frostPulseTimer = p.frostPulseTimer + b.frostInterval
+            triggerFrost(state, mapData)
+        end
+    end
+end
+
 function Service.tick(state, dt)
     state.totalPlayTime = state.totalPlayTime + dt
     state.uiToastTimer = math.max(0, state.uiToastTimer - dt)
     state.uiAutosaveTimer = math.max(0, state.uiAutosaveTimer - dt)
+    updatePassiveFx(state, dt)
 
     if state.message and state.uiLastMessage ~= state.message then
         state.uiLastMessage = state.message
@@ -144,6 +367,7 @@ function Service.tick(state, dt)
         )
         addEssence(state, essenceGain)
 
+        updatePassives(state, dt, mapData)
 
         local progressionScore = state.food.consumedTotal + math.floor(state.meta.totalRuns * 2)
         local unlockedAny = MapSystem.updateUnlocks(state.maps, progressionScore)
