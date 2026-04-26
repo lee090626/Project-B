@@ -52,8 +52,7 @@ function Food.spawnOne(food, mapData, bonuses)
         vy = love.math.random(-100, 100) * 0.01,
         tier = tier,
         radius = info.radius,
-        nutrition = info.nutrition,
-        xp = info.xp,
+        essence = info.essence,
         color = info.color,
         speed = info.speed,
     }
@@ -105,26 +104,23 @@ function Food.update(food, dt, mapData, bonuses, player)
 end
 
 function Food.consumeNearby(food, player, eatRadius, mapReward, bonuses)
-    local nutritionGain = 0
-    local xpGain = 0
+    local essenceGain = 0
     local consumed = 0
 
-    local nutritionMult = 1 + bonuses.nutritionMult
-    local xpMult = 1 + bonuses.xpMult
+    local essenceMult = bonuses.essenceMult or 1
 
     for i = #food.list, 1, -1 do
         local item = food.list[i]
         local dist = Utils.distance(player.x, player.y, item.x, item.y)
         if dist <= eatRadius + item.radius then
-            nutritionGain = nutritionGain + item.nutrition * mapReward * nutritionMult
-            xpGain = xpGain + item.xp * mapReward * xpMult
+            essenceGain = essenceGain + item.essence * mapReward * essenceMult
             consumed = consumed + 1
             table.remove(food.list, i)
         end
     end
 
     food.consumedTotal = food.consumedTotal + consumed
-    return nutritionGain, xpGain, consumed
+    return essenceGain, consumed
 end
 
 return Food

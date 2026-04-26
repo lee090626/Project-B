@@ -77,6 +77,7 @@ function GameState.new(loadResult, loadErr)
         runEnded = saved.runEnded or false,
         runEndedReason = saved.runEndedReason,
         lastRunReward = saved.lastRunReward or 0,
+        runRewardPreview = 0,
         lastSaveStatus = "never",
         meta = Meta.new(saved.meta),
     }
@@ -108,6 +109,7 @@ function GameState.new(loadResult, loadErr)
     if state.runEnded and state.mode ~= "run_end_tree" and state.mode ~= "run_end_result" then
         state.mode = "run_end_result"
     end
+    state.runRewardPreview = 0
 
     return state
 end
@@ -119,6 +121,7 @@ end
 
 function GameState.startNewRun(state)
     resetRunState(state)
+    state.runRewardPreview = 0
     state.message = "New run started"
 end
 
@@ -132,9 +135,9 @@ function GameState.endRun(state, reason)
     state.mode = "run_end_result"
     resetMetaTreeView(state)
 
-    local reward = Meta.calculateRunReward(state)
+    local reward = 0
     state.lastRunReward = reward
-    state.meta.essence = state.meta.essence + reward
+    state.runRewardPreview = 0
     state.meta.totalRuns = state.meta.totalRuns + 1
     state.message = "Run ended"
     return true

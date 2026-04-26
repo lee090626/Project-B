@@ -1,5 +1,3 @@
-local Utils = require("src.utils")
-
 local Meta = {}
 
 local DEFINITIONS = {
@@ -524,19 +522,7 @@ function Meta.tryBuy(meta, index)
 end
 
 function Meta.calculateRunReward(state)
-    local nutrition = state.resources.nutrition
-    local growth = state.resources.growth
-    local consumed = state.food.consumedTotal
-
-    local base = nutrition * 0.22 + growth * 0.55 + consumed * 0.25 + (state.meta.totalRuns * 0.4)
-    if state.boss.defeated then
-        base = base + 85
-    end
-    if state.endingReached then
-        base = base + 140
-    end
-
-    return Utils.round(math.max(10, base))
+    return 0
 end
 
 return Meta
