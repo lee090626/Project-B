@@ -12,8 +12,6 @@ local CATEGORIES = {
 local EFFECT_ROTATION = {
     { stat = "speed", perLevel = 4, iconId = "spd" },
     { stat = "reach", perLevel = 1.2, iconId = "rng" },
-    { stat = "nutritionMult", perLevel = 0.03, iconId = "nut" },
-    { stat = "xpMult", perLevel = 0.03, iconId = "xp" },
     { stat = "rareBonus", perLevel = 0.004, iconId = "rar" },
     { stat = "eliteBonus", perLevel = 0.0022, iconId = "elt" },
     { stat = "bite", perLevel = 0.9, iconId = "dmg" },
@@ -224,7 +222,7 @@ function SkillTree.getNextValue(node)
     return node.effect.perLevel * nextLevel
 end
 
-function SkillTree.canUnlock(tree, node, growth)
+function SkillTree.canUnlock(tree, node, essence)
     if not SkillTree.depSatisfied(tree, node) then
         return false, "dependency missing"
     end
@@ -234,8 +232,8 @@ function SkillTree.canUnlock(tree, node, growth)
     end
 
     local cost = SkillTree.getNextCost(node)
-    if not cost or growth < cost then
-        return false, "need more growth"
+    if not cost or essence < cost then
+        return false, "not enough essence"
     end
 
     return true, nil
@@ -247,7 +245,8 @@ function SkillTree.tryUnlock(tree, nodeId, state)
         return false, "node not found", nil
     end
 
-    local ok, err = SkillTree.canUnlock(tree, node, state.resources.growth)
+    local essence = state.meta and state.meta.essence or 0
+    local ok, err = SkillTree.canUnlock(tree, node, essence)
     if not ok then
         return false, err, nil
     end
@@ -255,7 +254,7 @@ function SkillTree.tryUnlock(tree, nodeId, state)
     local cost = SkillTree.getNextCost(node)
     local wasUnlocked = node.level > 0
 
-    state.resources.growth = state.resources.growth - cost
+    state.meta.essence = essence - cost
     node.level = node.level + 1
 
     if not wasUnlocked and node.level > 0 then
@@ -274,8 +273,6 @@ function SkillTree.computeBonuses(tree)
     local bonuses = {
         speed = 0,
         reach = 0,
-        nutritionMult = 0,
-        xpMult = 0,
         rareBonus = 0,
         eliteBonus = 0,
         bite = 0,
@@ -304,8 +301,8 @@ function SkillTree.nodeAtWorldPosition(tree, wx, wy)
     return nil
 end
 
-function SkillTree.getTooltipInfo(tree, node, growth)
-    local canBuy, reason = SkillTree.canUnlock(tree, node, growth)
+function SkillTree.getTooltipInfo(tree, node, essence)
+    local canBuy, reason = SkillTree.canUnlock(tree, node, essence)
     return {
         canBuy = canBuy,
         reason = reason,
