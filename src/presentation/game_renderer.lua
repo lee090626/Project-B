@@ -69,13 +69,26 @@ local function drawWorld(state, assets)
     end
 
     for _, item in ipairs(state.food.list) do
+        local flash = 0.2 + (item.hitFlash or 0) * 0.4
         love.graphics.setColor(item.color)
         love.graphics.circle("fill", item.x, item.y, item.radius)
+        love.graphics.setColor(1, 1, 1, flash)
+        love.graphics.circle("line", item.x, item.y, item.radius + 1)
+
+        local hpPct = item.maxHp > 0 and math.max(0, item.hp / item.maxHp) or 0
+        local barW = item.radius * 2.1
+        local barX = item.x - barW * 0.5
+        local barY = item.y - item.radius - 8
+        love.graphics.setColor(0, 0, 0, 0.7)
+        love.graphics.rectangle("fill", barX, barY, barW, 4)
+        love.graphics.setColor(0.55, 1.0, 0.62)
+        love.graphics.rectangle("fill", barX + 1, barY + 1, math.max(0, (barW - 2) * hpPct), 2)
     end
 
     if state.boss.active or state.boss.defeated then
         local pulse = state.boss.active and (math.sin(state.boss.pulse * 4) * 0.08 + 0.92) or 0.6
-        love.graphics.setColor(0.9 * pulse, 0.25 * pulse, 0.2 * pulse)
+        local flash = state.boss.hitFlash or 0
+        love.graphics.setColor(0.9 * pulse + flash * 0.25, 0.25 * pulse + flash * 0.15, 0.2 * pulse + flash * 0.15)
         love.graphics.circle("fill", state.boss.x, state.boss.y, state.boss.radius)
         love.graphics.setColor(0.2, 0.05, 0.05)
         love.graphics.circle("line", state.boss.x, state.boss.y, state.boss.radius + 4)
@@ -106,6 +119,34 @@ local function drawWorld(state, assets)
 
     love.graphics.setColor(0.95, 0.7, 0.3, 0.25)
     love.graphics.circle("line", state.player.x, state.player.y, eatRadius)
+
+    if state.passives then
+        if state.passives.frostFxTimer and state.passives.frostFxTimer > 0 then
+            local a = state.passives.frostFxTimer / 0.22
+            love.graphics.setColor(0.55, 0.85, 1.0, 0.24 * a)
+            love.graphics.circle("fill", state.player.x, state.player.y, state.passives.frostFxRadius or 0)
+            love.graphics.setColor(0.8, 0.95, 1.0, 0.45 * a)
+            love.graphics.circle("line", state.player.x, state.player.y, state.passives.frostFxRadius or 0)
+        end
+
+        if state.passives.lightningFx then
+            local fx = state.passives.lightningFx
+            local a = math.max(0, fx.timer / 0.12)
+            love.graphics.setColor(0.8, 0.95, 1.0, a)
+            love.graphics.setLineWidth(3)
+            love.graphics.line(fx.fromX, fx.fromY, fx.toX, fx.toY)
+        end
+
+        if state.passives.fireballFx then
+            local fx = state.passives.fireballFx
+            local a = math.max(0, fx.timer / 0.2)
+            love.graphics.setColor(1.0, 0.65, 0.2, a)
+            love.graphics.setLineWidth(2)
+            love.graphics.line(fx.fromX, fx.fromY, fx.toX, fx.toY)
+            love.graphics.setColor(1.0, 0.42, 0.16, 0.18 * a)
+            love.graphics.circle("fill", fx.toX, fx.toY, fx.radius or 0)
+        end
+    end
 
     love.graphics.pop()
 end
