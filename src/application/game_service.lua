@@ -33,14 +33,19 @@ end
 
 local function mergeBonuses(skill, meta)
     local out = {
-        speed = skill.speed + meta.speed,
-        reach = skill.reach + meta.reach,
-        essenceMult = meta.gainMult,
-        rareBonus = skill.rareBonus,
-        eliteBonus = skill.eliteBonus,
-        bite = skill.bite + meta.bite,
-        magnet = skill.magnet,
+        speed = (skill.speed or 0) + (meta.speed or 0),
+        reach = (skill.reach or 0) + (meta.reach or 0),
+        essenceMult = meta.essenceMult or 1,
+        rareBonus = (skill.rareBonus or 0) + (meta.rareBonus or 0),
+        eliteBonus = (skill.eliteBonus or 0) + (meta.eliteBonus or 0),
+        contactBite = (skill.bite or 0) + (meta.contactBite or 0),
+        magnet = (skill.magnet or 0) + (meta.magnet or 0),
+        spawnRate = meta.spawnRate or 0,
+        spawnCap = meta.spawnCap or 0,
+        rareValue = meta.rareValue or 1,
+        eliteValue = meta.eliteValue or 1,
     }
+
     return out
 end
 
@@ -56,6 +61,13 @@ local function saveWithFeedback(state, reason)
         state.uiAutosaveTimer = C.RUN_HUD_UI.autosaveDuration
     end
     return ok
+end
+
+local function addEssence(state, rawAmount)
+    if rawAmount <= 0 then
+        return
+    end
+    state.meta.essence = state.meta.essence + math.max(1, math.floor(rawAmount + 0.5))
 end
 
 function Service.loadState()
@@ -119,14 +131,21 @@ function Service.tick(state, dt)
         state.player.magnetRadius = Player.getMagnetRadius(state.player, state.bonuses)
 
         Food.update(state.food, dt, mapData, state.bonuses, state.player)
-        local essenceGain = 0
-        essenceGain, _ = Food.consumeNearby(state.food, state.player, eatRadius, mapData.reward, state.bonuses)
-        if essenceGain > 0 then
-            state.meta.essence = state.meta.essence + math.floor(essenceGain + 0.5)
-        end
 
-        local progressionScore = state.food.consumedTotal
-            + math.floor(state.meta.totalRuns * 2)
+        local contactDamage = C.PLAYER_CONTACT_DAMAGE + state.bonuses.contactBite
+        local essenceGain = Food.damageTouching(
+            state.food,
+            state.player,
+            eatRadius,
+            contactDamage,
+            dt,
+            mapData,
+            state.bonuses
+        )
+        addEssence(state, essenceGain)
+
+
+        local progressionScore = state.food.consumedTotal + math.floor(state.meta.totalRuns * 2)
         local unlockedAny = MapSystem.updateUnlocks(state.maps, progressionScore)
         if unlockedAny then
             setMessage(state, "New map unlocked from run progress")
