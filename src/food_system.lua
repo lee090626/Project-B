@@ -20,6 +20,21 @@ local function randomTier(mapSpawn, bonuses)
     return "common"
 end
 
+local function rewardMultiplierForTier(tier, bonuses)
+    if tier == "rare" then
+        return bonuses.rareValue or 1
+    elseif tier == "elite" then
+        return bonuses.eliteValue or 1
+    end
+    return 1
+end
+
+local function rewardForKill(item, mapData, bonuses)
+    local essenceMult = bonuses.essenceMult or 1
+    local tierMult = rewardMultiplierForTier(item.tier, bonuses)
+    return item.essence * mapData.reward * essenceMult * tierMult
+end
+
 function Food.new(savedFood)
     local system = {
         list = {},
@@ -118,24 +133,132 @@ function Food.update(food, dt, mapData, bonuses, player)
     end
 end
 
-function Food.consumeNearby(food, player, eatRadius, mapReward, bonuses)
-    local essenceGain = 0
-    local consumed = 0
+function Food.applyDamageAtIndex(food, index, damage, mapData, bonuses)
+    local item = food.list[index]
+    if not item or damage <= 0 then
+        return 0, false, nil
+    end
 
-    local essenceMult = bonuses.essenceMult or 1
+    item.hp = item.hp - damage
+    item.hitFlash = 0.9
+    if item.hp > 0 then
+        return 0, false, item
+    end
+
+    local reward = rewardForKill(item, mapData, bonuses)
+    food.consumedTotal = food.consumedTotal + 1
+    table.remove(food.list, index)
+    return reward, true, item
+end
+
+function Food.applySlow(item, slowPower, duration)
+    if not item then
+        return
+    end
+    item.slowFactor = math.max(item.slowFactor or 0, slowPower or 0)
+    item.slowTimer = math.max(item.slowTimer or 0, duration or 0)
+end
+
+function Food.findNearestTarget(food, x, y)
+    local bestIndex
+    local bestItem
+    local bestDist = math.huge
+
+    for i, item in ipairs(food.list) do
+        local dist = Utils.distance(x, y, item.x, item.y)
+        if dist < bestDist then
+            bestDist = dist
+            bestIndex = i
+            bestItem = item
+        end
+    end
+
+    return bestIndex, bestItem, bestDist
+end
+
+function Food.damageTouching(food, player, eatRadius, dps, dt, mapData, bonuses)
+    local essenceGain = 0
+    local killed = 0
+    local totalDamage = dps * dt
 
     for i = #food.list, 1, -1 do
         local item = food.list[i]
         local dist = Utils.distance(player.x, player.y, item.x, item.y)
         if dist <= eatRadius + item.radius then
-            essenceGain = essenceGain + item.essence * mapReward * essenceMult
-            consumed = consumed + 1
-            table.remove(food.list, i)
+            local reward, didKill = Food.applyDamageAtIndex(food, i, totalDamage, mapData, bonuses)
+            essenceGain = essenceGain + reward
+            if didKill then
+                killed = killed + 1
+            end
         end
     end
 
-    food.consumedTotal = food.consumedTotal + consumed
-    return essenceGain, consumed
+    return essenceGain, killed
+end
+
+function Food.damagePulse(food, x, y, radius, damage, mapData, bonuses, slowPower, slowDuration, maxHits)
+    local essenceGain = 0
+    local killed = 0
+    local hits = 0
+
+    for i = #food.list, 1, -1 do
+        local item = food.list[i]
+        local dist = Utils.distance(x, y, item.x, item.y)
+        if dist <= radius + item.radius then
+            if slowPower and slowPower > 0 then
+                Food.applySlow(item, slowPower, slowDuration)
+            end
+            local reward, didKill = Food.applyDamageAtIndex(food, i, damage, mapData, bonuses)
+            essenceGain = essenceGain + reward
+            hits = hits + 1
+            if didKill then
+                killed = killed + 1
+            end
+            if maxHits and hits >= maxHits then
+                break
+            end
+        end
+    end
+
+    return essenceGain, killed, hits
+end
+
+function Food.chainLightning(food, startIndex, damage, chainCount, chainRadius, mapData, bonuses)
+    local essenceGain = 0
+    local killed = 0
+    local hitCount = 0
+
+    local currentIndex = startIndex
+    local currentX, currentY
+    local hitIndices = {}
+
+    while currentIndex and food.list[currentIndex] and hitCount < chainCount do
+        local item = food.list[currentIndex]
+        currentX, currentY = item.x, item.y
+        hitIndices[currentIndex] = true
+
+        local reward, didKill = Food.applyDamageAtIndex(food, currentIndex, damage, mapData, bonuses)
+        essenceGain = essenceGain + reward
+        hitCount = hitCount + 1
+        if didKill then
+            killed = killed + 1
+        end
+
+        local bestIndex
+        local bestDist = math.huge
+        for i, nextItem in ipairs(food.list) do
+            if not hitIndices[i] then
+                local dist = Utils.distance(currentX, currentY, nextItem.x, nextItem.y)
+                if dist <= chainRadius and dist < bestDist then
+                    bestDist = dist
+                    bestIndex = i
+                end
+            end
+        end
+        currentIndex = bestIndex
+    end
+
+    return essenceGain, killed, hitCount
 end
 
 return Food
