@@ -35,14 +35,27 @@ local function mergeBonuses(skill, meta)
     local out = {
         speed = skill.speed + meta.speed,
         reach = skill.reach + meta.reach,
-        nutritionMult = skill.nutritionMult + (meta.gainMult - 1),
-        xpMult = skill.xpMult + (meta.gainMult - 1),
+        essenceMult = meta.gainMult,
         rareBonus = skill.rareBonus,
         eliteBonus = skill.eliteBonus,
         bite = skill.bite + meta.bite,
         magnet = skill.magnet,
     }
     return out
+end
+
+local function setMessage(state, text)
+    state.message = text
+    state.uiLastMessage = text
+    state.uiToastTimer = C.RUN_HUD_UI.toastDuration
+end
+
+local function saveWithFeedback(state, reason)
+    local ok = GameState.saveNow(state, reason)
+    if ok then
+        state.uiAutosaveTimer = C.RUN_HUD_UI.autosaveDuration
+    end
+    return ok
 end
 
 function Service.loadState()
@@ -53,7 +66,7 @@ end
 
 function Service.reloadState()
     local state = Service.loadState()
-    state.message = "Save reloaded"
+    setMessage(state, "Save reloaded")
     return state
 end
 
@@ -62,21 +75,34 @@ function Service.resetAllData()
     love.filesystem.remove(C.BACKUP_FILE)
 
     local state = Service.loadState()
-    state.message = "All progress reset"
-    GameState.saveNow(state, "reset-all")
+    setMessage(state, "All progress reset")
+    saveWithFeedback(state, "reset-all")
     return state
 end
 
 function Service.tick(state, dt)
     state.totalPlayTime = state.totalPlayTime + dt
+    state.uiToastTimer = math.max(0, state.uiToastTimer - dt)
+    state.uiAutosaveTimer = math.max(0, state.uiAutosaveTimer - dt)
+
+    if state.message and state.uiLastMessage ~= state.message then
+        state.uiLastMessage = state.message
+        state.uiToastTimer = C.RUN_HUD_UI.toastDuration
+    end
+    if state.message and state.uiToastTimer <= 0 then
+        state.message = nil
+    end
 
     if not state.runEnded then
+        state.runRewardPreview = 0
         state.runTimeLeft = math.max(0, state.runTimeLeft - dt)
         if state.runTimeLeft <= 0 then
             if GameState.endRun(state, "time") then
-                GameState.saveNow(state, "run-timeout")
+                saveWithFeedback(state, "run-timeout")
             end
         end
+    else
+        state.runRewardPreview = 0
     end
 
     if state.mode == "game" and not state.runEnded then
@@ -93,29 +119,28 @@ function Service.tick(state, dt)
         state.player.magnetRadius = Player.getMagnetRadius(state.player, state.bonuses)
 
         Food.update(state.food, dt, mapData, state.bonuses, state.player)
-        local nutrition, xp, consumed = Food.consumeNearby(state.food, state.player, eatRadius, mapData.reward, state.bonuses)
+        local essenceGain = 0
+        essenceGain, _ = Food.consumeNearby(state.food, state.player, eatRadius, mapData.reward, state.bonuses)
+        if essenceGain > 0 then
+            state.meta.essence = state.meta.essence + math.floor(essenceGain + 0.5)
+        end
 
-        state.resources.nutrition = state.resources.nutrition + nutrition
-        state.resources.growth = state.resources.growth + xp
-        state.resources.consumed = state.resources.consumed + consumed
-
-        local progressionScore = state.resources.consumed
-            + math.floor(state.resources.growth * 0.15)
+        local progressionScore = state.food.consumedTotal
             + math.floor(state.meta.totalRuns * 2)
         local unlockedAny = MapSystem.updateUnlocks(state.maps, progressionScore)
         if unlockedAny then
-            state.message = "New map unlocked from run progress"
+            setMessage(state, "New map unlocked from run progress")
         end
 
         local wasDefeated = state.boss.defeated
         Boss.update(state, dt)
         if state.boss.defeated and not wasDefeated then
-            GameState.saveNow(state, "boss-defeated")
+            saveWithFeedback(state, "boss-defeated")
         end
 
         if GameState.checkEnding(state) then
             if GameState.endRun(state, "victory") then
-                GameState.saveNow(state, "run-victory")
+                saveWithFeedback(state, "run-victory")
             end
         end
 
@@ -124,7 +149,7 @@ function Service.tick(state, dt)
 
     state.autosaveTimer = state.autosaveTimer - dt
     if state.autosaveTimer <= 0 then
-        GameState.saveNow(state, "autosave")
+        saveWithFeedback(state, "autosave")
         state.autosaveTimer = C.AUTOSAVE_INTERVAL
     end
 end
@@ -137,7 +162,7 @@ function Service.toggleMode(state)
 end
 
 function Service.save(state, reason)
-    GameState.saveNow(state, reason)
+    saveWithFeedback(state, reason)
 end
 
 function Service.toggleHelp(state)
@@ -154,8 +179,8 @@ function Service.trySwitchMap(state, mapId)
 
     local switched = MapSystem.trySetCurrent(state.maps, mapId)
     if switched then
-        GameState.saveNow(state, "map-switch")
-        state.message = "Map changed to " .. C.MAPS[mapId].name
+        saveWithFeedback(state, "map-switch")
+        setMessage(state, "Map changed to " .. C.MAPS[mapId].name)
     end
     return switched
 end
@@ -168,8 +193,8 @@ function Service.tryEnterBoss(state)
     if Boss.canEnter(state) then
         local entered = Boss.enter(state)
         if entered then
-            GameState.saveNow(state, "boss-enter")
-            state.message = "Final boss engaged"
+            saveWithFeedback(state, "boss-enter")
+            setMessage(state, "Final boss engaged")
         end
         return entered
     end
@@ -179,16 +204,23 @@ end
 function Service.tryBuyMetaUpgrade(state, index)
     local ok, err = GameState.tryBuyMetaUpgrade(state, index)
     if ok then
-        GameState.saveNow(state, "meta-upgrade")
+        saveWithFeedback(state, "meta-upgrade")
     else
-        state.message = "Meta upgrade failed: " .. tostring(err)
+        setMessage(state, "Meta upgrade failed: " .. tostring(err))
     end
     return ok
 end
 
 function Service.restartRun(state)
     GameState.startNewRun(state)
-    GameState.saveNow(state, "run-restart")
+    saveWithFeedback(state, "run-restart")
+end
+
+function Service.openRunEndTree(state)
+    if not state.runEnded then
+        return
+    end
+    state.mode = "run_end_tree"
 end
 
 function Service.metaUpgradeIndexAtScreen(state, sx, sy)
@@ -255,12 +287,12 @@ function Service.tryUnlockTreeNodeAtScreen(state, sx, sy)
         return false, "no-node"
     end
 
-        local ok, err, info = SkillTree.tryUnlock(tree, node.id, state)
+    local ok, err, info = SkillTree.tryUnlock(tree, node.id, state)
     if ok then
         if info and info.maxLevel and info.maxLevel > 1 then
-            state.message = string.format("Upgraded %s Lv.%d/%d", node.name, info.level, info.maxLevel)
+            setMessage(state, string.format("Upgraded %s Lv.%d/%d", node.name, info.level, info.maxLevel))
         else
-            state.message = "Unlocked " .. node.name
+            setMessage(state, "Unlocked " .. node.name)
         end
         local skillBonuses = SkillTree.computeBonuses(state.skillTree)
         state.bonuses = mergeBonuses(skillBonuses, state.metaBonuses)
@@ -268,7 +300,7 @@ function Service.tryUnlockTreeNodeAtScreen(state, sx, sy)
         return true, nil
     end
 
-    state.message = "Cannot unlock: " .. tostring(err)
+    setMessage(state, "Cannot unlock: " .. tostring(err))
     return false, err
 end
 

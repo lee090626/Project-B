@@ -105,8 +105,8 @@ function GameState.new(loadResult, loadErr)
     state.bonuses = SkillTree.computeBonuses(state.skillTree)
     MapSystem.updateUnlocks(state.maps, state.skillTree.unlockedCount)
 
-    if state.runEnded then
-        state.mode = "run_end_tree"
+    if state.runEnded and state.mode ~= "run_end_tree" and state.mode ~= "run_end_result" then
+        state.mode = "run_end_result"
     end
 
     return state
@@ -129,14 +129,14 @@ function GameState.endRun(state, reason)
 
     state.runEnded = true
     state.runEndedReason = reason
-    state.mode = "run_end_tree"
+    state.mode = "run_end_result"
     resetMetaTreeView(state)
 
     local reward = Meta.calculateRunReward(state)
     state.lastRunReward = reward
     state.meta.essence = state.meta.essence + reward
     state.meta.totalRuns = state.meta.totalRuns + 1
-    state.message = string.format("Run ended: +%d essence", reward)
+    state.message = "Run ended"
     return true
 end
 

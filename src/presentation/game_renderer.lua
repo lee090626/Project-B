@@ -9,8 +9,6 @@ local Renderer = {}
 local ICON_LABELS = {
     spd = "SPD",
     rng = "RNG",
-    nut = "NUT",
-    xp = "XP",
     rar = "RAR",
     elt = "ELT",
     dmg = "DMG",
@@ -22,6 +20,18 @@ local function formatTime(seconds)
     local m = math.floor(total / 60)
     local s = total % 60
     return string.format("%02d:%02d", m, s)
+end
+
+local function ellipsize(font, text, maxWidth)
+    if font:getWidth(text) <= maxWidth then
+        return text
+    end
+    local suffix = "..."
+    local out = text
+    while #out > 1 and font:getWidth(out .. suffix) > maxWidth do
+        out = out:sub(1, #out - 1)
+    end
+    return out .. suffix
 end
 
 local function currentMapColor(mapId)
@@ -100,7 +110,7 @@ local function drawWorld(state, assets)
     love.graphics.pop()
 end
 
-local function drawHUD(state, fonts, ui)
+local function drawGameTopBar(state, fonts, ui)
     local sw = love.graphics.getWidth()
     local mapData = MapSystem.getCurrentMap(state.maps)
     local unlockedMaps = 0
@@ -110,43 +120,97 @@ local function drawHUD(state, fonts, ui)
         end
     end
 
+    local cfg = C.RUN_HUD_UI
+    local pad = cfg.padding
+    local topY = pad
+    local barH = cfg.topBarHeight
+
     love.graphics.setFont(fonts.hud)
-    love.graphics.setColor(0, 0, 0, 0.42)
-    love.graphics.rectangle("fill", 12, 12, 460, 170, 8, 8)
+
+    local mapText = string.format("Map %s (%d/%d)", mapData.name, unlockedMaps, #C.MAPS)
+    mapText = ellipsize(fonts.hud, mapText, math.max(180, sw * 0.34))
+
+    local leftText = string.format("Time %s   %s", formatTime(state.runTimeLeft), mapText)
+    local rightText = string.format("Essence %d", state.meta.essence)
+
+    local leftW = fonts.hud:getWidth(leftText) + cfg.chipPadX * 2
+    local rightW = fonts.hud:getWidth(rightText) + cfg.chipPadX * 2
+    local saveW = ui.saveBtn.w
+    local helpText = "[H] Help"
+    local helpW = fonts.hud:getWidth(helpText) + cfg.chipPadX * 2
+    local rightGroupW = rightW + cfg.groupGap + saveW + cfg.groupGap + helpW
+
+    love.graphics.setColor(0, 0, 0, 0.5)
+    love.graphics.rectangle("fill", pad, topY, leftW, barH, 8, 8)
+    love.graphics.rectangle("fill", sw - pad - rightGroupW, topY, rightGroupW, barH, 8, 8)
+
+    love.graphics.setColor(0.86, 0.94, 1.0, 0.95)
+    love.graphics.rectangle("line", pad, topY, leftW, barH, 8, 8)
+    love.graphics.rectangle("line", sw - pad - rightGroupW, topY, rightGroupW, barH, 8, 8)
 
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print(string.format("Time Left: %s", formatTime(state.runTimeLeft)), 24, 24)
-    love.graphics.print(string.format("Meta Essence: %d", state.meta.essence), 24, 48)
-    love.graphics.print(string.format("Runs: %d", state.meta.totalRuns), 24, 76)
-    love.graphics.print(string.format("Map: %s (%d/%d)", mapData.name, unlockedMaps, #C.MAPS), 24, 100)
-    love.graphics.print("[H] Help", 24, 124)
+    love.graphics.print(leftText, pad + cfg.chipPadX, topY + 12)
+    local rightStart = sw - pad - rightGroupW
+    love.graphics.print(rightText, rightStart + cfg.chipPadX, topY + 12)
 
-    ui.saveBtn.x = sw - 146
-    ui.saveBtn.y = 20
-    love.graphics.setColor(0, 0, 0, 0.45)
+    ui.saveBtn.x = rightStart + rightW + cfg.groupGap
+    ui.saveBtn.y = topY + 5
+    ui.saveBtn.h = barH - 10
+    ui.saveBtn.w = saveW
+    love.graphics.setColor(0.05, 0.08, 0.1, 0.95)
     love.graphics.rectangle("fill", ui.saveBtn.x, ui.saveBtn.y, ui.saveBtn.w, ui.saveBtn.h, 6, 6)
-    love.graphics.setColor(0.9, 0.95, 0.9)
+    love.graphics.setColor(0.75, 0.92, 0.85, 0.95)
     love.graphics.rectangle("line", ui.saveBtn.x, ui.saveBtn.y, ui.saveBtn.w, ui.saveBtn.h, 6, 6)
-    love.graphics.print("Manual Save", ui.saveBtn.x + 14, ui.saveBtn.y + 8)
+    local saveText = "Manual Save"
+    local saveTextX = ui.saveBtn.x + (ui.saveBtn.w - fonts.hud:getWidth(saveText)) * 0.5
+    love.graphics.print(saveText, saveTextX, ui.saveBtn.y + 8)
 
-    if state.boss.active then
-        local pct = state.boss.maxHp > 0 and (state.boss.hp / state.boss.maxHp) or 0
-        love.graphics.setColor(0, 0, 0, 0.5)
-        love.graphics.rectangle("fill", sw * 0.2, 16, sw * 0.6, 20)
-        love.graphics.setColor(0.9, 0.2, 0.2)
-        love.graphics.rectangle("fill", sw * 0.2 + 2, 18, (sw * 0.6 - 4) * pct, 16)
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.printf("Final Boss", sw * 0.2, 18, sw * 0.6, "center")
+    local helpX = ui.saveBtn.x + ui.saveBtn.w + cfg.groupGap
+    love.graphics.setColor(0.78, 0.85, 1.0)
+    love.graphics.print(helpText, helpX + cfg.chipPadX, topY + 12)
+end
+
+local function drawBossBar(state, fonts)
+    if not state.boss.active then
+        return
+    end
+    local sw = love.graphics.getWidth()
+    local cfg = C.RUN_HUD_UI
+    local y = cfg.padding + cfg.topBarHeight + 8
+    local pct = state.boss.maxHp > 0 and (state.boss.hp / state.boss.maxHp) or 0
+    love.graphics.setColor(0, 0, 0, 0.55)
+    love.graphics.rectangle("fill", sw * 0.22, y, sw * 0.56, 20)
+    love.graphics.setColor(0.9, 0.2, 0.2)
+    love.graphics.rectangle("fill", sw * 0.22 + 2, y + 2, (sw * 0.56 - 4) * pct, 16)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.setFont(fonts.hud)
+    love.graphics.printf("Final Boss", sw * 0.22, y + 2, sw * 0.56, "center")
+end
+
+local function drawGameToasts(state, fonts)
+    local sw = love.graphics.getWidth()
+    local sh = love.graphics.getHeight()
+    local cfg = C.RUN_HUD_UI
+
+    if state.uiAutosaveTimer > 0 then
+        local a = math.min(1, state.uiAutosaveTimer / cfg.autosaveDuration)
+        love.graphics.setColor(0, 0, 0, 0.42 * a)
+        love.graphics.rectangle("fill", sw * 0.34, sh - 36, sw * 0.32, 22, 6, 6)
+        love.graphics.setColor(0.85, 0.9, 0.98, a)
+        love.graphics.setFont(fonts.hud)
+        love.graphics.printf(state.lastSaveStatus, sw * 0.35, sh - 31, sw * 0.3, "center")
     end
 
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.printf("Autosave: " .. state.lastSaveStatus, 0, love.graphics.getHeight() - 24, sw, "center")
-
-    if state.message then
-        love.graphics.setColor(0, 0, 0, 0.65)
-        love.graphics.rectangle("fill", 12, love.graphics.getHeight() - 70, 760, 30, 6, 6)
-        love.graphics.setColor(1, 0.9, 0.7)
-        love.graphics.print(state.message, 20, love.graphics.getHeight() - 62)
+    if state.message and state.uiToastTimer > 0 then
+        local a = math.min(1, state.uiToastTimer / cfg.toastDuration)
+        local w = math.min(sw - 24, 780)
+        local x = (sw - w) * 0.5
+        local y = sh - 74
+        love.graphics.setColor(0, 0, 0, 0.65 * a)
+        love.graphics.rectangle("fill", x, y, w, 36, 8, 8)
+        love.graphics.setColor(1, 0.92, 0.78, a)
+        love.graphics.setFont(fonts.hud)
+        love.graphics.printf(state.message, x + 10, y + 10, w - 20, "center")
     end
 end
 
@@ -187,11 +251,11 @@ local function drawHelpPanel(state, fonts)
         love.graphics.printf("New nodes appear after unlocking prerequisite nodes", x + 24, y + 158, w - 48, "left")
         love.graphics.printf("[H] Close help", x + 24, y + 182, w - 48, "left")
     else
-        love.graphics.printf("[1-4] Switch map", x + 24, y + 62, w - 48, "left")
-        love.graphics.printf("[B] Enter boss", x + 24, y + 86, w - 48, "left")
-        love.graphics.printf("[F5/F9] Save / Load", x + 24, y + 110, w - 48, "left")
-        love.graphics.printf("[F10] Reset all data", x + 24, y + 134, w - 48, "left")
-        love.graphics.printf("[H] Close help", x + 24, y + 158, w - 48, "left")
+        love.graphics.printf("Goal: keep eating, grow fast, and challenge the boss before time runs out.", x + 24, y + 62, w - 48, "left")
+        love.graphics.printf("[1-4] Switch map", x + 24, y + 92, w - 48, "left")
+        love.graphics.printf("[B] Enter boss", x + 24, y + 116, w - 48, "left")
+        love.graphics.printf("[F5/F9] Save / Load  |  [F10] Reset all data", x + 24, y + 140, w - 48, "left")
+        love.graphics.printf("[H] Close help", x + 24, y + 164, w - 48, "left")
     end
 end
 
@@ -199,6 +263,7 @@ local function drawSkillTreeOverlay(state, fonts, treeWorldFromScreen)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
     local tree = state.skillTree
+    local essence = state.meta and state.meta.essence or 0
 
     love.graphics.setColor(0, 0, 0, 0.82)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
@@ -226,7 +291,7 @@ local function drawSkillTreeOverlay(state, fonts, treeWorldFromScreen)
     end
 
     for _, node in ipairs(tree.nodes) do
-        local tooltip = SkillTree.getTooltipInfo(tree, node, state.resources.growth)
+        local tooltip = SkillTree.getTooltipInfo(tree, node, essence)
         local unlocked = SkillTree.isUnlocked(node)
 
         if unlocked then
@@ -275,14 +340,14 @@ local function drawSkillTreeOverlay(state, fonts, treeWorldFromScreen)
     love.graphics.setColor(1, 1, 1)
     love.graphics.setFont(fonts.hud)
     love.graphics.print("SKILL TREE [TAB to close, drag to pan, wheel to zoom, click to unlock]", 18, 16)
-    love.graphics.print(string.format("Growth: %.0f | Unlocked: %d/%d", state.resources.growth, tree.unlockedCount, #tree.nodes), 18, 40)
+    love.graphics.print(string.format("Essence: %d | Unlocked: %d/%d", essence, tree.unlockedCount, #tree.nodes), 18, 40)
 
     local mx, my = love.mouse.getPosition()
     local treeX, treeY = treeWorldFromScreen(mx, my)
     local hovered = SkillTree.nodeAtWorldPosition(tree, treeX, treeY)
 
     if hovered then
-        local t = SkillTree.getTooltipInfo(tree, hovered, state.resources.growth)
+        local t = SkillTree.getTooltipInfo(tree, hovered, essence)
         local status
         if t.canBuy then
             status = "BUY AVAILABLE"
@@ -300,7 +365,7 @@ local function drawSkillTreeOverlay(state, fonts, treeWorldFromScreen)
         love.graphics.print(hovered.name, 30, sh - 106)
         love.graphics.print(string.format("Lv %d/%d", t.currentLevel, t.maxLevel), 30, sh - 84)
         love.graphics.print(string.format("%.2f -> %.2f %s", t.currentValue, t.nextValue, hovered.effect.stat), 30, sh - 62)
-        love.graphics.print("Cost: " .. (t.cost and tostring(t.cost) or "MAX") .. " growth", 30, sh - 40)
+        love.graphics.print("Cost: " .. (t.cost and tostring(t.cost) or "MAX") .. " essence", 30, sh - 40)
         love.graphics.setColor(t.canBuy and 0.4 or 1.0, 1.0, t.canBuy and 0.45 or 0.6)
         love.graphics.print(status, 300, sh - 84)
     end
@@ -469,7 +534,44 @@ local function drawRunEndTreeFullscreen(state, fonts)
 
 end
 
+local function drawRunEndResultOverlay(state, fonts)
+    local sw = love.graphics.getWidth()
+    local sh = love.graphics.getHeight()
+    local w = math.min(760, sw - 80)
+    local h = 270
+    local x = (sw - w) * 0.5
+    local y = (sh - h) * 0.5
+
+    love.graphics.setColor(0, 0, 0, 0.74)
+    love.graphics.rectangle("fill", 0, 0, sw, sh)
+
+    love.graphics.setColor(0.06, 0.07, 0.1, 0.96)
+    love.graphics.rectangle("fill", x, y, w, h, 12, 12)
+    love.graphics.setColor(0.8, 0.9, 1.0, 0.9)
+    love.graphics.rectangle("line", x, y, w, h, 12, 12)
+
+    love.graphics.setFont(fonts.big)
+    love.graphics.setColor(1, 0.95, 0.8)
+    love.graphics.printf("RUN ENDED", x, y + 24, w, "center")
+
+    love.graphics.setFont(fonts.hud)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.printf("Reason: " .. tostring(state.runEndedReason or "unknown"), x + 36, y + 94, w - 72, "left")
+    love.graphics.printf("Total Eaten: " .. tostring(state.food and state.food.consumedTotal or 0), x + 36, y + 124, w - 72, "left")
+    love.graphics.printf("Current Essence: " .. tostring(state.meta and state.meta.essence or 0), x + 36, y + 154, w - 72, "left")
+
+    love.graphics.setColor(0.84, 0.9, 1.0)
+    love.graphics.printf("Click to continue to skill tree", x, y + h - 42, w, "center")
+end
+
 function Renderer.draw(state, fonts, ui, assets, treeWorldFromScreen)
+    if state.mode == "run_end_result" then
+        drawWorld(state, assets)
+        drawRunEndResultOverlay(state, fonts)
+        drawHelpPanel(state, fonts)
+        return
+    end
+
     if state.mode == "run_end_tree" then
         drawRunEndTreeFullscreen(state, fonts)
         drawHelpPanel(state, fonts)
@@ -477,7 +579,9 @@ function Renderer.draw(state, fonts, ui, assets, treeWorldFromScreen)
     end
 
     drawWorld(state, assets)
-    drawHUD(state, fonts, ui)
+    drawGameTopBar(state, fonts, ui)
+    drawBossBar(state, fonts)
+    drawGameToasts(state, fonts)
     drawHelpPanel(state, fonts)
 end
 

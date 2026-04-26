@@ -69,6 +69,10 @@ function App:keypressed(key)
         return
     end
 
+    if self.state.mode == "run_end_result" then
+        return
+    end
+
     if key == "b" then
         Service.tryEnterBoss(self.state)
         return
@@ -90,6 +94,11 @@ function App:mousepressed(x, y, button)
         return
     end
 
+    if self.state.mode == "run_end_result" then
+        Service.openRunEndTree(self.state)
+        return
+    end
+
     local saveBtn = self.ui.saveBtn
     local inSaveButton = x >= saveBtn.x and x <= saveBtn.x + saveBtn.w and y >= saveBtn.y and y <= saveBtn.y + saveBtn.h
     if inSaveButton then
@@ -108,6 +117,10 @@ function App:mousereleased(x, y, button)
         if idx then
             Service.tryBuyMetaUpgrade(self.state, idx)
         end
+        return
+    end
+
+    if self.state.mode == "run_end_result" then
         return
     end
 

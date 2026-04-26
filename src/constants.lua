@@ -43,22 +43,19 @@ C.MAPS = {
 C.FOOD_BY_TIER = {
     common = {
         radius = 10,
-        nutrition = 1,
-        xp = 1,
+        essence = 1,
         color = { 0.4, 0.95, 0.45 },
         speed = 25,
     },
     rare = {
         radius = 13,
-        nutrition = 4,
-        xp = 3,
+        essence = 5,
         color = { 0.25, 0.8, 1.0 },
         speed = 32,
     },
     elite = {
         radius = 17,
-        nutrition = 10,
-        xp = 8,
+        essence = 14,
         color = { 1.0, 0.45, 0.25 },
         speed = 45,
     },
@@ -74,6 +71,15 @@ C.RUN_END_TREE_UI = {
     zoomStepDown = 0.88,
     nodeRadius = 30,
     clickThreshold = 8,
+}
+
+C.RUN_HUD_UI = {
+    padding = 14,
+    topBarHeight = 42,
+    groupGap = 10,
+    chipPadX = 10,
+    toastDuration = 2.2,
+    autosaveDuration = 2.8,
 }
 
 return C
