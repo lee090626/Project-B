@@ -273,10 +273,19 @@ function Meta.getTreeLayout()
 end
 
 function Meta.new(saved)
+    local levels = makeDefaultLevels()
+    if saved and saved.levels then
+        for key, value in pairs(saved.levels) do
+            if levels[key] ~= nil then
+                levels[key] = value
+            end
+        end
+    end
+
     return {
         essence = saved and saved.essence or 0,
         totalRuns = saved and saved.totalRuns or 0,
-        levels = saved and saved.levels or makeDefaultLevels(),
+        levels = levels,
     }
 end
 
