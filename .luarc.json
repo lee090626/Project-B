@@ -1,0 +1,11 @@
+{
+  "Lua.runtime.version": "LuaJIT",
+  "Lua.diagnostics.globals": [
+    "love"
+  ],
+  "Lua.workspace.library": [
+    "./types/love"
+  ],
+  "Lua.workspace.checkThirdParty": false,
+  "Lua.telemetry.enable": false
+}
