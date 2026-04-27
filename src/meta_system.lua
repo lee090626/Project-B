@@ -69,55 +69,55 @@ local function addMainBranch(prefix, category, nodes)
 end
 
 refs.up = addMainBranch("up", "mobility", {
-    { key = "swift", name = "Swift Claw", desc = "Move speed +8 per level", icon = "SPD", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "speed", bonusPerLevel = 8, x = 0.0, y = -0.22 },
-    { key = "maw", name = "Long Maw", desc = "Feeding reach +1.2 per level", icon = "MAW", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "reach", bonusPerLevel = 1.2, x = 0.0, y = -0.44 },
-    { key = "bite", name = "Snap Bite", desc = "Contact bite +4 per level", icon = "BTE", deps = { 2 }, maxLevel = 8, baseCost = 9, scale = 1.26, bonusKey = "contactBite", bonusPerLevel = 4, x = 0.0, y = -0.66 },
-    { key = "rush", name = "Rush Spine", desc = "Move speed +12 per level", icon = "RSH", deps = { 3 }, maxLevel = 7, baseCost = 12, scale = 1.27, bonusKey = "speed", bonusPerLevel = 12, x = 0.0, y = -0.9 },
-    { key = "crown", name = "Sky Crown", desc = "Contact bite +7 per level", icon = "CRN", deps = { 4 }, maxLevel = 6, baseCost = 17, scale = 1.28, bonusKey = "contactBite", bonusPerLevel = 7, x = 0.0, y = -1.16 },
-    { key = "drift", name = "Drift Wing", desc = "Move speed +6 per level", icon = "DWF", deps = { 1 }, maxLevel = 7, baseCost = 7, scale = 1.25, bonusKey = "speed", bonusPerLevel = 6, x = -0.26, y = -0.34 },
-    { key = "jaws", name = "Wide Jaws", desc = "Feeding reach +1.0 per level", icon = "JAW", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "reach", bonusPerLevel = 1.0, x = 0.27, y = -0.5 },
-    { key = "ram", name = "Ram Crest", desc = "Contact bite +5 per level", icon = "RAM", deps = { 3 }, maxLevel = 6, baseCost = 11, scale = 1.27, bonusKey = "contactBite", bonusPerLevel = 5, x = -0.3, y = -0.73 },
-    { key = "feather", name = "Wing Lash", desc = "Move speed +15 per level", icon = "LSH", deps = { 4 }, maxLevel = 6, baseCost = 15, scale = 1.28, bonusKey = "speed", bonusPerLevel = 15, x = 0.31, y = -0.92 },
-    { key = "majesty", name = "Predator Crest", desc = "Feeding reach +2.1 per level", icon = "PRD", deps = { 5, 9 }, maxLevel = 5, baseCost = 22, scale = 1.3, bonusKey = "reach", bonusPerLevel = 2.1, x = 0.12, y = -1.28 },
+    { key = "swift", name = "Swift Claw", desc = "Move speed +8 per level", icon = "SPD", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "speed", bonusPerLevel = 8, x = 0.0, y = -0.18 },
+    { key = "maw", name = "Long Maw", desc = "Feeding reach +1.2 per level", icon = "MAW", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "reach", bonusPerLevel = 1.2, x = 0.0, y = -0.36 },
+    { key = "bite", name = "Snap Bite", desc = "Contact bite +4 per level", icon = "BTE", deps = { 2 }, maxLevel = 8, baseCost = 9, scale = 1.26, bonusKey = "contactBite", bonusPerLevel = 4, x = 0.0, y = -0.54 },
+    { key = "rush", name = "Rush Spine", desc = "Move speed +12 per level", icon = "RSH", deps = { 3 }, maxLevel = 7, baseCost = 12, scale = 1.27, bonusKey = "speed", bonusPerLevel = 12, x = 0.0, y = -0.72 },
+    { key = "crown", name = "Sky Crown", desc = "Contact bite +7 per level", icon = "CRN", deps = { 4 }, maxLevel = 6, baseCost = 17, scale = 1.28, bonusKey = "contactBite", bonusPerLevel = 7, x = 0.0, y = -0.9 },
+    { key = "drift", name = "Drift Wing", desc = "Move speed +6 per level", icon = "DWF", deps = { 1 }, maxLevel = 7, baseCost = 7, scale = 1.25, bonusKey = "speed", bonusPerLevel = 6, x = -0.18, y = -0.18 },
+    { key = "jaws", name = "Wide Jaws", desc = "Feeding reach +1.0 per level", icon = "JAW", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "reach", bonusPerLevel = 1.0, x = 0.18, y = -0.36 },
+    { key = "ram", name = "Ram Crest", desc = "Contact bite +5 per level", icon = "RAM", deps = { 3 }, maxLevel = 6, baseCost = 11, scale = 1.27, bonusKey = "contactBite", bonusPerLevel = 5, x = -0.18, y = -0.54 },
+    { key = "feather", name = "Wing Lash", desc = "Move speed +15 per level", icon = "LSH", deps = { 4 }, maxLevel = 6, baseCost = 15, scale = 1.28, bonusKey = "speed", bonusPerLevel = 15, x = 0.18, y = -0.72 },
+    { key = "majesty", name = "Predator Crest", desc = "Feeding reach +2.1 per level", icon = "PRD", deps = { 5, 9 }, maxLevel = 5, baseCost = 22, scale = 1.3, bonusKey = "reach", bonusPerLevel = 2.1, x = 0.18, y = -0.9 },
 })
 
 refs.right = addMainBranch("right", "economy", {
-    { key = "greed", name = "Greed Gland", desc = "Essence gain +6% per level", icon = "ECO", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "essenceMult", bonusPerLevel = 0.06, x = 0.22, y = 0.0 },
-    { key = "lure", name = "Rare Lure", desc = "Rare spawn chance +0.8% per level", icon = "RAR", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "rareBonus", bonusPerLevel = 0.008, x = 0.44, y = 0.0 },
-    { key = "feast", name = "Elite Lure", desc = "Elite spawn chance +0.45% per level", icon = "ELT", deps = { 2 }, maxLevel = 8, baseCost = 10, scale = 1.26, bonusKey = "eliteBonus", bonusPerLevel = 0.0045, x = 0.68, y = 0.0 },
-    { key = "hoard", name = "Hoard Belly", desc = "Essence gain +8% per level", icon = "GLD", deps = { 3 }, maxLevel = 7, baseCost = 13, scale = 1.27, bonusKey = "essenceMult", bonusPerLevel = 0.08, x = 0.93, y = 0.0 },
-    { key = "royal", name = "Royal Stomach", desc = "Elite value +18% per level", icon = "ROY", deps = { 4 }, maxLevel = 6, baseCost = 18, scale = 1.29, bonusKey = "eliteValue", bonusPerLevel = 0.18, x = 1.2, y = 0.0 },
-    { key = "gold", name = "Gold Scent", desc = "Rare value +10% per level", icon = "GLD", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "rareValue", bonusPerLevel = 0.10, x = 0.54, y = -0.24 },
-    { key = "brood", name = "Brood Pull", desc = "Magnet radius +9 per level", icon = "MAG", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "magnet", bonusPerLevel = 9, x = 0.54, y = 0.24 },
-    { key = "nest", name = "Dense Nest", desc = "Max field monsters +5 per level", icon = "POP", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "spawnCap", bonusPerLevel = 5, x = 0.84, y = -0.22 },
-    { key = "bloom", name = "Feeding Bloom", desc = "Spawn speed +7% per level", icon = "SPN", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "spawnRate", bonusPerLevel = 0.07, x = 0.84, y = 0.24 },
-    { key = "vault", name = "Vault Heart", desc = "Essence gain +12% per level", icon = "VLT", deps = { 5, 8 }, maxLevel = 5, baseCost = 24, scale = 1.3, bonusKey = "essenceMult", bonusPerLevel = 0.12, x = 1.32, y = -0.14 },
+    { key = "greed", name = "Greed Gland", desc = "Essence gain +6% per level", icon = "ECO", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "essenceMult", bonusPerLevel = 0.06, x = 0.18, y = 0.0 },
+    { key = "lure", name = "Rare Lure", desc = "Rare spawn chance +0.8% per level", icon = "RAR", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "rareBonus", bonusPerLevel = 0.008, x = 0.36, y = 0.0 },
+    { key = "feast", name = "Elite Lure", desc = "Elite spawn chance +0.45% per level", icon = "ELT", deps = { 2 }, maxLevel = 8, baseCost = 10, scale = 1.26, bonusKey = "eliteBonus", bonusPerLevel = 0.0045, x = 0.54, y = 0.0 },
+    { key = "hoard", name = "Hoard Belly", desc = "Essence gain +8% per level", icon = "GLD", deps = { 3 }, maxLevel = 7, baseCost = 13, scale = 1.27, bonusKey = "essenceMult", bonusPerLevel = 0.08, x = 0.72, y = 0.0 },
+    { key = "royal", name = "Royal Stomach", desc = "Elite value +18% per level", icon = "ROY", deps = { 4 }, maxLevel = 6, baseCost = 18, scale = 1.29, bonusKey = "eliteValue", bonusPerLevel = 0.18, x = 0.9, y = 0.0 },
+    { key = "gold", name = "Gold Scent", desc = "Rare value +10% per level", icon = "GLD", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "rareValue", bonusPerLevel = 0.10, x = 0.36, y = -0.18 },
+    { key = "brood", name = "Brood Pull", desc = "Magnet radius +9 per level", icon = "MAG", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "magnet", bonusPerLevel = 9, x = 0.36, y = 0.18 },
+    { key = "nest", name = "Dense Nest", desc = "Max field monsters +5 per level", icon = "POP", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "spawnCap", bonusPerLevel = 5, x = 0.54, y = -0.18 },
+    { key = "bloom", name = "Feeding Bloom", desc = "Spawn speed +7% per level", icon = "SPN", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "spawnRate", bonusPerLevel = 0.07, x = 0.54, y = 0.18 },
+    { key = "vault", name = "Vault Heart", desc = "Essence gain +12% per level", icon = "VLT", deps = { 5, 8 }, maxLevel = 5, baseCost = 24, scale = 1.3, bonusKey = "essenceMult", bonusPerLevel = 0.12, x = 0.9, y = -0.18 },
 })
 
 refs.down = addMainBranch("down", "combat", {
-    { key = "fang", name = "Hunter Fang", desc = "Contact bite +5 per level", icon = "DMG", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "contactBite", bonusPerLevel = 5, x = 0.0, y = 0.22 },
-    { key = "stride", name = "Chase Stride", desc = "Move speed +7 per level", icon = "SPD", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "speed", bonusPerLevel = 7, x = 0.0, y = 0.44 },
-    { key = "arc", name = "Arc Spine", desc = "Lightning chain count +1 per level", icon = "LNK", deps = { 2 }, maxLevel = 5, baseCost = 10, scale = 1.27, bonusKey = "lightningChain", bonusPerLevel = 1, x = 0.0, y = 0.68 },
-    { key = "burst", name = "Burst Core", desc = "Fireball split shots +1 per level", icon = "FIR", deps = { 3 }, maxLevel = 4, baseCost = 14, scale = 1.28, bonusKey = "fireballSplit", bonusPerLevel = 1, x = 0.0, y = 0.94 },
-    { key = "blizzard", name = "Blizzard Vein", desc = "Frost duration +0.25 sec per level", icon = "ICE", deps = { 4 }, maxLevel = 5, baseCost = 18, scale = 1.29, bonusKey = "frostDuration", bonusPerLevel = 0.25, x = 0.0, y = 1.2 },
-    { key = "ram", name = "Crash Jaw", desc = "Contact bite +6 per level", icon = "JAW", deps = { 1 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "contactBite", bonusPerLevel = 6, x = -0.24, y = 0.54 },
-    { key = "field", name = "Field Pull", desc = "Magnet radius +10 per level", icon = "PUL", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "magnet", bonusPerLevel = 10, x = 0.25, y = 0.54 },
-    { key = "fork", name = "Fork Storm", desc = "Lightning damage +6 per level", icon = "THN", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "lightningDamage", bonusPerLevel = 6, x = -0.28, y = 0.84 },
-    { key = "ember", name = "Ember Mouth", desc = "Fireball damage +5 per level", icon = "EMB", deps = { 4 }, maxLevel = 6, baseCost = 13, scale = 1.28, bonusKey = "fireballDamage", bonusPerLevel = 5, x = 0.28, y = 1.02 },
-    { key = "cold", name = "Cold Maw", desc = "Frost damage +4 per level", icon = "CLD", deps = { 5, 9 }, maxLevel = 5, baseCost = 22, scale = 1.31, bonusKey = "frostDamage", bonusPerLevel = 4, x = -0.16, y = 1.32 },
+    { key = "fang", name = "Hunter Fang", desc = "Contact bite +5 per level", icon = "DMG", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "contactBite", bonusPerLevel = 5, x = 0.0, y = 0.18 },
+    { key = "stride", name = "Chase Stride", desc = "Move speed +7 per level", icon = "SPD", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "speed", bonusPerLevel = 7, x = 0.0, y = 0.36 },
+    { key = "arc", name = "Arc Spine", desc = "Lightning chain count +1 per level", icon = "LNK", deps = { 2 }, maxLevel = 5, baseCost = 10, scale = 1.27, bonusKey = "lightningChain", bonusPerLevel = 1, x = 0.0, y = 0.54 },
+    { key = "burst", name = "Burst Core", desc = "Fireball split shots +1 per level", icon = "FIR", deps = { 3 }, maxLevel = 4, baseCost = 14, scale = 1.28, bonusKey = "fireballSplit", bonusPerLevel = 1, x = 0.0, y = 0.72 },
+    { key = "blizzard", name = "Blizzard Vein", desc = "Frost duration +0.25 sec per level", icon = "ICE", deps = { 4 }, maxLevel = 5, baseCost = 18, scale = 1.29, bonusKey = "frostDuration", bonusPerLevel = 0.25, x = 0.0, y = 0.9 },
+    { key = "ram", name = "Crash Jaw", desc = "Contact bite +6 per level", icon = "JAW", deps = { 1 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "contactBite", bonusPerLevel = 6, x = -0.18, y = 0.18 },
+    { key = "field", name = "Field Pull", desc = "Magnet radius +10 per level", icon = "PUL", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "magnet", bonusPerLevel = 10, x = 0.18, y = 0.36 },
+    { key = "fork", name = "Fork Storm", desc = "Lightning damage +6 per level", icon = "THN", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "lightningDamage", bonusPerLevel = 6, x = -0.18, y = 0.54 },
+    { key = "ember", name = "Ember Mouth", desc = "Fireball damage +5 per level", icon = "EMB", deps = { 4 }, maxLevel = 6, baseCost = 13, scale = 1.28, bonusKey = "fireballDamage", bonusPerLevel = 5, x = 0.18, y = 0.72 },
+    { key = "cold", name = "Cold Maw", desc = "Frost damage +4 per level", icon = "CLD", deps = { 5, 9 }, maxLevel = 5, baseCost = 22, scale = 1.31, bonusKey = "frostDamage", bonusPerLevel = 4, x = 0.18, y = 0.9 },
 })
 
 refs.left = addMainBranch("left", "utility", {
-    { key = "drag", name = "Drag Sense", desc = "Magnet radius +8 per level", icon = "MAG", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "magnet", bonusPerLevel = 8, x = -0.22, y = 0.0 },
-    { key = "trail", name = "Trail Sniff", desc = "Spawn speed +6% per level", icon = "SNF", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "spawnRate", bonusPerLevel = 0.06, x = -0.44, y = 0.0 },
-    { key = "brood", name = "Brood Call", desc = "Max field monsters +6 per level", icon = "CAL", deps = { 2 }, maxLevel = 8, baseCost = 10, scale = 1.26, bonusKey = "spawnCap", bonusPerLevel = 6, x = -0.68, y = 0.0 },
-    { key = "sweep", name = "Sweep Step", desc = "Move speed +10 per level", icon = "SWP", deps = { 3 }, maxLevel = 7, baseCost = 13, scale = 1.27, bonusKey = "speed", bonusPerLevel = 10, x = -0.93, y = 0.0 },
-    { key = "vacuum", name = "Vacuum Maw", desc = "Magnet radius +16 per level", icon = "VAC", deps = { 4 }, maxLevel = 6, baseCost = 18, scale = 1.29, bonusKey = "magnet", bonusPerLevel = 16, x = -1.2, y = 0.0 },
-    { key = "wide", name = "Wide Sweep", desc = "Feeding reach +1.1 per level", icon = "RNG", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "reach", bonusPerLevel = 1.1, x = -0.54, y = -0.24 },
-    { key = "dash", name = "Dash Coil", desc = "Move speed +8 per level", icon = "DSH", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "speed", bonusPerLevel = 8, x = -0.54, y = 0.24 },
-    { key = "grid", name = "Field Grid", desc = "Essence gain +5% per level", icon = "GRD", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "essenceMult", bonusPerLevel = 0.05, x = -0.84, y = -0.22 },
-    { key = "pack", name = "Pack Pull", desc = "Spawn speed +8% per level", icon = "PAC", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "spawnRate", bonusPerLevel = 0.08, x = -0.84, y = 0.24 },
-    { key = "storm", name = "Search Storm", desc = "Max field monsters +10 per level", icon = "SRH", deps = { 5, 8 }, maxLevel = 5, baseCost = 24, scale = 1.3, bonusKey = "spawnCap", bonusPerLevel = 10, x = -1.32, y = 0.14 },
+    { key = "drag", name = "Drag Sense", desc = "Magnet radius +8 per level", icon = "MAG", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "magnet", bonusPerLevel = 8, x = -0.18, y = 0.0 },
+    { key = "trail", name = "Trail Sniff", desc = "Spawn speed +6% per level", icon = "SNF", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "spawnRate", bonusPerLevel = 0.06, x = -0.36, y = 0.0 },
+    { key = "brood", name = "Brood Call", desc = "Max field monsters +6 per level", icon = "CAL", deps = { 2 }, maxLevel = 8, baseCost = 10, scale = 1.26, bonusKey = "spawnCap", bonusPerLevel = 6, x = -0.54, y = 0.0 },
+    { key = "sweep", name = "Sweep Step", desc = "Move speed +10 per level", icon = "SWP", deps = { 3 }, maxLevel = 7, baseCost = 13, scale = 1.27, bonusKey = "speed", bonusPerLevel = 10, x = -0.72, y = 0.0 },
+    { key = "vacuum", name = "Vacuum Maw", desc = "Magnet radius +16 per level", icon = "VAC", deps = { 4 }, maxLevel = 6, baseCost = 18, scale = 1.29, bonusKey = "magnet", bonusPerLevel = 16, x = -0.9, y = 0.0 },
+    { key = "wide", name = "Wide Sweep", desc = "Feeding reach +1.1 per level", icon = "RNG", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "reach", bonusPerLevel = 1.1, x = -0.36, y = -0.18 },
+    { key = "dash", name = "Dash Coil", desc = "Move speed +8 per level", icon = "DSH", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "speed", bonusPerLevel = 8, x = -0.36, y = 0.18 },
+    { key = "grid", name = "Field Grid", desc = "Essence gain +5% per level", icon = "GRD", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "essenceMult", bonusPerLevel = 0.05, x = -0.54, y = -0.18 },
+    { key = "pack", name = "Pack Pull", desc = "Spawn speed +8% per level", icon = "PAC", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "spawnRate", bonusPerLevel = 0.08, x = -0.54, y = 0.18 },
+    { key = "storm", name = "Search Storm", desc = "Max field monsters +10 per level", icon = "SRH", deps = { 5, 8 }, maxLevel = 5, baseCost = 24, scale = 1.3, bonusKey = "spawnCap", bonusPerLevel = 10, x = -0.9, y = -0.18 },
 })
 
 local function addPassiveCluster(prefix, category, icon, rootDeps, points, defs)
@@ -153,24 +153,24 @@ local function addPassiveCluster(prefix, category, icon, rootDeps, points, defs)
 end
 
 local lightningPoints = {
-    { x = 0.82, y = -0.72 }, { x = 1.0, y = -0.88 }, { x = 1.18, y = -1.04 }, { x = 1.36, y = -1.18 },
-    { x = 0.96, y = -0.58 }, { x = 1.14, y = -0.46 }, { x = 1.32, y = -0.34 }, { x = 1.5, y = -0.22 },
-    { x = 0.68, y = -0.88 }, { x = 0.58, y = -1.06 }, { x = 0.5, y = -1.24 }, { x = 0.42, y = -1.42 },
-    { x = 1.44, y = -1.0 }, { x = 1.6, y = -0.84 }, { x = 1.68, y = -0.62 }, { x = 1.78, y = -0.42 },
+    { x = 0.54, y = 0.54 }, { x = 0.72, y = 0.54 }, { x = 0.9, y = 0.54 }, { x = 1.08, y = 0.54 },
+    { x = 0.72, y = 0.72 }, { x = 0.9, y = 0.72 }, { x = 0.9, y = 0.36 }, { x = 1.08, y = 0.36 },
+    { x = 0.54, y = 0.72 }, { x = 0.54, y = 0.9 }, { x = 0.72, y = 0.9 }, { x = 0.9, y = 0.9 },
+    { x = 1.08, y = 0.72 }, { x = 1.26, y = 0.72 }, { x = 1.26, y = 0.54 }, { x = 1.26, y = 0.36 },
 }
 
 local firePoints = {
-    { x = 0.9, y = 0.72 }, { x = 1.08, y = 0.9 }, { x = 1.26, y = 1.08 }, { x = 1.44, y = 1.24 },
-    { x = 1.02, y = 0.56 }, { x = 1.2, y = 0.42 }, { x = 1.38, y = 0.3 }, { x = 1.56, y = 0.18 },
-    { x = 0.74, y = 0.94 }, { x = 0.62, y = 1.12 }, { x = 0.52, y = 1.3 }, { x = 0.42, y = 1.48 },
-    { x = 1.5, y = 1.06 }, { x = 1.64, y = 0.88 }, { x = 1.76, y = 0.68 }, { x = 1.86, y = 0.48 },
+    { x = -0.36, y = 0.72 }, { x = -0.54, y = 0.72 }, { x = -0.72, y = 0.72 }, { x = -0.9, y = 0.72 },
+    { x = -0.54, y = 0.9 }, { x = -0.72, y = 0.9 }, { x = -0.72, y = 0.54 }, { x = -0.9, y = 0.54 },
+    { x = -0.36, y = 0.9 }, { x = -0.36, y = 1.08 }, { x = -0.54, y = 1.08 }, { x = -0.72, y = 1.08 },
+    { x = -0.9, y = 0.9 }, { x = -1.08, y = 0.9 }, { x = -1.08, y = 0.72 }, { x = -1.08, y = 0.54 },
 }
 
 local frostPoints = {
-    { x = -0.82, y = 0.72 }, { x = -1.0, y = 0.88 }, { x = -1.18, y = 1.04 }, { x = -1.36, y = 1.18 },
-    { x = -0.96, y = 0.56 }, { x = -1.14, y = 0.42 }, { x = -1.32, y = 0.3 }, { x = -1.5, y = 0.18 },
-    { x = -0.68, y = 0.9 }, { x = -0.58, y = 1.08 }, { x = -0.5, y = 1.26 }, { x = -0.42, y = 1.44 },
-    { x = -1.44, y = 1.0 }, { x = -1.6, y = 0.84 }, { x = -1.72, y = 0.64 }, { x = -1.82, y = 0.44 },
+    { x = -0.54, y = -0.36 }, { x = -0.72, y = -0.36 }, { x = -0.9, y = -0.36 }, { x = -1.08, y = -0.36 },
+    { x = -0.72, y = -0.54 }, { x = -0.9, y = -0.54 }, { x = -0.9, y = -0.18 }, { x = -1.08, y = -0.18 },
+    { x = -0.54, y = -0.54 }, { x = -0.54, y = -0.72 }, { x = -0.72, y = -0.72 }, { x = -0.9, y = -0.72 },
+    { x = -1.08, y = -0.54 }, { x = -1.26, y = -0.54 }, { x = -1.26, y = -0.36 }, { x = -1.26, y = -0.18 },
 }
 
 refs.lightning = addPassiveCluster("lightning", "lightning", "LIT", { refs.down[3], refs.right[3] }, lightningPoints, {

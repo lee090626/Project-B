@@ -181,6 +181,42 @@ local function metaTreeWorldToScreen(state, wx, wy, sw, sh)
     return sx, sy
 end
 
+local function drawOrthogonalConnector(fromX, fromY, toX, toY, radius)
+    local dx = toX - fromX
+    local dy = toY - fromY
+
+    if math.abs(dx) < 1e-4 then
+        local startY = fromY + (dy >= 0 and radius or -radius)
+        local endY = toY - (dy >= 0 and radius or -radius)
+        love.graphics.line(fromX, startY, toX, endY)
+        return
+    end
+
+    if math.abs(dy) < 1e-4 then
+        local startX = fromX + (dx >= 0 and radius or -radius)
+        local endX = toX - (dx >= 0 and radius or -radius)
+        love.graphics.line(startX, fromY, endX, toY)
+        return
+    end
+
+    if math.abs(dx) >= math.abs(dy) then
+        local startX = fromX + (dx >= 0 and radius or -radius)
+        local startY = fromY
+        local endX = toX
+        local endY = toY - (dy >= 0 and radius or -radius)
+        love.graphics.line(startX, startY, endX, startY)
+        love.graphics.line(endX, startY, endX, endY)
+        return
+    end
+
+    local startX = fromX
+    local startY = fromY + (dy >= 0 and radius or -radius)
+    local endX = toX - (dx >= 0 and radius or -radius)
+    local endY = toY
+    love.graphics.line(startX, startY, startX, endY)
+    love.graphics.line(startX, endY, endX, endY)
+end
+
 function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
@@ -239,7 +275,7 @@ function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts)
                             love.graphics.setColor(0.25, 0.95, 1.0, 0.45)
                         end
                         love.graphics.setLineWidth(3)
-                        love.graphics.line(sx0, sy0, sx1, sy1)
+                        drawOrthogonalConnector(sx0, sy0, sx1, sy1, ui.nodeRadius)
                     end
                 end
             end
