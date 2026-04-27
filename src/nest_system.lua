@@ -24,8 +24,8 @@ local function getDefinition(key)
     return nil
 end
 
-local function getCost(def, level)
-    return C.NEST_UPGRADE_POINT_COST
+local function getCost(def, currentLevel)
+    return def.basePointCost + math.floor(currentLevel / 4)
 end
 
 local function getStartChoices(level)
@@ -36,15 +36,15 @@ local function getStartChoices(level)
 end
 
 local function getThresholdFactor(level)
-    return math.max(0.6, 1 - level * 0.04)
+    return math.max(0.75, 1 - level * 0.025)
 end
 
 local function getChoiceCount(level)
-    return level >= 5 and 4 or 3
+    return level >= 7 and 4 or 3
 end
 
 local function getRarityShift(level)
-    return level * 2
+    return level
 end
 
 local function effectPayload(key, level)
@@ -56,7 +56,7 @@ local function effectPayload(key, level)
         return "nest.effect.larder", { percent = reduction }
     end
     if key == "roost" then
-        return "nest.effect.roost", { speed = level * 4, magnet = level * 8 }
+        return "nest.effect.roost", { speed = level * 3, magnet = level * 6 }
     end
     if key == "hatchery" then
         return "nest.effect.hatchery", { count = getChoiceCount(level), shift = getRarityShift(level) }
@@ -90,15 +90,21 @@ end
 local function getSpentPoints(nest)
     local spent = 0
     for _, key in ipairs(ORDER) do
-        spent = spent + math.max(0, math.floor(nest.levels[key] or 0))
+        local def = getDefinition(key)
+        local level = math.max(0, math.floor(nest.levels[key] or 0))
+        for currentLevel = 0, level - 1 do
+            spent = spent + getCost(def, currentLevel)
+        end
     end
     return spent
 end
 
 function Nest.getProgress(nest)
     local totalEssence = math.max(0, math.floor(nest.totalEssence or 0))
-    local step = C.DRAGON_LEVEL_ESSENCE_STEP
-    local level = math.floor(totalEssence / step)
+    local factor = C.DRAGON_LEVEL_CURVE_FACTOR
+    local level = math.floor(math.sqrt(totalEssence / factor))
+    local currentLevelStart = factor * level * level
+    local nextLevelEssence = factor * (level + 1) * (level + 1)
     local spentPoints = getSpentPoints(nest)
     local availablePoints = math.max(0, level - spentPoints)
 
@@ -114,9 +120,11 @@ function Nest.getProgress(nest)
         level = level,
         spentPoints = spentPoints,
         availablePoints = availablePoints,
-        nextLevelEssence = (level + 1) * step,
-        currentLevelProgress = totalEssence - level * step,
-        essencePerLevel = step,
+        nextLevelEssence = nextLevelEssence,
+        nextLevelCost = math.max(0, nextLevelEssence - totalEssence),
+        currentLevelStart = currentLevelStart,
+        currentLevelProgress = totalEssence - currentLevelStart,
+        essencePerLevel = nextLevelEssence - currentLevelStart,
         evolutionIndex = evolutionIndex,
         evolutionKey = "evolution.stage." .. evolutionIndex,
     }
@@ -129,8 +137,8 @@ function Nest.computeBonuses(nest)
     local hatchery = nest.levels.hatchery or 0
 
     return {
-        speed = roost * 4,
-        magnet = roost * 8,
+        speed = roost * 3,
+        magnet = roost * 6,
         startingChoices = getStartChoices(brooder),
         thresholdFactor = getThresholdFactor(larder),
         choiceCount = getChoiceCount(hatchery),

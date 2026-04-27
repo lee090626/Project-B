@@ -97,32 +97,30 @@ C.PASSIVE_BASES = {
 C.NEST_UPGRADES = {
     {
         key = "brooder",
-        baseCost = 20,
+        basePointCost = 1,
         maxLevel = 10,
     },
     {
         key = "larder",
-        baseCost = 24,
+        basePointCost = 1,
         maxLevel = 10,
     },
     {
         key = "roost",
-        baseCost = 18,
+        basePointCost = 1,
         maxLevel = 10,
     },
     {
         key = "hatchery",
-        baseCost = 28,
+        basePointCost = 2,
         maxLevel = 10,
     },
 }
 
-C.NEST_UPGRADE_SCALE = 1.45
-C.NEST_UPGRADE_POINT_COST = 1
-C.DRAGON_LEVEL_ESSENCE_STEP = 10
-C.DRAGON_EVOLUTION_LEVELS = { 50, 150, 250 }
+C.DRAGON_LEVEL_CURVE_FACTOR = 5
+C.DRAGON_EVOLUTION_LEVELS = { 20, 50, 90 }
 
-C.MUTATION_LEVEL_THRESHOLDS = { 30, 80, 150, 240, 360, 520, 720, 980 }
+C.MUTATION_LEVEL_THRESHOLDS = { 50, 140, 280, 480, 760, 1120, 1560, 2080 }
 C.MUTATION_RARITY_WEIGHTS = {
     common = 70,
     rare = 25,

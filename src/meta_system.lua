@@ -2,6 +2,59 @@ local Meta = {}
 
 local DEFINITIONS = {}
 local LAYOUT = {}
+local INTEGER_REBALANCE_KEYS = {
+    speed = true,
+    magnet = true,
+    contactBite = true,
+    spawnCap = true,
+    lightningDamage = true,
+    lightningChain = true,
+    fireballDamage = true,
+    fireballCount = true,
+    fireballRadius = true,
+    fireballSplit = true,
+    frostDamage = true,
+    frostRadius = true,
+}
+local ECONOMY_REBALANCE_KEYS = {
+    essenceMult = true,
+    rareValue = true,
+    eliteValue = true,
+    spawnRate = true,
+    rareBonus = true,
+    eliteBonus = true,
+}
+local COOLDOWN_REBALANCE_KEYS = {
+    lightningIntervalCut = true,
+    fireballIntervalCut = true,
+    frostIntervalCut = true,
+}
+local STATUS_REBALANCE_KEYS = {
+    frostSlow = true,
+    frostDuration = true,
+}
+
+local function round(value, digits)
+    local scale = 10 ^ digits
+    return math.floor(value * scale + 0.5) / scale
+end
+
+local function rebalanceBonus(def)
+    if not def.bonusKey then
+        return
+    end
+
+    local value = def.bonusPerLevel
+    if INTEGER_REBALANCE_KEYS[def.bonusKey] then
+        def.bonusPerLevel = math.floor(value * 0.75)
+    elseif def.bonusKey == "reach" then
+        def.bonusPerLevel = round(value * 0.8, 1)
+    elseif ECONOMY_REBALANCE_KEYS[def.bonusKey] then
+        def.bonusPerLevel = round(value * 0.7, 2)
+    elseif COOLDOWN_REBALANCE_KEYS[def.bonusKey] or STATUS_REBALANCE_KEYS[def.bonusKey] then
+        def.bonusPerLevel = round(value * 0.75, 2)
+    end
+end
 
 local function addNode(args)
     local index = #DEFINITIONS + 1
@@ -223,6 +276,10 @@ refs.frost = addPassiveCluster("frost", "frost", "ICE", { refs.left[3], refs.up[
     { key = "veil3", deps = { 14 }, maxLevel = 3, baseCost = 28, scale = 1.32, bonusKey = "frostDamage", bonusPerLevel = 14 },
     { key = "apex", deps = { 15, 8 }, maxLevel = 3, baseCost = 34, scale = 1.34, bonusKey = "frostDuration", bonusPerLevel = 0.35 },
 })
+
+for _, def in ipairs(DEFINITIONS) do
+    rebalanceBonus(def)
+end
 
 assert(#DEFINITIONS == 89, "meta tree must contain 89 nodes")
 
