@@ -1,3 +1,5 @@
+local C = require("src.constants")
+
 local Meta = {}
 
 local DEFINITIONS = {}
@@ -80,6 +82,7 @@ local function addNode(args)
         scale = args.scale,
         bonusKey = args.bonusKey,
         bonusPerLevel = args.bonusPerLevel,
+        clusterDepth = args.clusterDepth,
     }
     LAYOUT[index] = { x = args.x, y = args.y }
     return index
@@ -181,8 +184,10 @@ refs.left = addMainBranch("left", "utility", {
 
 local function addPassiveCluster(prefix, category, icon, rootDeps, points, defs)
     local indices = {}
+    local clusterDepths = {}
     for i, def in ipairs(defs) do
         local deps = {}
+        local clusterDepth = 0
         if i == 1 then
             for _, depIndex in ipairs(rootDeps) do
                 deps[#deps + 1] = depIndex
@@ -190,8 +195,10 @@ local function addPassiveCluster(prefix, category, icon, rootDeps, points, defs)
         else
             for _, depRef in ipairs(def.deps) do
                 deps[#deps + 1] = indices[depRef]
+                clusterDepth = math.max(clusterDepth, (clusterDepths[depRef] or 0) + 1)
             end
         end
+        clusterDepths[i] = clusterDepth
         indices[i] = addNode {
             key = prefix .. "_" .. def.key,
             category = category,
@@ -202,6 +209,7 @@ local function addPassiveCluster(prefix, category, icon, rootDeps, points, defs)
             scale = def.scale,
             bonusKey = def.bonusKey,
             bonusPerLevel = def.bonusPerLevel,
+            clusterDepth = clusterDepth,
             x = points[i].x,
             y = points[i].y,
         }
@@ -291,6 +299,45 @@ for _, def in ipairs(DEFINITIONS) do
     rebalanceBonus(def)
 end
 
+local function computeTreeDepth(index)
+    local def = DEFINITIONS[index]
+    if def.treeDepth ~= nil then
+        return def.treeDepth
+    end
+
+    if not def.deps or #def.deps == 0 then
+        def.treeDepth = 0
+        return def.treeDepth
+    end
+
+    local maxDepth = 0
+    for _, depIndex in ipairs(def.deps) do
+        maxDepth = math.max(maxDepth, computeTreeDepth(depIndex) + 1)
+    end
+    def.treeDepth = maxDepth
+    return def.treeDepth
+end
+
+local function depthMultiplierFor(def)
+    local depth = def.clusterDepth
+    local tableRef = C.META_PASSIVE_COST_DEPTH_MULTIPLIERS
+    if depth == nil then
+        depth = def.treeDepth or 0
+        tableRef = C.META_COST_DEPTH_MULTIPLIERS
+    end
+
+    for _, rule in ipairs(tableRef) do
+        if depth <= rule.maxDepth then
+            return rule.multiplier
+        end
+    end
+    return 1
+end
+
+for index = 1, #DEFINITIONS do
+    computeTreeDepth(index)
+end
+
 local function assertUniqueLayout()
     local seen = {}
     for index, point in ipairs(LAYOUT) do
@@ -315,7 +362,7 @@ local function makeDefaultLevels()
 end
 
 local function getCost(def, level)
-    return math.floor(def.baseCost * (def.scale ^ level))
+    return math.floor(def.baseCost * (def.scale ^ level) * depthMultiplierFor(def))
 end
 
 local function depsSatisfied(metaState, def)

@@ -21,7 +21,7 @@ C.MAPS = {
     {
         id = 2,
         nameKey = "map.2.name",
-        reward = 1.35,
+        reward = 1.28,
         hpScale = 1.28,
         spawn = { common = 0.68, rare = 0.26, elite = 0.06 },
         unlockRequires = 18,
@@ -29,18 +29,18 @@ C.MAPS = {
     {
         id = 3,
         nameKey = "map.3.name",
-        reward = 1.75,
+        reward = 1.62,
         hpScale = 1.62,
         spawn = { common = 0.56, rare = 0.32, elite = 0.12 },
-        unlockRequires = 42,
+        unlockRequires = 46,
     },
     {
         id = 4,
         nameKey = "map.4.name",
-        reward = 2.3,
+        reward = 2.0,
         hpScale = 2.05,
         spawn = { common = 0.46, rare = 0.36, elite = 0.18 },
-        unlockRequires = 74,
+        unlockRequires = 82,
     },
 }
 
@@ -127,7 +127,27 @@ C.NEST_UPGRADES = {
     },
 }
 
-C.DRAGON_LEVEL_CURVE_FACTOR = 5
+C.NEST_LEVEL_COST_BANDS = {
+    { fromLevel = 1, toLevel = 20, multiplier = 1 },
+    { fromLevel = 21, toLevel = 40, multiplier = 3 },
+    { fromLevel = 41, toLevel = 60, multiplier = 6 },
+    { fromLevel = 61, toLevel = math.huge, multiplier = 10 },
+}
+
+C.META_COST_DEPTH_MULTIPLIERS = {
+    { maxDepth = 2, multiplier = 1.0 },
+    { maxDepth = 4, multiplier = 1.25 },
+    { maxDepth = 6, multiplier = 1.55 },
+    { maxDepth = math.huge, multiplier = 1.9 },
+}
+
+C.META_PASSIVE_COST_DEPTH_MULTIPLIERS = {
+    { maxDepth = 0, multiplier = 1.35 },
+    { maxDepth = 2, multiplier = 1.55 },
+    { maxDepth = 4, multiplier = 1.85 },
+    { maxDepth = math.huge, multiplier = 2.15 },
+}
+
 C.DRAGON_EVOLUTION_LEVELS = { 20, 50, 90 }
 
 C.MUTATION_LEVEL_THRESHOLDS = { 50, 140, 280, 480, 760, 1120, 1560, 2080 }

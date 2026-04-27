@@ -28,6 +28,20 @@ local function getCost(def, currentLevel)
     return def.basePointCost + math.floor(currentLevel / 4)
 end
 
+local function getLevelBandMultiplier(level)
+    for _, band in ipairs(C.NEST_LEVEL_COST_BANDS) do
+        if level >= band.fromLevel and level <= band.toLevel then
+            return band.multiplier
+        end
+    end
+    return 1
+end
+
+local function getLevelCost(level)
+    local baseCost = 5 * (2 * level - 1)
+    return math.floor(baseCost * getLevelBandMultiplier(level) + 0.5)
+end
+
 local function getStartChoices(level)
     if level <= 0 then
         return 0
@@ -87,6 +101,15 @@ function Nest.export(nest)
     }
 end
 
+function Nest.getEssenceThreshold(level)
+    local cappedLevel = math.max(0, math.floor(level or 0))
+    local total = 0
+    for currentLevel = 1, cappedLevel do
+        total = total + getLevelCost(currentLevel)
+    end
+    return total
+end
+
 local function getSpentPoints(nest)
     local spent = 0
     for _, key in ipairs(ORDER) do
@@ -101,10 +124,16 @@ end
 
 function Nest.getProgress(nest)
     local totalEssence = math.max(0, math.floor(nest.totalEssence or 0))
-    local factor = C.DRAGON_LEVEL_CURVE_FACTOR
-    local level = math.floor(math.sqrt(totalEssence / factor))
-    local currentLevelStart = factor * level * level
-    local nextLevelEssence = factor * (level + 1) * (level + 1)
+    local level = 0
+    local currentLevelStart = 0
+    local nextLevelEssence = getLevelCost(1)
+
+    while nextLevelEssence <= totalEssence do
+        level = level + 1
+        currentLevelStart = nextLevelEssence
+        nextLevelEssence = currentLevelStart + getLevelCost(level + 1)
+    end
+
     local spentPoints = getSpentPoints(nest)
     local availablePoints = math.max(0, level - spentPoints)
 
@@ -124,7 +153,7 @@ function Nest.getProgress(nest)
         nextLevelCost = math.max(0, nextLevelEssence - totalEssence),
         currentLevelStart = currentLevelStart,
         currentLevelProgress = totalEssence - currentLevelStart,
-        essencePerLevel = nextLevelEssence - currentLevelStart,
+        essencePerLevel = getLevelCost(level + 1),
         evolutionIndex = evolutionIndex,
         evolutionKey = "evolution.stage." .. evolutionIndex,
     }
