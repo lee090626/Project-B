@@ -135,7 +135,7 @@ function WorldRenderer.draw(state, assets)
                     local sprite = assets.fireballSprite
                     local iw = sprite:getWidth()
                     local ih = sprite:getHeight()
-                    local diameter = math.max(40, projectile.radius * 2.05)
+                    local diameter = math.max(40, projectile.radius * 1.35)
                     local scale = diameter / math.max(iw, ih)
                     local angle = angleFromVector(projectile.vx, projectile.vy)
                     love.graphics.setColor(1, 1, 1)
