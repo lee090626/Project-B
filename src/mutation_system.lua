@@ -165,11 +165,15 @@ local function findDefinition(key)
     return nil
 end
 
+local function clamp(value, minValue, maxValue)
+    return math.max(minValue, math.min(maxValue, value))
+end
+
 local function buildWeights(state)
     local shift = math.max(0, math.floor(state.nestBonuses.rarityShift or 0))
-    local common = math.max(0, C.MUTATION_RARITY_WEIGHTS.common - shift)
-    local rare = C.MUTATION_RARITY_WEIGHTS.rare + math.min(shift, 10)
-    local mythic = C.MUTATION_RARITY_WEIGHTS.mythic + math.max(0, shift - 10)
+    local common = clamp(C.MUTATION_RARITY_WEIGHTS.common - shift, 45, C.MUTATION_RARITY_WEIGHTS.common)
+    local rare = C.MUTATION_RARITY_WEIGHTS.rare + math.min(shift, 7)
+    local mythic = C.MUTATION_RARITY_WEIGHTS.mythic + math.max(0, shift - 7)
     return common, rare, mythic
 end
 
@@ -221,6 +225,38 @@ function Mutation.newRunState()
         activeChoices = nil,
         picks = {},
         counts = {},
+    }
+end
+
+function Mutation.getProgress(state)
+    local thresholds = getThresholds(state)
+    local nextIndex = state.runMutations.nextThresholdIndex or 1
+    local nextThreshold = thresholds[nextIndex]
+    local currentEssence = state.runEssenceTotal or 0
+
+    if nextThreshold == nil then
+        return {
+            essence = currentEssence,
+            current = currentEssence,
+            next = currentEssence,
+            remain = 0,
+            complete = true,
+            pending = state.runMutations.pendingChoices or 0,
+        }
+    end
+
+    local prevThreshold = 0
+    if nextIndex > 1 then
+        prevThreshold = thresholds[nextIndex - 1] or 0
+    end
+
+    return {
+        essence = currentEssence,
+        current = math.max(0, currentEssence - prevThreshold),
+        next = math.max(1, nextThreshold - prevThreshold),
+        remain = math.max(0, nextThreshold - currentEssence),
+        complete = false,
+        pending = state.runMutations.pendingChoices or 0,
     }
 end
 

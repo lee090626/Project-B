@@ -3,6 +3,7 @@ local Locale = require("src.locale")
 local MapSystem = require("src.map_system")
 local GameState = require("src.game_state")
 local Meta = require("src.meta_system")
+local Mutation = require("src.mutation_system")
 
 local OverlayRenderer = {}
 
@@ -69,9 +70,21 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
         essence = state.meta.essence,
         level = state.nestProgress and state.nestProgress.level or 0,
     })
+    local instinct = Mutation.getProgress(state)
+    local instinctText
+    if instinct.complete then
+        instinctText = t(state, "hud.instinct_complete")
+    else
+        instinctText = t(state, "hud.instinct_progress", {
+            current = instinct.current,
+            next = instinct.next,
+            remain = instinct.remain,
+        })
+    end
 
     local leftW = fonts.hud:getWidth(leftText) + cfg.chipPadX * 2
-    local rightW = fonts.hud:getWidth(rightText) + cfg.chipPadX * 2
+    local rightLineW = math.max(fonts.hud:getWidth(rightText), fonts.hud:getWidth(instinctText))
+    local rightW = rightLineW + cfg.chipPadX * 2
     local saveW = ui.saveBtn.w
     local helpText = t(state, "hud.help")
     local helpW = fonts.hud:getWidth(helpText) + cfg.chipPadX * 2
@@ -88,7 +101,9 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(leftText, pad + cfg.chipPadX, topY + 12)
     local rightStart = sw - pad - rightGroupW
-    love.graphics.print(rightText, rightStart + cfg.chipPadX, topY + 12)
+    love.graphics.print(rightText, rightStart + cfg.chipPadX, topY + 7)
+    love.graphics.setColor(0.84, 0.9, 1.0)
+    love.graphics.print(instinctText, rightStart + cfg.chipPadX, topY + 23)
 
     ui.saveBtn.x = rightStart + rightW + cfg.groupGap
     ui.saveBtn.y = topY + 5
@@ -309,12 +324,13 @@ local function drawNestTab(state, fonts, ui, sw, sh)
     love.graphics.printf(t(state, "nest.summary", {
         level = progress.level,
         points = progress.availablePoints,
+        spent = progress.spentPoints,
         evolution = Locale.ref(progress.evolutionKey),
     }), panelX, panelY + 18, panelW, "center")
     love.graphics.setColor(0.82, 0.9, 0.98)
     love.graphics.printf(t(state, "nest.progress", {
         essence = progress.totalEssence,
-        next = progress.nextLevelEssence,
+        next = progress.nextLevelCost,
     }), panelX, panelY + 42, panelW, "center")
 
     for i, row in ipairs(rows) do
