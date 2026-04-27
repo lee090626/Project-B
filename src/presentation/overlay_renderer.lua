@@ -153,7 +153,7 @@ function OverlayRenderer.drawHelpPanel(state, fonts)
     love.graphics.setColor(1, 1, 1)
     if state.mode == "run_end_tree" then
         love.graphics.printf(
-            string.format("Reason: %s | Current essence: %d", state.runEndedReason or "unknown", state.meta.essence),
+            string.format("Reason: %s | Essence: %d | Matter: %d", state.runEndedReason or "unknown", state.meta.essence, state.nest.nestMatter),
             x + 24,
             y + 62,
             w - 48,
@@ -161,9 +161,14 @@ function OverlayRenderer.drawHelpPanel(state, fonts)
         )
         love.graphics.printf("[Drag] Pan view", x + 24, y + 86, w - 48, "left")
         love.graphics.printf("[Wheel] Zoom in/out", x + 24, y + 110, w - 48, "left")
-        love.graphics.printf("[Click] Buy upgrade  |  [R] Start new run", x + 24, y + 134, w - 48, "left")
-        love.graphics.printf("New nodes appear after unlocking prerequisite nodes", x + 24, y + 158, w - 48, "left")
+        love.graphics.printf("[Click Tab] Switch Meta and Nest", x + 24, y + 134, w - 48, "left")
+        love.graphics.printf("[Click] Buy upgrade  |  [R] Start new run", x + 24, y + 158, w - 48, "left")
         love.graphics.printf("[H] Close help", x + 24, y + 182, w - 48, "left")
+    elseif state.mode == "run_choice" then
+        love.graphics.printf("Choose one instinct to shape this run", x + 24, y + 62, w - 48, "left")
+        love.graphics.printf("Time and combat pause while choosing", x + 24, y + 92, w - 48, "left")
+        love.graphics.printf("Brooder and Hatchery improve this system", x + 24, y + 122, w - 48, "left")
+        love.graphics.printf("[Click] Pick one card  |  [H] Close help", x + 24, y + 152, w - 48, "left")
     else
         love.graphics.printf("Goal: keep eating, grow fast, and challenge the boss before time runs out.", x + 24, y + 62, w - 48, "left")
         love.graphics.printf("[1-4] Switch map", x + 24, y + 92, w - 48, "left")
@@ -217,9 +222,104 @@ local function drawOrthogonalConnector(fromX, fromY, toX, toY, radius)
     love.graphics.line(startX, endY, endX, endY)
 end
 
-function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts)
+local function drawRunEndTabs(state, fonts, ui, sw)
+    local tabW = C.RUN_END_TREE_UI.tabWidth
+    local tabH = C.RUN_END_TREE_UI.tabHeight
+    local gap = C.RUN_END_TREE_UI.tabGap
+    local startX = (sw - (tabW * 2 + gap)) * 0.5
+    local y = 78
+
+    ui.runEnd.tabs.meta = { x = startX, y = y, w = tabW, h = tabH }
+    ui.runEnd.tabs.nest = { x = startX + tabW + gap, y = y, w = tabW, h = tabH }
+
+    for _, tab in ipairs({
+        { key = "meta", label = "Meta Tree", rect = ui.runEnd.tabs.meta },
+        { key = "nest", label = "Nest", rect = ui.runEnd.tabs.nest },
+    }) do
+        local active = state.runEndTab == tab.key
+        love.graphics.setColor(active and 0.08 or 0.04, active and 0.22 or 0.08, active and 0.16 or 0.1, 0.96)
+        love.graphics.rectangle("fill", tab.rect.x, tab.rect.y, tab.rect.w, tab.rect.h, 8, 8)
+        love.graphics.setColor(active and 0.4 or 0.25, 1.0, active and 0.55 or 0.95, 0.95)
+        love.graphics.rectangle("line", tab.rect.x, tab.rect.y, tab.rect.w, tab.rect.h, 8, 8)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.printf(tab.label, tab.rect.x, tab.rect.y + 9, tab.rect.w, "center")
+    end
+end
+
+local function drawNestTab(state, fonts, ui, sw, sh)
+    local rows = GameState.getNestUpgradeRows(state)
+    local panelW = math.min(sw - 80, 860)
+    local panelH = math.min(sh - 180, 470)
+    local panelX = (sw - panelW) * 0.5
+    local panelY = 132
+    local rowH = 76
+
+    ui.runEnd.nestButtons = {}
+
+    love.graphics.setColor(0, 0, 0, 0.76)
+    love.graphics.rectangle("fill", panelX, panelY, panelW, panelH, 12, 12)
+    love.graphics.setColor(0.82, 0.92, 1.0)
+    love.graphics.rectangle("line", panelX, panelY, panelW, panelH, 12, 12)
+
+    love.graphics.setColor(1, 0.95, 0.78)
+    love.graphics.printf("Nest Matter: " .. tostring(state.nest.nestMatter), panelX, panelY + 18, panelW, "center")
+
+    for i, row in ipairs(rows) do
+        local x = panelX + 18
+        local y = panelY + 56 + (i - 1) * (rowH + 10)
+        local w = panelW - 36
+        ui.runEnd.nestButtons[i] = { key = row.key, x = x, y = y, w = w, h = rowH }
+
+        local activeColor = row.canBuy and { 0.08, 0.18, 0.12, 0.96 } or { 0.1, 0.1, 0.12, 0.96 }
+        if row.maxed then
+            activeColor = { 0.08, 0.16, 0.1, 0.96 }
+        end
+
+        love.graphics.setColor(activeColor[1], activeColor[2], activeColor[3], activeColor[4])
+        love.graphics.rectangle("fill", x, y, w, rowH, 8, 8)
+        love.graphics.setColor(row.canBuy and 0.35 or 0.25, 1.0, row.canBuy and 0.55 or 0.95, 0.9)
+        love.graphics.rectangle("line", x, y, w, rowH, 8, 8)
+
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.printf(
+            string.format("%s  Lv.%d/%d", row.name, row.level, row.maxLevel),
+            x + 14,
+            y + 10,
+            w - 160,
+            "left"
+        )
+        love.graphics.setColor(0.86, 0.92, 0.98)
+        love.graphics.printf(row.effect, x + 14, y + 34, w - 180, "left")
+
+        local costText = row.maxed and "MAX" or ("Cost " .. tostring(row.cost))
+        love.graphics.setColor(row.canBuy and 0.9 or 0.78, 0.95, row.maxed and 0.68 or 0.55)
+        love.graphics.printf(costText, x + w - 136, y + 12, 120, "right")
+        love.graphics.setColor(0.72, 0.8, 0.9)
+        love.graphics.printf(row.nextEffect, x + w - 220, y + 38, 204, "right")
+    end
+
+    love.graphics.setColor(0.78, 0.85, 0.92)
+    love.graphics.printf("Brooder and Hatchery reshape each new run", panelX, panelY + panelH - 30, panelW, "center")
+end
+
+function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts, ui)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
+
+    love.graphics.setColor(0, 0, 0, 0.82)
+    love.graphics.rectangle("fill", 0, 0, sw, sh)
+
+    love.graphics.setFont(fonts.big)
+    love.graphics.setColor(1, 0.95, 0.78)
+    love.graphics.printf("RUN ENDED", 0, 24, sw, "center")
+    love.graphics.setFont(fonts.hud)
+    drawRunEndTabs(state, fonts, ui, sw)
+
+    if state.runEndTab == "nest" then
+        drawNestTab(state, fonts, ui, sw, sh)
+        return
+    end
+
     local upgrades = GameState.getMetaUpgradeRows(state)
     local treeLayout = Meta.getTreeLayout()
     local byIndex = {}
@@ -230,20 +330,12 @@ function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts)
             visibleRows[#visibleRows + 1] = row
         end
     end
-    local ui = C.RUN_END_TREE_UI
-
-    love.graphics.setColor(0, 0, 0, 0.82)
-    love.graphics.rectangle("fill", 0, 0, sw, sh)
-
-    love.graphics.setFont(fonts.big)
-    love.graphics.setColor(1, 0.95, 0.78)
-    love.graphics.printf("RUN ENDED", 0, 24, sw, "center")
-    love.graphics.setFont(fonts.hud)
+    local treeUi = C.RUN_END_TREE_UI
 
     local mx, my = love.mouse.getPosition()
     local hoveredIndex
     local hoveredDistSq = math.huge
-    local hitRadiusPx = ui.nodeRadius + 2
+    local hitRadiusPx = treeUi.nodeRadius + 2
     for _, row in ipairs(visibleRows) do
         local point = treeLayout[row.index]
         if point then
@@ -275,7 +367,7 @@ function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts)
                             love.graphics.setColor(0.25, 0.95, 1.0, 0.45)
                         end
                         love.graphics.setLineWidth(3)
-                        drawOrthogonalConnector(sx0, sy0, sx1, sy1, ui.nodeRadius)
+                        drawOrthogonalConnector(sx0, sy0, sx1, sy1, treeUi.nodeRadius)
                     end
                 end
             end
@@ -286,14 +378,14 @@ function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts)
         local point = treeLayout[hovered.index]
         local hsx, hsy = metaTreeWorldToScreen(state, point.x, point.y, sw, sh)
         love.graphics.setColor(0.35, 1.0, 0.55, 0.1)
-        love.graphics.circle("fill", hsx, hsy, ui.nodeRadius + 8)
+        love.graphics.circle("fill", hsx, hsy, treeUi.nodeRadius + 8)
     end
 
     for _, row in ipairs(visibleRows) do
         local point = treeLayout[row.index]
         if point then
             local sx, sy = metaTreeWorldToScreen(state, point.x, point.y, sw, sh)
-            local size = ui.nodeRadius
+            local size = treeUi.nodeRadius
             if row.maxed then
                 love.graphics.setColor(0.12, 0.2, 0.12, 0.95)
             elseif row.canBuy then
@@ -375,7 +467,7 @@ function OverlayRenderer.drawRunEndResultOverlay(state, fonts)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
     local w = math.min(760, sw - 80)
-    local h = 270
+    local h = 310
     local x = (sw - w) * 0.5
     local y = (sh - h) * 0.5
 
@@ -396,9 +488,67 @@ function OverlayRenderer.drawRunEndResultOverlay(state, fonts)
     love.graphics.printf("Reason: " .. tostring(state.runEndedReason or "unknown"), x + 36, y + 94, w - 72, "left")
     love.graphics.printf("Total Eaten: " .. tostring(state.food and state.food.consumedTotal or 0), x + 36, y + 124, w - 72, "left")
     love.graphics.printf("Current Essence: " .. tostring(state.meta and state.meta.essence or 0), x + 36, y + 154, w - 72, "left")
+    love.graphics.printf("Nest Matter Gained: " .. tostring(state.lastNestMatterReward or 0), x + 36, y + 184, w - 72, "left")
 
     love.graphics.setColor(0.84, 0.9, 1.0)
-    love.graphics.printf("Click to continue to skill tree", x, y + h - 42, w, "center")
+    love.graphics.printf("Click to continue to growth view", x, y + h - 42, w, "center")
+end
+
+function OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
+    local sw = love.graphics.getWidth()
+    local sh = love.graphics.getHeight()
+    local cards = state.runMutations.activeChoices or {}
+    local cfg = C.RUN_CHOICE_UI
+    local count = #cards
+    local totalW = count * cfg.cardWidth + math.max(0, count - 1) * cfg.cardGap
+    local startX = (sw - totalW) * 0.5
+    local y = (sh - cfg.cardHeight) * 0.5 + 30
+
+    ui.runChoice.cards = {}
+
+    love.graphics.setColor(0, 0, 0, 0.7)
+    love.graphics.rectangle("fill", 0, 0, sw, sh)
+    love.graphics.setFont(fonts.big)
+    love.graphics.setColor(1, 0.95, 0.78)
+    love.graphics.printf("CHOOSE AN INSTINCT", 0, y - 92, sw, "center")
+    love.graphics.setFont(fonts.hud)
+    love.graphics.setColor(0.84, 0.9, 1.0)
+    love.graphics.printf(
+        string.format("Run essence %d   Pending choices %d", state.runEssenceTotal or 0, state.runMutations.pendingChoices + 1),
+        0,
+        y - 48,
+        sw,
+        "center"
+    )
+
+    for i, card in ipairs(cards) do
+        local x = startX + (i - 1) * (cfg.cardWidth + cfg.cardGap)
+        ui.runChoice.cards[i] = { x = x, y = y, w = cfg.cardWidth, h = cfg.cardHeight }
+
+        local fill = { 0.08, 0.1, 0.12, 0.95 }
+        local line = { 0.45, 0.8, 1.0, 0.95 }
+        if card.rarity == "rare" then
+            line = { 0.6, 0.95, 0.55, 0.95 }
+        elseif card.rarity == "mythic" then
+            line = { 1.0, 0.82, 0.45, 0.95 }
+        end
+
+        love.graphics.setColor(fill[1], fill[2], fill[3], fill[4])
+        love.graphics.rectangle("fill", x, y, cfg.cardWidth, cfg.cardHeight, 12, 12)
+        love.graphics.setColor(line[1], line[2], line[3], line[4])
+        love.graphics.rectangle("line", x, y, cfg.cardWidth, cfg.cardHeight, 12, 12)
+
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.printf(card.name, x + 14, y + 18, cfg.cardWidth - 28, "center")
+        love.graphics.setColor(0.82, 0.9, 1.0)
+        love.graphics.printf(string.upper(card.category), x + 14, y + 56, cfg.cardWidth - 28, "center")
+        love.graphics.setColor(line[1], line[2], line[3], line[4])
+        love.graphics.printf(string.upper(card.rarity), x + 14, y + 84, cfg.cardWidth - 28, "center")
+        love.graphics.setColor(0.95, 0.95, 0.95)
+        love.graphics.printf(card.desc, x + 18, y + 124, cfg.cardWidth - 36, "center")
+        love.graphics.setColor(0.84, 0.9, 1.0)
+        love.graphics.printf("Click to choose", x + 14, y + cfg.cardHeight - 34, cfg.cardWidth - 28, "center")
+    end
 end
 
 return OverlayRenderer

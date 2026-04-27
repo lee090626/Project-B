@@ -12,7 +12,7 @@ function Renderer.draw(state, fonts, ui, assets)
     end
 
     if state.mode == "run_end_tree" then
-        OverlayRenderer.drawRunEndTreeFullscreen(state, fonts)
+        OverlayRenderer.drawRunEndTreeFullscreen(state, fonts, ui)
         OverlayRenderer.drawHelpPanel(state, fonts)
         return
     end
@@ -21,6 +21,9 @@ function Renderer.draw(state, fonts, ui, assets)
     OverlayRenderer.drawGameTopBar(state, fonts, ui)
     OverlayRenderer.drawBossBar(state, fonts)
     OverlayRenderer.drawGameToasts(state, fonts)
+    if state.mode == "run_choice" then
+        OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
+    end
     OverlayRenderer.drawHelpPanel(state, fonts)
 end
 

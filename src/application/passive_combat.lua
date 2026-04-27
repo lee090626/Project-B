@@ -2,6 +2,7 @@ local C = require("src.constants")
 local Utils = require("src.utils")
 local Food = require("src.food_system")
 local Boss = require("src.boss_system")
+local Mutation = require("src.mutation_system")
 
 local PassiveCombat = {}
 
@@ -67,9 +68,10 @@ end
 
 local function addEssence(state, rawAmount)
     if rawAmount <= 0 then
-        return
+        return false
     end
-    state.meta.essence = state.meta.essence + math.max(1, math.floor(rawAmount + 0.5))
+    local _, opened = Mutation.gainEssenceAndCheckLevel(state, rawAmount)
+    return opened
 end
 
 local function pushLightningFx(state, fromX, fromY, toX, toY)
@@ -146,13 +148,13 @@ end
 local function triggerLightning(state, mapData)
     local target = findNearestHostile(state, state.player.x, state.player.y)
     if not target then
-        return
+        return false
     end
 
     pushLightningFx(state, state.player.x, state.player.y, target.x, target.y)
     if target.kind == "boss" then
         Boss.applyDamage(state, state.bonuses.lightningDamage)
-        return
+        return false
     end
 
     local reward = select(1, Food.chainLightning(
@@ -164,7 +166,7 @@ local function triggerLightning(state, mapData)
         mapData,
         state.bonuses
     ))
-    addEssence(state, reward)
+    return addEssence(state, reward)
 end
 
 local function triggerFireball(state, mapData)
@@ -190,7 +192,9 @@ local function triggerFireball(state, mapData)
                 nil,
                 math.max(2, projectiles)
             )
-            addEssence(state, reward)
+            if addEssence(state, reward) then
+                return true
+            end
         else
             local reward = Food.damagePulse(
                 state.food,
@@ -204,9 +208,12 @@ local function triggerFireball(state, mapData)
                 nil,
                 math.max(3, projectiles + 1)
             )
-            addEssence(state, reward)
+            if addEssence(state, reward) then
+                return true
+            end
         end
     end
+    return false
 end
 
 local function triggerFrost(state, mapData)
@@ -223,7 +230,9 @@ local function triggerFrost(state, mapData)
         state.bonuses.frostDuration,
         nil
     )
-    addEssence(state, reward)
+    if addEssence(state, reward) then
+        return true
+    end
 
     if state.boss.active and not state.boss.defeated then
         local dist = Boss.distanceTo(state.boss, state.player.x, state.player.y)
@@ -231,6 +240,7 @@ local function triggerFrost(state, mapData)
             Boss.applyDamage(state, state.bonuses.frostDamage * 0.7)
         end
     end
+    return false
 end
 
 function PassiveCombat.tickPassives(state, dt, mapData)
@@ -241,7 +251,9 @@ function PassiveCombat.tickPassives(state, dt, mapData)
         passives.lightningTimer = passives.lightningTimer - dt
         while passives.lightningTimer <= 0 do
             passives.lightningTimer = passives.lightningTimer + bonuses.lightningInterval
-            triggerLightning(state, mapData)
+            if triggerLightning(state, mapData) or state.mode == "run_choice" then
+                return
+            end
         end
     end
 
@@ -249,7 +261,9 @@ function PassiveCombat.tickPassives(state, dt, mapData)
         passives.fireballTimer = passives.fireballTimer - dt
         while passives.fireballTimer <= 0 do
             passives.fireballTimer = passives.fireballTimer + bonuses.fireballInterval
-            triggerFireball(state, mapData)
+            if triggerFireball(state, mapData) or state.mode == "run_choice" then
+                return
+            end
         end
     end
 
@@ -257,7 +271,9 @@ function PassiveCombat.tickPassives(state, dt, mapData)
         passives.frostPulseTimer = passives.frostPulseTimer - dt
         while passives.frostPulseTimer <= 0 do
             passives.frostPulseTimer = passives.frostPulseTimer + bonuses.frostInterval
-            triggerFrost(state, mapData)
+            if triggerFrost(state, mapData) or state.mode == "run_choice" then
+                return
+            end
         end
     end
 end

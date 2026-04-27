@@ -9,8 +9,20 @@ function App.new()
         state = nil,
         fonts = {},
         assets = {},
-        ui = { saveBtn = { x = 0, y = 0, w = 120, h = 32 } },
+        ui = {
+            saveBtn = { x = 0, y = 0, w = 120, h = 32 },
+            runEnd = { tabs = {}, nestButtons = {} },
+            runChoice = { cards = {} },
+        },
     }, App)
+end
+
+local function hitRect(x, y, rect)
+    return rect
+        and x >= rect.x
+        and x <= rect.x + rect.w
+        and y >= rect.y
+        and y <= rect.y + rect.h
 end
 
 function App:load()
@@ -60,10 +72,22 @@ function App:keypressed(key)
     end
 
     if self.state.mode == "run_end_tree" then
+        if key == "tab" then
+            if self.state.runEndTab == "meta" then
+                Service.openNestTab(self.state)
+            else
+                Service.openMetaTab(self.state)
+            end
+            return
+        end
         if key == "r" then
             Service.restartRun(self.state)
             return
         end
+        return
+    end
+
+    if self.state.mode == "run_choice" then
         return
     end
 
@@ -87,7 +111,38 @@ function App:mousepressed(x, y, button)
         return
     end
 
+    if self.state.mode == "run_choice" then
+        for index, rect in ipairs(self.ui.runChoice.cards) do
+            if hitRect(x, y, rect) then
+                Service.chooseRunMutation(self.state, index)
+                return
+            end
+        end
+        return
+    end
+
     if self.state.mode == "run_end_tree" then
+        for name, rect in pairs(self.ui.runEnd.tabs) do
+            if hitRect(x, y, rect) then
+                if name == "meta" then
+                    Service.openMetaTab(self.state)
+                else
+                    Service.openNestTab(self.state)
+                end
+                return
+            end
+        end
+
+        if self.state.runEndTab == "nest" then
+            for _, row in ipairs(self.ui.runEnd.nestButtons) do
+                if hitRect(x, y, row) then
+                    Service.tryBuyNestUpgrade(self.state, row.key)
+                    return
+                end
+            end
+            return
+        end
+
         Service.beginMetaTreePointer(self.state, x, y)
         return
     end
@@ -110,6 +165,9 @@ function App:mousereleased(x, y, button)
     end
 
     if self.state.mode == "run_end_tree" then
+        if self.state.runEndTab ~= "meta" then
+            return
+        end
         local idx = Service.endMetaTreePointer(self.state, x, y)
         if idx then
             Service.tryBuyMetaUpgrade(self.state, idx)
@@ -123,14 +181,14 @@ function App:mousereleased(x, y, button)
 end
 
 function App:mousemoved(x, y, dx, dy)
-    if self.state.mode == "run_end_tree" then
+    if self.state.mode == "run_end_tree" and self.state.runEndTab == "meta" then
         Service.updateMetaTreePointer(self.state, x, y, dx, dy)
         return
     end
 end
 
 function App:wheelmoved(_, y)
-    if self.state.mode == "run_end_tree" then
+    if self.state.mode == "run_end_tree" and self.state.runEndTab == "meta" then
         Service.zoomMetaTree(self.state, y)
     end
 end

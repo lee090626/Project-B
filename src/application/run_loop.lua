@@ -7,6 +7,7 @@ local Boss = require("src.boss_system")
 local Meta = require("src.meta_system")
 local GameState = require("src.game_state")
 local PassiveCombat = require("src.application.passive_combat")
+local Mutation = require("src.mutation_system")
 
 local RunLoop = {}
 
@@ -60,10 +61,18 @@ function RunLoop.tickGameplay(state, dt)
         state.bonuses
     )
     if essenceGain > 0 then
-        state.meta.essence = state.meta.essence + math.max(1, math.floor(essenceGain + 0.5))
+        Mutation.gainEssenceAndCheckLevel(state, essenceGain)
+        if state.mode == "run_choice" then
+            updateCamera(state)
+            return result
+        end
     end
 
     PassiveCombat.tickPassives(state, dt, mapData)
+    if state.mode == "run_choice" then
+        updateCamera(state)
+        return result
+    end
 
     result.mapUnlocked = MapSystem.updateUnlocks(state.maps, Meta.getUnlockedCount(state.meta))
 

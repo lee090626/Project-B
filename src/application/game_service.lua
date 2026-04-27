@@ -5,6 +5,7 @@ local Boss = require("src.boss_system")
 local PassiveCombat = require("src.application.passive_combat")
 local RunLoop = require("src.application.run_loop")
 local MetaTreeController = require("src.application.meta_tree_controller")
+local Mutation = require("src.mutation_system")
 
 local Service = {}
 
@@ -15,6 +16,10 @@ local function setMessage(state, text)
 end
 
 local function saveWithFeedback(state, reason)
+    if state.mode == "run_choice" then
+        state.lastSaveStatus = "save delayed: instinct choice"
+        return false
+    end
     local ok = GameState.saveNow(state, reason)
     if ok then
         state.uiAutosaveTimer = C.RUN_HUD_UI.autosaveDuration
@@ -48,7 +53,9 @@ function Service.tick(state, dt)
     state.totalPlayTime = state.totalPlayTime + dt
     state.uiToastTimer = math.max(0, state.uiToastTimer - dt)
     state.uiAutosaveTimer = math.max(0, state.uiAutosaveTimer - dt)
-    PassiveCombat.tickFx(state, dt)
+    if state.mode ~= "run_choice" then
+        PassiveCombat.tickFx(state, dt)
+    end
 
     if state.message and state.uiLastMessage ~= state.message then
         state.uiLastMessage = state.message
@@ -58,7 +65,7 @@ function Service.tick(state, dt)
         state.message = nil
     end
 
-    if not state.runEnded then
+    if state.mode ~= "run_choice" and not state.runEnded then
         state.runTimeLeft = math.max(0, state.runTimeLeft - dt)
         if state.runTimeLeft <= 0 then
             if GameState.endRun(state, "time") then
@@ -80,6 +87,10 @@ function Service.tick(state, dt)
         end
     end
 
+    if state.mode == "run_choice" then
+        return
+    end
+
     state.autosaveTimer = state.autosaveTimer - dt
     if state.autosaveTimer <= 0 then
         saveWithFeedback(state, "autosave")
@@ -88,7 +99,12 @@ function Service.tick(state, dt)
 end
 
 function Service.save(state, reason)
+    if state.mode == "run_choice" then
+        setMessage(state, "Save delayed until instinct choice ends")
+        return false
+    end
     saveWithFeedback(state, reason)
+    return true
 end
 
 function Service.toggleHelp(state)
@@ -140,6 +156,17 @@ function Service.tryBuyMetaUpgrade(state, index)
     return ok
 end
 
+function Service.tryBuyNestUpgrade(state, key)
+    local ok, err = GameState.tryBuyNestUpgrade(state, key)
+    if ok then
+        setMessage(state, "Nest upgrade purchased")
+        saveWithFeedback(state, "nest-upgrade")
+    else
+        setMessage(state, "Nest upgrade failed: " .. tostring(err))
+    end
+    return ok
+end
+
 function Service.restartRun(state)
     GameState.startNewRun(state)
     saveWithFeedback(state, "run-restart")
@@ -149,7 +176,38 @@ function Service.openRunEndTree(state)
     if not state.runEnded then
         return
     end
+    state.runEndTab = "meta"
     state.mode = "run_end_tree"
+end
+
+function Service.openMetaTab(state)
+    state.metaTreeView.pointerDown = false
+    state.metaTreeView.moved = false
+    state.runEndTab = "meta"
+end
+
+function Service.openNestTab(state)
+    state.metaTreeView.pointerDown = false
+    state.metaTreeView.moved = false
+    state.runEndTab = "nest"
+end
+
+function Service.chooseRunMutation(state, choiceIndex)
+    local ok, err = Mutation.applyChoice(state, choiceIndex)
+    if not ok then
+        setMessage(state, "Instinct choice failed: " .. tostring(err))
+        return false
+    end
+
+    GameState.refreshDerivedState(state)
+    if state.runMutations.activeChoices then
+        state.mode = "run_choice"
+        setMessage(state, "Choose another instinct")
+    else
+        state.mode = "game"
+        setMessage(state, "Instinct chosen")
+    end
+    return true
 end
 
 function Service.metaUpgradeIndexAtScreen(state, sx, sy)

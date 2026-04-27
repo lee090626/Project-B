@@ -66,6 +66,7 @@ function Save.snapshot(state)
         maps = state.modules.mapExport(state.maps),
         boss = state.modules.bossExport(state.boss),
         meta = state.modules.metaExport(state.meta),
+        nest = state.modules.nestExport(state.nest),
     }
 end
 

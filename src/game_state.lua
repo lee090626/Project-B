@@ -4,10 +4,66 @@ local Food = require("src.food_system")
 local MapSystem = require("src.map_system")
 local Boss = require("src.boss_system")
 local Meta = require("src.meta_system")
+local Nest = require("src.nest_system")
 local Save = require("src.save_system")
 local PassiveCombat = require("src.application.passive_combat")
+local Mutation = require("src.mutation_system")
 
 local GameState = {}
+
+local BONUS_KEYS = {
+    "speed",
+    "reach",
+    "magnet",
+    "contactBite",
+    "rareBonus",
+    "eliteBonus",
+    "spawnRate",
+    "spawnCap",
+    "lightningEnabled",
+    "lightningDamage",
+    "lightningChain",
+    "lightningIntervalCut",
+    "fireballEnabled",
+    "fireballDamage",
+    "fireballCount",
+    "fireballRadius",
+    "fireballIntervalCut",
+    "fireballSplit",
+    "frostEnabled",
+    "frostDamage",
+    "frostRadius",
+    "frostSlow",
+    "frostDuration",
+    "frostIntervalCut",
+}
+
+local MULT_KEYS = {
+    essenceMult = true,
+    rareValue = true,
+    eliteValue = true,
+}
+
+local function combineBonuses(metaBonuses, nestBonuses, runOnlyBonuses)
+    local out = {
+        essenceMult = 1,
+        rareValue = 1,
+        eliteValue = 1,
+    }
+
+    for _, key in ipairs(BONUS_KEYS) do
+        out[key] = (metaBonuses[key] or 0) + (nestBonuses[key] or 0) + (runOnlyBonuses[key] or 0)
+    end
+
+    for key in pairs(MULT_KEYS) do
+        out[key] = 1
+            + ((metaBonuses[key] or 1) - 1)
+            + ((nestBonuses[key] or 1) - 1)
+            + ((runOnlyBonuses[key] or 1) - 1)
+    end
+
+    return out
+end
 
 local function resetMetaTreeView(state)
     state.metaTreeView = {
@@ -26,6 +82,8 @@ local function resetRunState(state)
     state.food = Food.new(nil)
     state.maps = MapSystem.new(nil)
     state.boss = Boss.new(nil)
+    state.runMutations = Mutation.newRunState()
+    state.runEssenceTotal = 0
     GameState.refreshDerivedState(state)
     GameState.normalizeProgression(state)
 
@@ -38,8 +96,18 @@ local function resetRunState(state)
     state.runEndedReason = nil
     state.endingReached = false
     state.mode = "game"
+    state.runEndTab = "meta"
     resetMetaTreeView(state)
     PassiveCombat.resetState(state)
+
+    state.runMutations.pendingChoices = state.nestBonuses.startingChoices or 0
+    if state.runMutations.pendingChoices > 0 then
+        Mutation.rollChoices(state)
+        if state.runMutations.activeChoices then
+            state.mode = "run_choice"
+            state.message = "Choose an instinct"
+        end
+    end
 end
 
 function GameState.new(loadResult, loadErr)
@@ -61,6 +129,11 @@ function GameState.new(loadResult, loadErr)
         runEndedReason = saved.runEndedReason,
         lastSaveStatus = "never",
         meta = Meta.new(saved.meta),
+        nest = Nest.new(saved.nest),
+        runMutations = Mutation.newRunState(),
+        runEssenceTotal = 0,
+        lastNestMatterReward = 0,
+        runEndTab = "meta",
     }
 
     state.player = Player.new(saved.player)
@@ -77,12 +150,16 @@ function GameState.new(loadResult, loadErr)
         mapExport = MapSystem.export,
         bossExport = Boss.export,
         metaExport = Meta.export,
+        nestExport = Nest.export,
     }
 
     GameState.refreshDerivedState(state)
     GameState.normalizeProgression(state)
     state.runTimeLeft = saved.runTimeLeft or state.runDuration
 
+    if state.mode == "run_choice" then
+        state.mode = "game"
+    end
     if state.runEnded and state.mode ~= "run_end_tree" and state.mode ~= "run_end_result" then
         state.mode = "run_end_result"
     end
@@ -97,7 +174,11 @@ end
 
 function GameState.refreshDerivedState(state)
     state.metaBonuses = Meta.computeBonuses(state.meta)
-    state.bonuses = PassiveCombat.buildRunBonuses(state.metaBonuses)
+    state.nestBonuses = Nest.computeBonuses(state.nest)
+    state.runOnlyBonuses = Mutation.buildRunBonuses(state.runMutations)
+    state.bonuses = PassiveCombat.buildRunBonuses(
+        combineBonuses(state.metaBonuses, state.nestBonuses, state.runOnlyBonuses)
+    )
     state.runDuration = C.RUN_TIME_LIMIT_SECONDS
 end
 
@@ -107,7 +188,9 @@ end
 
 function GameState.startNewRun(state)
     resetRunState(state)
-    state.message = "New run started"
+    if state.mode ~= "run_choice" then
+        state.message = "New run started"
+    end
 end
 
 function GameState.endRun(state, reason)
@@ -122,6 +205,7 @@ function GameState.endRun(state, reason)
     PassiveCombat.resetState(state)
 
     state.meta.totalRuns = state.meta.totalRuns + 1
+    state.lastNestMatterReward = Nest.awardRunMatter(state)
     state.message = "Run ended"
     return true
 end
@@ -144,6 +228,24 @@ end
 
 function GameState.getMetaUpgradeRows(state)
     return Meta.getUpgradeInfo(state.meta)
+end
+
+function GameState.getNestUpgradeRows(state)
+    return Nest.getUpgradeRows(state.nest)
+end
+
+function GameState.tryBuyNestUpgrade(state, key)
+    if not state.runEnded then
+        return false, "not in run end"
+    end
+
+    local ok, err = Nest.tryUpgrade(state.nest, key)
+    if not ok then
+        return false, err
+    end
+
+    GameState.refreshDerivedState(state)
+    return true, nil
 end
 
 function GameState.checkEnding(state)

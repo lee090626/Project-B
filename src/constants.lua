@@ -2,7 +2,7 @@ local C = {}
 
 C.SAVE_FILE = "save.json"
 C.BACKUP_FILE = "save.bak"
-C.SAVE_VERSION = 3
+C.SAVE_VERSION = 4
 C.AUTOSAVE_INTERVAL = 30
 C.RUN_TIME_LIMIT_SECONDS = 15
 
@@ -92,6 +92,56 @@ C.PASSIVE_BASES = {
     },
 }
 
+C.NEST_UPGRADES = {
+    {
+        key = "brooder",
+        name = "Brooder",
+        desc = "Start each run with instinct picks",
+        baseCost = 20,
+        maxLevel = 10,
+    },
+    {
+        key = "larder",
+        name = "Larder",
+        desc = "Lower essence needed for instinct levels",
+        baseCost = 24,
+        maxLevel = 10,
+    },
+    {
+        key = "roost",
+        name = "Roost",
+        desc = "Raise starting speed and magnet reach",
+        baseCost = 18,
+        maxLevel = 10,
+    },
+    {
+        key = "hatchery",
+        name = "Hatchery",
+        desc = "More instinct cards and better rarity",
+        baseCost = 28,
+        maxLevel = 10,
+    },
+}
+
+C.NEST_UPGRADE_SCALE = 1.45
+C.NEST_MIN_RUN_REWARD = 8
+C.NEST_RUN_REWARD_RATE = 0.12
+C.NEST_RUN_MAP_BONUS = 6
+C.NEST_RUN_BOSS_BONUS = 40
+
+C.MUTATION_LEVEL_THRESHOLDS = { 30, 80, 150, 240, 360, 520, 720, 980 }
+C.MUTATION_RARITY_WEIGHTS = {
+    common = 70,
+    rare = 25,
+    mythic = 5,
+}
+
+C.RUN_CHOICE_UI = {
+    cardWidth = 250,
+    cardHeight = 220,
+    cardGap = 24,
+}
+
 C.RUN_END_TREE_UI = {
     worldScale = 460,
     minZoom = 0.4,
@@ -100,6 +150,9 @@ C.RUN_END_TREE_UI = {
     zoomStepDown = 0.88,
     nodeRadius = 24,
     clickThreshold = 8,
+    tabWidth = 140,
+    tabHeight = 34,
+    tabGap = 12,
 }
 
 C.RUN_HUD_UI = {
