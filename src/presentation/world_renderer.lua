@@ -21,39 +21,84 @@ local function angleFromVector(dx, dy)
     return angle
 end
 
-local function currentMapColor(mapId)
-    if mapId == 1 then
-        return { 0.12, 0.17, 0.12 }, { 0.2, 0.32, 0.2 }
-    elseif mapId == 2 then
-        return { 0.08, 0.09, 0.15 }, { 0.16, 0.18, 0.28 }
-    elseif mapId == 3 then
-        return { 0.2, 0.08, 0.06 }, { 0.38, 0.13, 0.1 }
-    end
-    return { 0.08, 0.05, 0.1 }, { 0.19, 0.1, 0.25 }
+local function currentMapTheme(mapId)
+    return C.WORLD_THEME.maps[mapId] or C.WORLD_THEME.maps[4]
 end
 
-function WorldRenderer.draw(state, assets)
-    local mapData = MapSystem.getCurrentMap(state.maps)
-    local bgA, bgB = currentMapColor(mapData.id)
-    local sw = love.graphics.getWidth()
-    local sh = love.graphics.getHeight()
+local function setPaletteColor(color, alphaMul)
+    local a = (color[4] or 1) * (alphaMul or 1)
+    love.graphics.setColor(color[1], color[2], color[3], a)
+end
 
-    love.graphics.setColor(bgA)
+local function drawWorldBackdrop(sw, sh, mapTheme)
+    setPaletteColor(mapTheme.sky)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
-    love.graphics.setColor(bgB)
+    setPaletteColor(mapTheme.ground)
     love.graphics.rectangle("fill", 0, sh * 0.52, sw, sh * 0.48)
+    setPaletteColor(mapTheme.glow)
+    love.graphics.circle("fill", sw * 0.5, sh * 0.4, math.min(sw, sh) * 0.38)
+    setPaletteColor(C.WORLD_THEME.vignette)
+    love.graphics.rectangle("fill", 0, 0, sw, 70)
+    love.graphics.rectangle("fill", 0, sh - 90, sw, 90)
+    love.graphics.rectangle("fill", 0, 0, 80, sh)
+    love.graphics.rectangle("fill", sw - 80, 0, 80, sh)
+end
 
-    love.graphics.push()
-    love.graphics.scale(state.camera.zoom)
-    love.graphics.translate(-state.camera.x, -state.camera.y)
-
-    love.graphics.setColor(0.15, 0.15, 0.15, 0.35)
+local function drawMapPattern(mapId, mapTheme)
+    love.graphics.setLineWidth(1)
+    setPaletteColor(mapTheme.grid)
     for x = 0, C.WORLD_WIDTH, 80 do
         love.graphics.line(x, 0, x, C.WORLD_HEIGHT)
     end
     for y = 0, C.WORLD_HEIGHT, 80 do
         love.graphics.line(0, y, C.WORLD_WIDTH, y)
     end
+
+    setPaletteColor(mapTheme.sigil)
+    if mapId == 1 then
+        for x = 40, C.WORLD_WIDTH, 240 do
+            for y = 40, C.WORLD_HEIGHT, 240 do
+                love.graphics.circle("line", x, y, 18)
+            end
+        end
+    elseif mapId == 2 then
+        for x = 80, C.WORLD_WIDTH, 220 do
+            for y = 80, C.WORLD_HEIGHT, 220 do
+                love.graphics.line(x - 14, y, x, y - 14)
+                love.graphics.line(x, y - 14, x + 14, y)
+                love.graphics.line(x + 14, y, x, y + 14)
+                love.graphics.line(x, y + 14, x - 14, y)
+            end
+        end
+    elseif mapId == 3 then
+        for x = 0, C.WORLD_WIDTH, 180 do
+            love.graphics.line(x, C.WORLD_HEIGHT * 0.55, x + 90, C.WORLD_HEIGHT)
+        end
+    else
+        for x = 120, C.WORLD_WIDTH, 260 do
+            for y = 120, C.WORLD_HEIGHT, 260 do
+                love.graphics.arc("line", "open", x, y, 22, -math.pi * 0.3, math.pi * 1.1)
+            end
+        end
+    end
+end
+
+function WorldRenderer.draw(state, assets)
+    local mapData = MapSystem.getCurrentMap(state.maps)
+    local mapTheme = currentMapTheme(mapData.id)
+    local sw = love.graphics.getWidth()
+    local sh = love.graphics.getHeight()
+
+    drawWorldBackdrop(sw, sh, mapTheme)
+
+    love.graphics.push()
+    love.graphics.scale(state.camera.zoom)
+    love.graphics.translate(-state.camera.x, -state.camera.y)
+
+    setPaletteColor(C.WORLD_THEME.nestShadow)
+    love.graphics.circle("fill", C.WORLD_WIDTH * 0.5, C.WORLD_HEIGHT * 0.52, math.min(C.WORLD_WIDTH, C.WORLD_HEIGHT) * 0.32)
+
+    drawMapPattern(mapData.id, mapTheme)
 
     for _, item in ipairs(state.food.list) do
         local flash = 0.2 + (item.hitFlash or 0) * 0.4
@@ -84,8 +129,13 @@ function WorldRenderer.draw(state, assets)
     local eatRadius = Player.getEatRadius(state.player, state.bonuses)
     local magnetRadius = state.player.magnetRadius or Player.getMagnetRadius(state.player, state.bonuses)
 
-    love.graphics.setColor(0.9, 0.8, 0.2, 0.12)
+    local pulse = 0.84 + math.sin((state.totalPlayTime or 0) * 2.8) * 0.16
+    setPaletteColor(C.WORLD_THEME.magnetFill)
     love.graphics.circle("fill", state.player.x, state.player.y, magnetRadius)
+    setPaletteColor(C.WORLD_THEME.aura)
+    love.graphics.circle("fill", state.player.x, state.player.y, state.player.radius * (2.4 + pulse * 0.25))
+    setPaletteColor(C.WORLD_THEME.auraLine)
+    love.graphics.circle("line", state.player.x, state.player.y, state.player.radius * (2.9 + pulse * 0.4))
 
     if assets and assets.playerSprite then
         local sprite = assets.playerSprite
@@ -103,7 +153,10 @@ function WorldRenderer.draw(state, assets)
         love.graphics.circle("fill", state.player.x + 5, state.player.y - 4, 2)
     end
 
-    love.graphics.setColor(0.95, 0.7, 0.3, 0.25)
+    setPaletteColor(C.WORLD_THEME.magnetLine)
+    love.graphics.circle("line", state.player.x, state.player.y, magnetRadius)
+    love.graphics.circle("line", state.player.x, state.player.y, magnetRadius * (0.18 + pulse * 0.05))
+    setPaletteColor(C.WORLD_THEME.eatLine)
     love.graphics.circle("line", state.player.x, state.player.y, eatRadius)
 
     if state.passives then

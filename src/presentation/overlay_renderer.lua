@@ -38,6 +38,153 @@ local function ellipsize(font, text, maxWidth)
     return out .. suffix
 end
 
+local function setPaletteColor(color, alphaMul)
+    local a = (color[4] or 1) * (alphaMul or 1)
+    love.graphics.setColor(color[1], color[2], color[3], a)
+end
+
+local function drawDiamond(x, y, radius)
+    love.graphics.polygon("line", x, y - radius, x + radius, y, x, y + radius, x - radius, y)
+end
+
+local function drawDecoratedPanel(x, y, w, h, theme, alphaMul)
+    setPaletteColor(theme.panelFill, alphaMul)
+    love.graphics.rectangle("fill", x, y, w, h, 14, 14)
+    setPaletteColor(theme.panelInner or theme.panelFill, 0.72 * (alphaMul or 1))
+    love.graphics.rectangle("fill", x + 8, y + 8, w - 16, h - 16, 10, 10)
+    setPaletteColor(theme.panelGlow or theme.panelLine, alphaMul)
+    love.graphics.rectangle("line", x + 3, y + 3, w - 6, h - 6, 12, 12)
+    setPaletteColor(theme.panelLine, alphaMul)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", x, y, w, h, 14, 14)
+
+    local corner = 8
+    setPaletteColor(theme.accent or theme.panelLine, 0.9 * (alphaMul or 1))
+    love.graphics.polygon("fill", x + 14, y + 8, x + 14 + corner, y + 14, x + 14, y + 20, x + 14 - corner, y + 14)
+    love.graphics.polygon("fill", x + w - 14, y + 8, x + w - 14 + corner, y + 14, x + w - 14, y + 20, x + w - 14 - corner, y + 14)
+end
+
+local function drawPanelRule(x, y, w, color, alphaMul)
+    setPaletteColor(color, alphaMul)
+    love.graphics.setLineWidth(2)
+    love.graphics.line(x, y, x + w, y)
+    love.graphics.line(x + w * 0.32, y - 4, x + w * 0.5, y - 4)
+    love.graphics.line(x + w * 0.5, y + 4, x + w * 0.68, y + 4)
+end
+
+local function drawRuneBadge(kind, x, y, radius, fillColor, lineColor)
+    love.graphics.setLineWidth(2)
+    setPaletteColor(fillColor)
+    love.graphics.circle("fill", x, y, radius)
+    setPaletteColor(lineColor)
+    love.graphics.circle("line", x, y, radius)
+
+    if kind == "time" then
+        love.graphics.line(x, y, x, y - radius * 0.45)
+        love.graphics.line(x, y, x + radius * 0.32, y)
+    elseif kind == "map" then
+        drawDiamond(x, y, radius * 0.48)
+        love.graphics.line(x, y - radius * 0.48, x, y + radius * 0.48)
+    elseif kind == "essence" then
+        love.graphics.circle("fill", x, y, radius * 0.34)
+        love.graphics.arc("line", "open", x, y, radius * 0.6, -math.pi * 0.15, math.pi * 1.15)
+    elseif kind == "level" then
+        love.graphics.line(x - radius * 0.4, y + radius * 0.35, x, y - radius * 0.45)
+        love.graphics.line(x, y - radius * 0.45, x + radius * 0.4, y + radius * 0.35)
+        love.graphics.line(x - radius * 0.26, y + radius * 0.06, x + radius * 0.26, y + radius * 0.06)
+    elseif kind == "instinct" then
+        love.graphics.arc("line", "open", x - radius * 0.16, y, radius * 0.44, -math.pi * 0.4, math.pi * 0.4)
+        love.graphics.arc("line", "open", x + radius * 0.16, y, radius * 0.44, math.pi * 0.6, math.pi * 1.4)
+        love.graphics.circle("fill", x, y, radius * 0.14)
+    elseif kind == "save" then
+        love.graphics.rectangle("line", x - radius * 0.34, y - radius * 0.34, radius * 0.68, radius * 0.68, 3, 3)
+        love.graphics.line(x - radius * 0.18, y - radius * 0.08, x + radius * 0.18, y - radius * 0.08)
+        love.graphics.line(x - radius * 0.14, y + radius * 0.2, x + radius * 0.14, y + radius * 0.2)
+    elseif kind == "help" then
+        love.graphics.arc("line", "open", x, y - radius * 0.08, radius * 0.34, math.pi, math.pi * 2)
+        love.graphics.line(x + radius * 0.16, y + radius * 0.02, x, y + radius * 0.22)
+        love.graphics.circle("fill", x, y + radius * 0.42, radius * 0.06)
+    elseif kind == "boss" then
+        love.graphics.line(x - radius * 0.36, y + radius * 0.3, x - radius * 0.12, y - radius * 0.26)
+        love.graphics.line(x + radius * 0.36, y + radius * 0.3, x + radius * 0.12, y - radius * 0.26)
+        love.graphics.line(x - radius * 0.12, y - radius * 0.26, x + radius * 0.12, y - radius * 0.26)
+    elseif kind == "hunt" then
+        love.graphics.line(x - radius * 0.3, y + radius * 0.24, x, y - radius * 0.32)
+        love.graphics.line(x + radius * 0.18, y + radius * 0.26, x, y - radius * 0.32)
+    elseif kind == "stomach" then
+        love.graphics.circle("line", x, y, radius * 0.4)
+        love.graphics.circle("fill", x, y, radius * 0.12)
+    elseif kind == "sense" then
+        love.graphics.arc("line", "open", x, y, radius * 0.56, math.pi * 0.15, math.pi * 0.85)
+        love.graphics.arc("line", "open", x, y, radius * 0.56, math.pi * 1.15, math.pi * 1.85)
+        love.graphics.circle("fill", x, y, radius * 0.12)
+    elseif kind == "spawn" then
+        for i = 0, 3 do
+            local angle = i * math.pi * 0.5
+            love.graphics.line(x, y, x + math.cos(angle) * radius * 0.42, y + math.sin(angle) * radius * 0.42)
+        end
+        love.graphics.circle("fill", x, y, radius * 0.1)
+    end
+end
+
+local function drawKeyChip(font, x, y, keyLabel, desc, theme)
+    local padX = 10
+    local keyW = font:getWidth(keyLabel) + padX * 2
+    local descW = font:getWidth(desc)
+    local totalW = keyW + 10 + descW
+
+    setPaletteColor(theme.chipFill)
+    love.graphics.rectangle("fill", x, y, keyW, 24, 8, 8)
+    setPaletteColor(theme.chipLine)
+    love.graphics.rectangle("line", x, y, keyW, 24, 8, 8)
+    setPaletteColor(theme.text or theme.panelLine)
+    love.graphics.print(keyLabel, x + padX, y + 4)
+    setPaletteColor(theme.dim or theme.text)
+    love.graphics.print(desc, x + keyW + 10, y + 4)
+    return totalW
+end
+
+local function drawProgressBar(x, y, w, h, pct, theme, complete)
+    pct = math.max(0, math.min(1, pct or 0))
+    setPaletteColor(theme.progressBg)
+    love.graphics.rectangle("fill", x, y, w, h, 5, 5)
+    setPaletteColor(complete and theme.progressDone or theme.progressFill)
+    love.graphics.rectangle("fill", x + 2, y + 2, math.max(0, (w - 4) * pct), h - 4, 4, 4)
+    setPaletteColor(theme.panelLine)
+    love.graphics.rectangle("line", x, y, w, h, 5, 5)
+end
+
+local function getToastTheme(key, isStatus)
+    local theme = C.HUD_THEME
+    if isStatus then
+        if key == "save_status.failed" then
+            return theme.danger
+        end
+        return theme.accentSoft
+    end
+    if key and key:find("failed", 1, true) then
+        return theme.warning
+    end
+    return theme.accent
+end
+
+local function getChoicePalette(rarity)
+    return C.RUN_CHOICE_THEME[rarity] or C.RUN_CHOICE_THEME.common
+end
+
+local function getCategorySymbol(category)
+    if category == "hunt" then
+        return "hunt"
+    elseif category == "stomach" then
+        return "stomach"
+    elseif category == "sense" then
+        return "sense"
+    elseif category == "spawn" then
+        return "spawn"
+    end
+    return "instinct"
+end
+
 function OverlayRenderer.drawGameTopBar(state, fonts, ui)
     local sw = love.graphics.getWidth()
     local mapData = MapSystem.getCurrentMap(state.maps)
@@ -49,9 +196,11 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
     end
 
     local cfg = C.RUN_HUD_UI
+    local theme = C.HUD_THEME
     local pad = cfg.padding
     local topY = pad
     local barH = cfg.topBarHeight
+    local compact = sw < 1180
 
     love.graphics.setFont(fonts.hud)
 
@@ -69,57 +218,77 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
     local rightText = t(state, "hud.essence", {
         essence = state.meta.essence,
         level = state.nestProgress and state.nestProgress.level or 0,
+        current = state.nestProgress and state.nestProgress.currentLevelProgress or 0,
+        goal = state.nestProgress and state.nestProgress.essencePerLevel or 0,
     })
     local instinct = Mutation.getProgress(state)
     local instinctText
     if instinct.complete then
         instinctText = t(state, "hud.instinct_complete")
     else
-        instinctText = t(state, "hud.instinct_progress", {
-            current = instinct.current,
-            next = instinct.next,
-            remain = instinct.remain,
-        })
+        if compact then
+            instinctText = t(state, "hud.instinct_short", { remain = instinct.remain })
+        else
+            instinctText = t(state, "hud.instinct_progress", {
+                current = instinct.current,
+                next = instinct.next,
+                remain = instinct.remain,
+            })
+        end
     end
 
-    local leftW = fonts.hud:getWidth(leftText) + cfg.chipPadX * 2
-    local rightLineW = math.max(fonts.hud:getWidth(rightText), fonts.hud:getWidth(instinctText))
-    local rightW = rightLineW + cfg.chipPadX * 2
-    local saveW = ui.saveBtn.w
+    local leftW = math.max(320, math.min(sw * 0.38, fonts.hud:getWidth(leftText) + 84))
+    local rightInfoW = math.max(270, math.min(sw * 0.28, math.max(fonts.hud:getWidth(rightText), fonts.hud:getWidth(instinctText)) + 86))
+    local saveW = compact and 118 or 132
     local helpText = t(state, "hud.help")
-    local helpW = fonts.hud:getWidth(helpText) + cfg.chipPadX * 2
-    local rightGroupW = rightW + cfg.groupGap + saveW + cfg.groupGap + helpW
+    local helpW = fonts.hud:getWidth(helpText) + 40
+    local rightGroupW = rightInfoW + cfg.groupGap + saveW + cfg.groupGap + helpW
+    local leftX = pad
+    local rightX = sw - pad - rightGroupW
 
-    love.graphics.setColor(0, 0, 0, 0.5)
-    love.graphics.rectangle("fill", pad, topY, leftW, barH, 8, 8)
-    love.graphics.rectangle("fill", sw - pad - rightGroupW, topY, rightGroupW, barH, 8, 8)
+    drawDecoratedPanel(leftX, topY, leftW, barH, theme)
+    drawDecoratedPanel(rightX, topY, rightGroupW, barH, theme)
 
-    love.graphics.setColor(0.86, 0.94, 1.0, 0.95)
-    love.graphics.rectangle("line", pad, topY, leftW, barH, 8, 8)
-    love.graphics.rectangle("line", sw - pad - rightGroupW, topY, rightGroupW, barH, 8, 8)
+    drawRuneBadge("time", leftX + 20, topY + 22, 12, theme.chipFill, theme.accent)
+    drawRuneBadge("map", leftX + 20, topY + 50, 12, theme.chipFill, theme.accentSoft)
+    setPaletteColor(theme.text)
+    love.graphics.print(formatTime(state.runTimeLeft), leftX + 40, topY + 12)
+    setPaletteColor(theme.dim)
+    love.graphics.print(mapText, leftX + 40, topY + 40)
+    setPaletteColor(theme.accentSoft)
+    love.graphics.print(string.format("%d/%d", unlockedMaps, #C.MAPS), leftX + leftW - 54, topY + 40)
 
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.print(leftText, pad + cfg.chipPadX, topY + 12)
-    local rightStart = sw - pad - rightGroupW
-    love.graphics.print(rightText, rightStart + cfg.chipPadX, topY + 7)
-    love.graphics.setColor(0.84, 0.9, 1.0)
-    love.graphics.print(instinctText, rightStart + cfg.chipPadX, topY + 23)
+    drawRuneBadge("essence", rightX + 18, topY + 18, 11, theme.chipFill, theme.accent)
+    drawRuneBadge("level", rightX + 18, topY + 44, 11, theme.chipFill, theme.accentSoft)
+    setPaletteColor(theme.text)
+    love.graphics.print(rightText, rightX + 38, topY + 8)
+    setPaletteColor(theme.dim)
+    love.graphics.print(instinctText, rightX + 38, topY + 34)
+    local pct = instinct.complete and 1 or (instinct.next > 0 and instinct.current / instinct.next or 0)
+    drawProgressBar(rightX + 38, topY + 54, rightInfoW - 52, 12, pct, theme, instinct.complete)
 
-    ui.saveBtn.x = rightStart + rightW + cfg.groupGap
-    ui.saveBtn.y = topY + 5
-    ui.saveBtn.h = barH - 10
+    ui.saveBtn.x = rightX + rightInfoW + cfg.groupGap
+    ui.saveBtn.y = topY + 10
+    ui.saveBtn.h = 26
     ui.saveBtn.w = saveW
-    love.graphics.setColor(0.05, 0.08, 0.1, 0.95)
-    love.graphics.rectangle("fill", ui.saveBtn.x, ui.saveBtn.y, ui.saveBtn.w, ui.saveBtn.h, 6, 6)
-    love.graphics.setColor(0.75, 0.92, 0.85, 0.95)
-    love.graphics.rectangle("line", ui.saveBtn.x, ui.saveBtn.y, ui.saveBtn.w, ui.saveBtn.h, 6, 6)
+    setPaletteColor(theme.buttonFill)
+    love.graphics.rectangle("fill", ui.saveBtn.x, ui.saveBtn.y, ui.saveBtn.w, ui.saveBtn.h, 8, 8)
+    setPaletteColor(theme.buttonLine)
+    love.graphics.rectangle("line", ui.saveBtn.x, ui.saveBtn.y, ui.saveBtn.w, ui.saveBtn.h, 8, 8)
+    drawRuneBadge("save", ui.saveBtn.x + 16, ui.saveBtn.y + 13, 8, theme.chipFill, theme.buttonLine)
     local saveText = t(state, "hud.manual_save")
-    local saveTextX = ui.saveBtn.x + (ui.saveBtn.w - fonts.hud:getWidth(saveText)) * 0.5
-    love.graphics.print(saveText, saveTextX, ui.saveBtn.y + 8)
+    local saveTextX = ui.saveBtn.x + 30 + (ui.saveBtn.w - 30 - fonts.hud:getWidth(saveText)) * 0.5
+    setPaletteColor(theme.buttonText)
+    love.graphics.print(saveText, saveTextX, ui.saveBtn.y + 5)
 
     local helpX = ui.saveBtn.x + ui.saveBtn.w + cfg.groupGap
-    love.graphics.setColor(0.78, 0.85, 1.0)
-    love.graphics.print(helpText, helpX + cfg.chipPadX, topY + 12)
+    setPaletteColor(theme.chipFill)
+    love.graphics.rectangle("fill", helpX, topY + 10, helpW, 26, 8, 8)
+    setPaletteColor(theme.chipLine)
+    love.graphics.rectangle("line", helpX, topY + 10, helpW, 26, 8, 8)
+    drawRuneBadge("help", helpX + 14, topY + 23, 7, theme.chipFill, theme.chipLine)
+    setPaletteColor(theme.text)
+    love.graphics.print(helpText, helpX + 28, topY + 15)
 end
 
 function OverlayRenderer.drawBossBar(state, fonts)
@@ -128,15 +297,28 @@ function OverlayRenderer.drawBossBar(state, fonts)
     end
     local sw = love.graphics.getWidth()
     local cfg = C.RUN_HUD_UI
-    local y = cfg.padding + cfg.topBarHeight + 8
+    local theme = C.HUD_THEME
+    local y = cfg.padding + cfg.topBarHeight + 12
+    local x = sw * 0.18
+    local w = sw * 0.64
+    local h = 28
     local pct = state.boss.maxHp > 0 and (state.boss.hp / state.boss.maxHp) or 0
-    love.graphics.setColor(0, 0, 0, 0.55)
-    love.graphics.rectangle("fill", sw * 0.22, y, sw * 0.56, 20)
-    love.graphics.setColor(0.9, 0.2, 0.2)
-    love.graphics.rectangle("fill", sw * 0.22 + 2, y + 2, (sw * 0.56 - 4) * pct, 16)
-    love.graphics.setColor(1, 1, 1)
+    setPaletteColor(theme.panelFill)
+    love.graphics.rectangle("fill", x, y, w, h, 10, 10)
+    setPaletteColor(theme.panelLine)
+    love.graphics.rectangle("line", x, y, w, h, 10, 10)
+    love.graphics.polygon("fill", x - 12, y + h * 0.5, x, y + 5, x, y + h - 5)
+    love.graphics.polygon("fill", x + w + 12, y + h * 0.5, x + w, y + 5, x + w, y + h - 5)
+    setPaletteColor({ 0.24, 0.07, 0.07, 0.95 })
+    love.graphics.rectangle("fill", x + 4, y + 4, w - 8, h - 8, 8, 8)
+    setPaletteColor({ 0.96, 0.48, 0.18, 0.96 })
+    love.graphics.rectangle("fill", x + 4, y + 4, math.max(0, (w - 8) * pct), h - 8, 8, 8)
+    setPaletteColor({ 0.98, 0.74, 0.38, 0.35 })
+    love.graphics.rectangle("fill", x + 4, y + 4, math.max(0, (w - 8) * pct), math.max(5, (h - 8) * 0.42), 8, 8)
+    drawRuneBadge("boss", x + w * 0.5, y + h * 0.5, 11, theme.chipFill, theme.accent)
+    setPaletteColor(theme.text)
     love.graphics.setFont(fonts.hud)
-    love.graphics.printf(t(state, "boss.title"), sw * 0.22, y + 2, sw * 0.56, "center")
+    love.graphics.printf(t(state, "boss.title"), x, y + 5, w, "center")
 end
 
 function OverlayRenderer.drawGameToasts(state, fonts)
@@ -146,14 +328,21 @@ function OverlayRenderer.drawGameToasts(state, fonts)
 
     if state.uiAutosaveTimer > 0 and state.lastSaveStatusKey then
         local a = math.min(1, state.uiAutosaveTimer / cfg.autosaveDuration)
-        love.graphics.setColor(0, 0, 0, 0.42 * a)
-        love.graphics.rectangle("fill", sw * 0.34, sh - 36, sw * 0.32, 22, 6, 6)
-        love.graphics.setColor(0.85, 0.9, 0.98, a)
+        local color = getToastTheme(state.lastSaveStatusKey, true)
+        local y = sh - 44 - (1 - a) * 5
+        drawDecoratedPanel(sw * 0.33, y, sw * 0.34, 28, {
+            panelFill = { 0.07, 0.08, 0.07, 0.9 },
+            panelInner = { 0.11, 0.13, 0.1, 0.85 },
+            panelLine = color,
+            panelGlow = color,
+            accent = color,
+        }, a)
+        setPaletteColor(color, a)
         love.graphics.setFont(fonts.hud)
         love.graphics.printf(
             t(state, state.lastSaveStatusKey, state.lastSaveStatusParams),
             sw * 0.35,
-            sh - 31,
+            y + 6,
             sw * 0.3,
             "center"
         )
@@ -161,14 +350,20 @@ function OverlayRenderer.drawGameToasts(state, fonts)
 
     if state.messageKey and state.uiToastTimer > 0 then
         local a = math.min(1, state.uiToastTimer / cfg.toastDuration)
+        local color = getToastTheme(state.messageKey, false)
         local w = math.min(sw - 24, 780)
         local x = (sw - w) * 0.5
-        local y = sh - 74
-        love.graphics.setColor(0, 0, 0, 0.65 * a)
-        love.graphics.rectangle("fill", x, y, w, 36, 8, 8)
-        love.graphics.setColor(1, 0.92, 0.78, a)
+        local y = sh - 80 - (1 - a) * 6
+        drawDecoratedPanel(x, y, w, 40, {
+            panelFill = { 0.09, 0.08, 0.06, 0.93 },
+            panelInner = { 0.15, 0.11, 0.08, 0.85 },
+            panelLine = color,
+            panelGlow = color,
+            accent = color,
+        }, a)
+        setPaletteColor(color, a)
         love.graphics.setFont(fonts.hud)
-        love.graphics.printf(t(state, state.messageKey, state.messageParams), x + 10, y + 10, w - 20, "center")
+        love.graphics.printf(t(state, state.messageKey, state.messageParams), x + 14, y + 10, w - 28, "center")
     end
 end
 
@@ -180,21 +375,28 @@ function OverlayRenderer.drawHelpPanel(state, fonts)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
     local w = math.min(760, sw - 60)
-    local h = 252
+    local h = 282
     local x = (sw - w) * 0.5
     local y = (sh - h) * 0.5
+    local theme = C.HELP_THEME
 
-    love.graphics.setColor(0, 0, 0, 0.86)
-    love.graphics.rectangle("fill", x, y, w, h, 10, 10)
-    love.graphics.setColor(0.85, 0.92, 1.0)
-    love.graphics.rectangle("line", x, y, w, h, 10, 10)
+    love.graphics.setColor(0, 0, 0, 0.78)
+    love.graphics.rectangle("fill", 0, 0, sw, sh)
+    drawDecoratedPanel(x, y, w, h, {
+        panelFill = theme.panelFill,
+        panelInner = theme.panelInner,
+        panelLine = theme.panelLine,
+        panelGlow = theme.panelLine,
+        accent = theme.panelLine,
+    })
 
     love.graphics.setFont(fonts.big)
-    love.graphics.setColor(1, 0.95, 0.8)
+    setPaletteColor(theme.text)
     love.graphics.printf(t(state, "help.title"), x, y + 14, w, "center")
+    drawPanelRule(x + 62, y + 52, w - 124, theme.panelLine)
 
     love.graphics.setFont(fonts.hud)
-    love.graphics.setColor(1, 1, 1)
+    setPaletteColor(theme.text)
     if state.mode == "run_end_tree" then
         love.graphics.printf(
             t(state, "help.run_end.summary", {
@@ -204,36 +406,39 @@ function OverlayRenderer.drawHelpPanel(state, fonts)
                 points = state.nestProgress.availablePoints,
             }),
             x + 24,
-            y + 62,
+            y + 72,
             w - 48,
             "left"
         )
-        love.graphics.printf(t(state, "help.run_end.drag"), x + 24, y + 86, w - 48, "left")
-        love.graphics.printf(t(state, "help.run_end.wheel"), x + 24, y + 110, w - 48, "left")
-        love.graphics.printf(t(state, "help.run_end.tab"), x + 24, y + 134, w - 48, "left")
-        love.graphics.printf(t(state, "help.run_end.buy"), x + 24, y + 158, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_end.drag"), x + 24, y + 98, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_end.wheel"), x + 24, y + 122, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_end.tab"), x + 24, y + 146, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_end.buy"), x + 24, y + 170, w - 48, "left")
     elseif state.mode == "run_choice" then
-        love.graphics.printf(t(state, "help.run_choice.line1"), x + 24, y + 62, w - 48, "left")
-        love.graphics.printf(t(state, "help.run_choice.line2"), x + 24, y + 92, w - 48, "left")
-        love.graphics.printf(t(state, "help.run_choice.line3"), x + 24, y + 122, w - 48, "left")
-        love.graphics.printf(t(state, "help.run_choice.line4"), x + 24, y + 152, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_choice.line1"), x + 24, y + 72, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_choice.line2"), x + 24, y + 102, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_choice.line3"), x + 24, y + 132, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_choice.line4"), x + 24, y + 162, w - 48, "left")
     else
-        love.graphics.printf(t(state, "help.game.goal"), x + 24, y + 62, w - 48, "left")
-        love.graphics.printf(t(state, "help.game.map"), x + 24, y + 92, w - 48, "left")
-        love.graphics.printf(t(state, "help.game.boss"), x + 24, y + 116, w - 48, "left")
-        love.graphics.printf(t(state, "help.game.save"), x + 24, y + 140, w - 48, "left")
+        love.graphics.printf(t(state, "help.game.goal"), x + 24, y + 72, w - 48, "left")
+        love.graphics.printf(t(state, "help.game.map"), x + 24, y + 102, w - 48, "left")
+        love.graphics.printf(t(state, "help.game.boss"), x + 24, y + 126, w - 48, "left")
+        love.graphics.printf(t(state, "help.game.save"), x + 24, y + 150, w - 48, "left")
     end
 
-    love.graphics.setColor(0.8, 0.9, 1.0)
+    setPaletteColor(theme.dim)
     love.graphics.printf(
         t(state, "help.language", { language = Locale.ref("language." .. state.locale) }),
         x + 24,
-        y + h - 68,
+        y + h - 78,
         w - 48,
         "left"
     )
-    love.graphics.printf(t(state, "help.toggle_language"), x + 24, y + h - 44, w - 48, "left")
-    love.graphics.printf(t(state, "help.close"), x + 24, y + h - 20, w - 48, "left")
+
+    local chipX = x + 24
+    local chipY = y + h - 42
+    chipX = chipX + drawKeyChip(fonts.hud, chipX, chipY, "H", t(state, "help.close_label"), theme) + 16
+    drawKeyChip(fonts.hud, chipX, chipY, "L", t(state, "help.toggle_language_label"), theme)
 end
 
 local function metaTreeWorldToScreen(state, wx, wy, sw, sh)
@@ -608,20 +813,22 @@ function OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
     local sh = love.graphics.getHeight()
     local cards = state.runMutations.activeChoices or {}
     local cfg = C.RUN_CHOICE_UI
+    local theme = C.RUN_CHOICE_THEME
     local count = #cards
     local totalW = count * cfg.cardWidth + math.max(0, count - 1) * cfg.cardGap
     local startX = (sw - totalW) * 0.5
-    local y = (sh - cfg.cardHeight) * 0.5 + 30
+    local y = (sh - cfg.cardHeight) * 0.5 + 34
 
     ui.runChoice.cards = {}
 
-    love.graphics.setColor(0, 0, 0, 0.7)
+    setPaletteColor(theme.overlay)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
     love.graphics.setFont(fonts.big)
-    love.graphics.setColor(1, 0.95, 0.78)
+    setPaletteColor(theme.title)
     love.graphics.printf(t(state, "run_choice.title"), 0, y - 92, sw, "center")
+    drawPanelRule(sw * 0.36, y - 52, sw * 0.28, C.HUD_THEME.accent)
     love.graphics.setFont(fonts.hud)
-    love.graphics.setColor(0.84, 0.9, 1.0)
+    setPaletteColor(theme.summary)
     love.graphics.printf(
         t(state, "run_choice.summary", {
             essence = state.runEssenceTotal or 0,
@@ -637,29 +844,43 @@ function OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
         local x = startX + (i - 1) * (cfg.cardWidth + cfg.cardGap)
         ui.runChoice.cards[i] = { x = x, y = y, w = cfg.cardWidth, h = cfg.cardHeight }
 
-        local fill = { 0.08, 0.1, 0.12, 0.95 }
-        local line = { 0.45, 0.8, 1.0, 0.95 }
-        if card.rarity == "rare" then
-            line = { 0.6, 0.95, 0.55, 0.95 }
-        elseif card.rarity == "mythic" then
-            line = { 1.0, 0.82, 0.45, 0.95 }
-        end
+        local palette = getChoicePalette(card.rarity)
+        drawDecoratedPanel(x, y, cfg.cardWidth, cfg.cardHeight, {
+            panelFill = palette.fill,
+            panelInner = palette.inner,
+            panelLine = palette.line,
+            panelGlow = palette.line,
+            accent = palette.line,
+        })
 
-        love.graphics.setColor(fill[1], fill[2], fill[3], fill[4])
-        love.graphics.rectangle("fill", x, y, cfg.cardWidth, cfg.cardHeight, 12, 12)
-        love.graphics.setColor(line[1], line[2], line[3], line[4])
-        love.graphics.rectangle("line", x, y, cfg.cardWidth, cfg.cardHeight, 12, 12)
+        setPaletteColor(palette.ribbon)
+        love.graphics.rectangle("fill", x + 16, y + 16, cfg.cardWidth - 32, 28, 8, 8)
+        setPaletteColor(palette.line)
+        love.graphics.rectangle("line", x + 16, y + 16, cfg.cardWidth - 32, 28, 8, 8)
+        setPaletteColor(C.HUD_THEME.text)
+        love.graphics.printf(t(state, "rarity." .. card.rarity), x + 16, y + 22, cfg.cardWidth - 32, "center")
 
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.printf(t(state, card.nameKey), x + 14, y + 18, cfg.cardWidth - 28, "center")
-        love.graphics.setColor(0.82, 0.9, 1.0)
-        love.graphics.printf(t(state, "category." .. card.category), x + 14, y + 56, cfg.cardWidth - 28, "center")
-        love.graphics.setColor(line[1], line[2], line[3], line[4])
-        love.graphics.printf(t(state, "rarity." .. card.rarity), x + 14, y + 84, cfg.cardWidth - 28, "center")
-        love.graphics.setColor(0.95, 0.95, 0.95)
-        love.graphics.printf(t(state, card.descKey), x + 18, y + 124, cfg.cardWidth - 36, "center")
-        love.graphics.setColor(0.84, 0.9, 1.0)
-        love.graphics.printf(t(state, "run_choice.click"), x + 14, y + cfg.cardHeight - 34, cfg.cardWidth - 28, "center")
+        setPaletteColor(C.HUD_THEME.dim)
+        love.graphics.printf(t(state, card.nameKey), x + 18, y + 58, cfg.cardWidth - 36, "center")
+
+        setPaletteColor(C.HUD_THEME.chipFill)
+        love.graphics.rectangle("fill", x + 22, y + 88, 90, 24, 8, 8)
+        setPaletteColor(palette.line)
+        love.graphics.rectangle("line", x + 22, y + 88, 90, 24, 8, 8)
+        setPaletteColor(C.HUD_THEME.text)
+        love.graphics.printf(t(state, "category." .. card.category), x + 22, y + 93, 90, "center")
+
+        drawRuneBadge(getCategorySymbol(card.category), x + cfg.cardWidth * 0.5, y + 132, 20, palette.inner, palette.line)
+
+        setPaletteColor(C.HUD_THEME.text)
+        love.graphics.printf(t(state, card.descKey), x + 26, y + 160, cfg.cardWidth - 52, "center")
+
+        setPaletteColor(palette.ribbon)
+        love.graphics.rectangle("fill", x + 18, y + cfg.cardHeight - 46, cfg.cardWidth - 36, 28, 10, 10)
+        setPaletteColor(palette.line)
+        love.graphics.rectangle("line", x + 18, y + cfg.cardHeight - 46, cfg.cardWidth - 36, 28, 10, 10)
+        setPaletteColor(C.HUD_THEME.text)
+        love.graphics.printf(t(state, "run_choice.click"), x + 18, y + cfg.cardHeight - 40, cfg.cardWidth - 36, "center")
     end
 end
 
