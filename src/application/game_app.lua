@@ -50,6 +50,13 @@ function App:load()
         self.assets.playerSprite = nil
     end
 
+    local fireballOk, fireballImage = pcall(love.graphics.newImage, "FireBall.png")
+    if fireballOk and fireballImage then
+        self.assets.fireballSprite = fireballImage
+    else
+        self.assets.fireballSprite = nil
+    end
+
     self.state = Service.loadState()
 end
 
