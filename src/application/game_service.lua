@@ -29,6 +29,10 @@ local function saveWithFeedback(state, reason)
         GameState.setSaveStatus(state, "save_status.delayed_choice")
         return false
     end
+    if state.mode == "boss_arena" then
+        GameState.setSaveStatus(state, "save_status.delayed_boss")
+        return false
+    end
     local ok = GameState.saveNow(state, reason)
     if ok then
         state.uiAutosaveTimer = C.RUN_HUD_UI.autosaveDuration
@@ -41,6 +45,30 @@ local function localizedErrorRef(domain, code)
         return nestedKey("error.generic." .. code)
     end
     return nestedKey("error." .. domain .. "." .. code)
+end
+
+local function handleLoopResult(state, result)
+    if result.mapUnlocked then
+        setMessage(state, "message.new_map_unlocked_from_skill_tree")
+    end
+
+    if result.bossDefeated and not result.runEndedReason then
+        setMessage(state, "message.final_boss_defeated")
+        saveWithFeedback(state, "boss-defeated")
+        return
+    end
+
+    if not result.runEndedReason then
+        return
+    end
+
+    if result.runEndedReason == "victory" then
+        saveWithFeedback(state, "run-victory")
+    elseif result.runEndedReason == "boss_failed" then
+        saveWithFeedback(state, "boss-failed")
+    else
+        saveWithFeedback(state, "run-ended")
+    end
 end
 
 function Service.loadState()
@@ -83,7 +111,7 @@ function Service.tick(state, dt)
         GameState.clearMessage(state)
     end
 
-    if state.mode ~= "run_choice" and not state.runEnded then
+    if state.mode ~= "run_choice" and state.mode ~= "boss_arena" and not state.runEnded then
         state.runTimeLeft = math.max(0, state.runTimeLeft - dt)
         if state.runTimeLeft <= 0 then
             if GameState.endRun(state, "time") then
@@ -94,18 +122,10 @@ function Service.tick(state, dt)
 
     if state.mode == "game" and not state.runEnded then
         local result = RunLoop.tickGameplay(state, dt)
-        if result.mapUnlocked then
-            setMessage(state, "message.new_map_unlocked_from_skill_tree")
-        end
-        if result.bossDefeated then
-            if not result.runEndedReason then
-                setMessage(state, "message.final_boss_defeated")
-            end
-            saveWithFeedback(state, "boss-defeated")
-        end
-        if result.runEndedReason == "victory" then
-            saveWithFeedback(state, "run-victory")
-        end
+        handleLoopResult(state, result)
+    elseif state.mode == "boss_arena" and not state.runEnded then
+        local result = RunLoop.tickBossArena(state, dt)
+        handleLoopResult(state, result)
     end
 
     Guide.tick(state)
@@ -126,6 +146,10 @@ function Service.save(state, reason)
         setMessage(state, "message.save_delayed_until_choice_ends")
         return false
     end
+    if state.mode == "boss_arena" then
+        setMessage(state, "message.save_delayed_during_boss_arena")
+        return false
+    end
     saveWithFeedback(state, reason)
     return true
 end
@@ -143,7 +167,7 @@ function Service.cycleLocale(state)
 end
 
 function Service.trySwitchMap(state, mapId)
-    if state.runEnded then
+    if state.runEnded or state.mode == "boss_arena" then
         return false
     end
     if not C.MAPS[mapId] then
@@ -161,14 +185,17 @@ function Service.trySwitchMap(state, mapId)
 end
 
 function Service.tryEnterBoss(state)
-    if state.runEnded then
+    if state.runEnded or state.mode == "boss_arena" then
         return false
     end
 
     if Boss.canEnter(state) then
+        if not saveWithFeedback(state, "boss-enter-prep") then
+            return false
+        end
         local entered = Boss.enter(state)
         if entered then
-            saveWithFeedback(state, "boss-enter")
+            PassiveCombat.resetState(state)
             setMessage(state, "message.final_boss_engaged")
         end
         return entered

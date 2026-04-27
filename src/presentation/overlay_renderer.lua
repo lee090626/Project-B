@@ -26,6 +26,10 @@ local function formatTime(seconds)
     return string.format("%02d:%02d", m, s)
 end
 
+local function formatBossTime(seconds)
+    return string.format("%.1f", math.max(0, seconds or 0))
+end
+
 local function ellipsize(font, text, maxWidth)
     if font:getWidth(text) <= maxWidth then
         return text
@@ -301,8 +305,15 @@ function OverlayRenderer.drawBossBar(state, fonts)
     local y = cfg.padding + cfg.topBarHeight + 12
     local x = sw * 0.18
     local w = sw * 0.64
-    local h = 28
+    local h = 54
     local pct = state.boss.maxHp > 0 and (state.boss.hp / state.boss.maxHp) or 0
+    local statusKey = state.boss.shielded and "boss.status.shielded" or "boss.status.vulnerable"
+    local info = string.format(
+        "%s   %s   %s",
+        t(state, "boss.timer", { time = formatBossTime(state.boss.arenaTimer) }),
+        t(state, statusKey),
+        t(state, "boss.weak_points", { count = #(state.boss.weakPoints or {}) })
+    )
     setPaletteColor(theme.panelFill)
     love.graphics.rectangle("fill", x, y, w, h, 10, 10)
     setPaletteColor(theme.panelLine)
@@ -310,15 +321,17 @@ function OverlayRenderer.drawBossBar(state, fonts)
     love.graphics.polygon("fill", x - 12, y + h * 0.5, x, y + 5, x, y + h - 5)
     love.graphics.polygon("fill", x + w + 12, y + h * 0.5, x + w, y + 5, x + w, y + h - 5)
     setPaletteColor({ 0.24, 0.07, 0.07, 0.95 })
-    love.graphics.rectangle("fill", x + 4, y + 4, w - 8, h - 8, 8, 8)
+    love.graphics.rectangle("fill", x + 4, y + 18, w - 8, 20, 8, 8)
     setPaletteColor({ 0.96, 0.48, 0.18, 0.96 })
-    love.graphics.rectangle("fill", x + 4, y + 4, math.max(0, (w - 8) * pct), h - 8, 8, 8)
+    love.graphics.rectangle("fill", x + 4, y + 18, math.max(0, (w - 8) * pct), 20, 8, 8)
     setPaletteColor({ 0.98, 0.74, 0.38, 0.35 })
-    love.graphics.rectangle("fill", x + 4, y + 4, math.max(0, (w - 8) * pct), math.max(5, (h - 8) * 0.42), 8, 8)
-    drawRuneBadge("boss", x + w * 0.5, y + h * 0.5, 11, theme.chipFill, theme.accent)
+    love.graphics.rectangle("fill", x + 4, y + 18, math.max(0, (w - 8) * pct), 8, 8, 8)
+    drawRuneBadge("boss", x + 22, y + 12, 10, theme.chipFill, theme.accent)
     setPaletteColor(theme.text)
     love.graphics.setFont(fonts.hud)
-    love.graphics.printf(t(state, "boss.title"), x, y + 5, w, "center")
+    love.graphics.printf(t(state, "boss.title"), x, y + 4, w, "center")
+    setPaletteColor(theme.dim)
+    love.graphics.printf(info, x + 12, y + 38, w - 24, "center")
 end
 
 function OverlayRenderer.drawGameToasts(state, fonts)

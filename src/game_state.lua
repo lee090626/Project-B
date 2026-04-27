@@ -193,8 +193,11 @@ function GameState.new(loadResult, loadErr)
     GameState.normalizeProgression(state)
     state.runTimeLeft = saved.runTimeLeft or state.runDuration
 
-    if state.mode == "run_choice" then
+    if state.mode == "run_choice" or state.mode == "boss_arena" then
         state.mode = "game"
+    end
+    if state.boss.active then
+        state.boss = Boss.new({ defeated = state.boss.defeated })
     end
     if state.runEnded and state.mode ~= "run_end_tree" and state.mode ~= "run_end_result" then
         state.mode = "run_end_result"

@@ -119,6 +119,10 @@ function App:keypressed(key)
         return
     end
 
+    if self.state.mode == "boss_arena" then
+        return
+    end
+
     if key == "b" then
         Service.tryEnterBoss(self.state)
         return

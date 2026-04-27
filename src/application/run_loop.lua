@@ -77,12 +77,37 @@ function RunLoop.tickGameplay(state, dt)
 
     result.mapUnlocked = MapSystem.updateUnlocks(state.maps, Meta.getUnlockedCount(state.meta))
 
-    local wasDefeated = state.boss.defeated
-    Boss.update(state, dt)
-    result.bossDefeated = state.boss.defeated and not wasDefeated
+    updateCamera(state)
+    return result
+end
 
-    if GameState.checkEnding(state) and GameState.endRun(state, "victory") then
+function RunLoop.tickBossArena(state, dt)
+    local result = {
+        mapUnlocked = false,
+        bossDefeated = false,
+        runEndedReason = nil,
+    }
+
+    local mx, my = love.mouse.getPosition()
+    local wx, wy = RunLoop.screenToWorld(state, mx, my)
+
+    Player.update(state.player, dt, wx, wy, state.bonuses)
+    state.player.magnetRadius = Player.getMagnetRadius(state.player, state.bonuses)
+
+    local mapData = MapSystem.getCurrentMap(state.maps)
+    PassiveCombat.tickPassives(state, dt, mapData)
+    if state.mode == "run_choice" then
+        updateCamera(state)
+        return result
+    end
+
+    local bossResult = Boss.update(state, dt)
+    result.bossDefeated = state.boss.defeated
+
+    if result.bossDefeated and GameState.checkEnding(state) and GameState.endRun(state, "victory") then
         result.runEndedReason = "victory"
+    elseif bossResult == "failed" and GameState.endRun(state, "boss_failed") then
+        result.runEndedReason = "boss_failed"
     end
 
     updateCamera(state)

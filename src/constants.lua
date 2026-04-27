@@ -94,6 +94,16 @@ C.PASSIVE_BASES = {
     },
 }
 
+C.BOSS_ARENA = {
+    timeLimit = 8,
+    bossHp = 420,
+    weakPointCount = 3,
+    weakPointHp = 36,
+    weakPointRadius = 22,
+    weakPointOrbitRadius = 140,
+    vulnerableDuration = 1.6,
+}
+
 C.NEST_UPGRADES = {
     {
         key = "brooder",

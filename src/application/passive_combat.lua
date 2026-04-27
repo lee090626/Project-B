@@ -101,7 +101,7 @@ local function pushLightningFx(state, segments)
     }
 end
 
-local function spawnFireballProjectile(state, fromX, fromY, toX, toY, radius, pulseDamage, bossDamage, maxHits)
+local function spawnFireballProjectile(state, fromX, fromY, toX, toY, radius, pulseDamage, bossDamage, maxHits, targetKind, targetIndex)
     local dist = Utils.distance(fromX, fromY, toX, toY)
     if dist <= 0 then
         dist = 1
@@ -125,6 +125,8 @@ local function spawnFireballProjectile(state, fromX, fromY, toX, toY, radius, pu
         pulseDamage = pulseDamage,
         bossDamage = bossDamage,
         maxHits = maxHits,
+        targetKind = targetKind,
+        targetIndex = targetIndex,
     }
 end
 
@@ -177,7 +179,12 @@ function PassiveCombat.tickFx(state, dt)
                 projectile.y = projectile.targetY
                 pushFireballImpact(state, projectile.x, projectile.y, projectile.radius)
 
-                if state.boss.active and not state.boss.defeated then
+                if projectile.targetKind == "weak_point" then
+                    local weakIndex, weakPoint, weakDist = Boss.getNearestWeakPoint(state, projectile.targetX, projectile.targetY)
+                    if weakPoint and weakDist <= projectile.radius + weakPoint.radius then
+                        Boss.applyWeakPointDamage(state, weakIndex, projectile.bossDamage)
+                    end
+                elseif state.boss.active and not state.boss.defeated then
                     local bossDist = Boss.distanceTo(state.boss, projectile.x, projectile.y)
                     if bossDist <= projectile.radius + state.boss.radius then
                         Boss.applyDamage(state, projectile.bossDamage)
@@ -208,6 +215,10 @@ function PassiveCombat.tickFx(state, dt)
 end
 
 local function findNearestHostile(state, fromX, fromY)
+    if state.mode == "boss_arena" then
+        return Boss.getPriorityTarget(state, fromX, fromY)
+    end
+
     local best
     local foodIndex, foodItem, foodDist = Food.findNearestTarget(state.food, fromX, fromY)
     if foodItem then
@@ -251,6 +262,17 @@ local function triggerLightning(state, mapData)
             },
         })
         Boss.applyDamage(state, state.bonuses.lightningDamage)
+        return false
+    elseif target.kind == "weak_point" then
+        pushLightningFx(state, {
+            {
+                fromX = state.player.x,
+                fromY = state.player.y,
+                toX = target.x,
+                toY = target.y,
+            },
+        })
+        Boss.applyWeakPointDamage(state, target.index, state.bonuses.lightningDamage)
         return false
     end
 
@@ -314,13 +336,32 @@ local function triggerFireball(state, mapData)
             state.bonuses.fireballRadius,
             pulseDamage,
             bossDamage,
-            maxHits
+            maxHits,
+            target.kind,
+            target.index
         )
     end
     return false
 end
 
 local function triggerFrost(state, mapData)
+    if state.mode == "boss_arena" then
+        triggerFrostFx(state, state.bonuses.frostRadius)
+        local target = Boss.getPriorityTarget(state, state.player.x, state.player.y)
+        if not target then
+            return false
+        end
+
+        if target.kind == "weak_point" then
+            if target.dist <= state.bonuses.frostRadius + target.radius then
+                Boss.applyWeakPointDamage(state, target.index, state.bonuses.frostDamage)
+            end
+        elseif target.dist <= state.bonuses.frostRadius + state.boss.radius then
+            Boss.applyDamage(state, state.bonuses.frostDamage * 0.7)
+        end
+        return false
+    end
+
     triggerFrostFx(state, state.bonuses.frostRadius)
     local reward = Food.damagePulse(
         state.food,

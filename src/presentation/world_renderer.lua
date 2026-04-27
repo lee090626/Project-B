@@ -195,6 +195,19 @@ function WorldRenderer.draw(state, assets)
         drawMapPattern(mapData.id, mapTheme)
     end
 
+    if state.mode == "boss_arena" and state.boss.active then
+        local arenaX = (state.player.x + state.boss.x) * 0.5
+        local arenaY = (state.player.y + state.boss.y) * 0.5
+        local arenaRadius = C.BOSS_ARENA.weakPointOrbitRadius + 200
+        if isCircleVisible(arenaX, arenaY, arenaRadius, left, top, right, bottom, margin) then
+            love.graphics.setColor(0.32, 0.09, 0.06, 0.18)
+            love.graphics.circle("fill", arenaX, arenaY, arenaRadius)
+            love.graphics.setColor(0.96, 0.52, 0.22, 0.65)
+            love.graphics.setLineWidth(3)
+            love.graphics.circle("line", arenaX, arenaY, arenaRadius)
+        end
+    end
+
     for _, item in ipairs(state.food.list) do
         if isCircleVisible(item.x, item.y, item.radius + 10, left, top, right, bottom, margin) then
             local flash = 0.2 + (item.hitFlash or 0) * 0.4
@@ -214,10 +227,36 @@ function WorldRenderer.draw(state, assets)
         end
     end
 
+    if state.boss.active and state.boss.weakPoints then
+        for _, point in ipairs(state.boss.weakPoints) do
+            if isCircleVisible(point.x, point.y, point.radius + 8, left, top, right, bottom, margin) then
+                local flash = 0.2 + (point.hitFlash or 0) * 0.5
+                love.graphics.setColor(0.88, 0.74 + flash * 0.15, 0.28 + flash * 0.1, 0.95)
+                love.graphics.circle("fill", point.x, point.y, point.radius)
+                love.graphics.setColor(1, 0.97, 0.84, 0.9)
+                love.graphics.setLineWidth(2)
+                love.graphics.circle("line", point.x, point.y, point.radius + 2)
+
+                local hpPct = point.maxHp > 0 and math.max(0, point.hp / point.maxHp) or 0
+                local barW = point.radius * 2.0
+                local barX = point.x - barW * 0.5
+                local barY = point.y - point.radius - 10
+                love.graphics.setColor(0, 0, 0, 0.72)
+                love.graphics.rectangle("fill", barX, barY, barW, 4)
+                love.graphics.setColor(1.0, 0.86, 0.44)
+                love.graphics.rectangle("fill", barX + 1, barY + 1, math.max(0, (barW - 2) * hpPct), 2)
+            end
+        end
+    end
+
     if (state.boss.active or state.boss.defeated)
         and isCircleVisible(state.boss.x, state.boss.y, state.boss.radius + 6, left, top, right, bottom, margin) then
         local pulse = state.boss.active and (math.sin(state.boss.pulse * 4) * 0.08 + 0.92) or 0.6
         local flash = state.boss.hitFlash or 0
+        if state.boss.active and not state.boss.shielded then
+            love.graphics.setColor(1.0, 0.56, 0.22, 0.18 + (state.boss.vulnerableTimer or 0) * 0.08)
+            love.graphics.circle("fill", state.boss.x, state.boss.y, state.boss.radius + 18)
+        end
         love.graphics.setColor(0.9 * pulse + flash * 0.25, 0.25 * pulse + flash * 0.15, 0.2 * pulse + flash * 0.15)
         love.graphics.circle("fill", state.boss.x, state.boss.y, state.boss.radius)
         love.graphics.setColor(0.2, 0.05, 0.05)
