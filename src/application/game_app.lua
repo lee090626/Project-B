@@ -35,9 +35,7 @@ function App:update(dt)
 end
 
 function App:draw()
-    Renderer.draw(self.state, self.fonts, self.ui, self.assets, function(sx, sy)
-        return Service.skillTreeWorldPosition(self.state, sx, sy)
-    end)
+    Renderer.draw(self.state, self.fonts, self.ui, self.assets)
 end
 
 function App:keypressed(key)
@@ -122,8 +120,6 @@ function App:mousereleased(x, y, button)
     if self.state.mode == "run_end_result" then
         return
     end
-
-    Service.stopTreeDrag(self.state)
 end
 
 function App:mousemoved(x, y, dx, dy)
@@ -131,15 +127,12 @@ function App:mousemoved(x, y, dx, dy)
         Service.updateMetaTreePointer(self.state, x, y, dx, dy)
         return
     end
-    Service.panTree(self.state, dx, dy)
 end
 
 function App:wheelmoved(_, y)
     if self.state.mode == "run_end_tree" then
         Service.zoomMetaTree(self.state, y)
-        return
     end
-    Service.zoomTree(self.state, y)
 end
 
 function App:quit()

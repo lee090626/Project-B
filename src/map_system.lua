@@ -53,6 +53,16 @@ function MapSystem.updateUnlocks(maps, unlockedSkillCount)
     return unlockedAny
 end
 
+function MapSystem.syncUnlocks(maps, unlockedSkillCount)
+    for _, mapData in ipairs(C.MAPS) do
+        maps.unlocked[mapData.id] = unlockedSkillCount >= mapData.unlockRequires
+    end
+
+    if not maps.unlocked[maps.currentMapId] then
+        maps.currentMapId = 1
+    end
+end
+
 function MapSystem.allMapsUnlocked(maps)
     for _, mapData in ipairs(C.MAPS) do
         if not maps.unlocked[mapData.id] then

@@ -1,20 +1,10 @@
 local C = require("src.constants")
 local Player = require("src.player_controller")
 local MapSystem = require("src.map_system")
-local SkillTree = require("src.skill_tree_system")
 local GameState = require("src.game_state")
 local Meta = require("src.meta_system")
 
 local Renderer = {}
-local ICON_LABELS = {
-    spd = "SPD",
-    rng = "RNG",
-    rar = "RAR",
-    elt = "ELT",
-    dmg = "DMG",
-    mag = "MAG",
-}
-
 local function formatTime(seconds)
     local total = math.max(0, math.floor(seconds))
     local m = math.floor(total / 60)
@@ -280,7 +270,7 @@ local function drawHelpPanel(state, fonts)
     love.graphics.setColor(1, 1, 1)
     if state.mode == "run_end_tree" then
         love.graphics.printf(
-            string.format("Reason: %s | Reward: +%d essence | Current: %d essence", state.runEndedReason or "unknown", state.lastRunReward, state.meta.essence),
+            string.format("Reason: %s | Current essence: %d", state.runEndedReason or "unknown", state.meta.essence),
             x + 24,
             y + 62,
             w - 48,
@@ -297,118 +287,6 @@ local function drawHelpPanel(state, fonts)
         love.graphics.printf("[B] Enter boss", x + 24, y + 116, w - 48, "left")
         love.graphics.printf("[F5/F9] Save / Load  |  [F10] Reset all data", x + 24, y + 140, w - 48, "left")
         love.graphics.printf("[H] Close help", x + 24, y + 164, w - 48, "left")
-    end
-end
-
-local function drawSkillTreeOverlay(state, fonts, treeWorldFromScreen)
-    local sw = love.graphics.getWidth()
-    local sh = love.graphics.getHeight()
-    local tree = state.skillTree
-    local essence = state.meta and state.meta.essence or 0
-
-    love.graphics.setColor(0, 0, 0, 0.82)
-    love.graphics.rectangle("fill", 0, 0, sw, sh)
-
-    love.graphics.push()
-    love.graphics.translate(sw * 0.5, sh * 0.5)
-    love.graphics.scale(tree.zoom)
-    love.graphics.translate(-tree.cameraX, -tree.cameraY)
-
-    for _, node in ipairs(tree.nodes) do
-        if #node.deps > 0 then
-            for _, depId in ipairs(node.deps) do
-                local dep = tree.nodes[depId]
-                if dep then
-                    if SkillTree.isUnlocked(node) and SkillTree.isUnlocked(dep) then
-                        love.graphics.setColor(0.35, 1.0, 0.55, 0.9)
-                    else
-                        love.graphics.setColor(0.25, 0.95, 1.0, 0.45)
-                    end
-                    love.graphics.setLineWidth(2)
-                    love.graphics.line(dep.x, dep.y, node.x, node.y)
-                end
-            end
-        end
-    end
-
-    for _, node in ipairs(tree.nodes) do
-        local tooltip = SkillTree.getTooltipInfo(tree, node, essence)
-        local unlocked = SkillTree.isUnlocked(node)
-
-        if unlocked then
-            love.graphics.setColor(0.12, 0.12, 0.16)
-        elseif tooltip.canBuy then
-            love.graphics.setColor(0.08, 0.2, 0.14)
-        else
-            love.graphics.setColor(0.08, 0.08, 0.1)
-        end
-
-        local s = node.isAnchor and 24 or 18
-        love.graphics.polygon(
-            "fill",
-            node.x, node.y - s,
-            node.x + s, node.y,
-            node.x, node.y + s,
-            node.x - s, node.y
-        )
-
-        if unlocked then
-            love.graphics.setColor(0.35, 1.0, 0.55)
-        else
-            love.graphics.setColor(0.25, 0.95, 1.0)
-        end
-        love.graphics.setLineWidth(node.isAnchor and 3 or 2)
-        love.graphics.polygon(
-            "line",
-            node.x, node.y - s,
-            node.x + s, node.y,
-            node.x, node.y + s,
-            node.x - s, node.y
-        )
-
-        love.graphics.setColor(0.92, 0.95, 1.0)
-        local iconLabel = ICON_LABELS[node.iconId] or "SKL"
-        love.graphics.printf(iconLabel, node.x - 16, node.y - 8, 32, "center")
-
-        if node.isAnchor then
-            love.graphics.setColor(0.85, 0.95, 0.45)
-            love.graphics.printf(string.format("%d/%d", node.level, node.maxLevel), node.x - 24, node.y + s + 3, 48, "center")
-        end
-    end
-
-    love.graphics.pop()
-
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.setFont(fonts.hud)
-    love.graphics.print("SKILL TREE [TAB to close, drag to pan, wheel to zoom, click to unlock]", 18, 16)
-    love.graphics.print(string.format("Essence: %d | Unlocked: %d/%d", essence, tree.unlockedCount, #tree.nodes), 18, 40)
-
-    local mx, my = love.mouse.getPosition()
-    local treeX, treeY = treeWorldFromScreen(mx, my)
-    local hovered = SkillTree.nodeAtWorldPosition(tree, treeX, treeY)
-
-    if hovered then
-        local t = SkillTree.getTooltipInfo(tree, hovered, essence)
-        local status
-        if t.canBuy then
-            status = "BUY AVAILABLE"
-        elseif t.reason == "max level" or t.reason == "already unlocked" then
-            status = "MAXED"
-        elseif t.reason == "dependency missing" then
-            status = "NEED PREV NODE"
-        else
-            status = "NEED MORE GROWTH"
-        end
-
-        love.graphics.setColor(0, 0, 0, 0.8)
-        love.graphics.rectangle("fill", 18, sh - 116, 520, 94, 8, 8)
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.print(hovered.name, 30, sh - 106)
-        love.graphics.print(string.format("Lv %d/%d", t.currentLevel, t.maxLevel), 30, sh - 84)
-        love.graphics.print(string.format("%.2f -> %.2f %s", t.currentValue, t.nextValue, hovered.effect.stat), 30, sh - 62)
-        love.graphics.print("Cost: " .. (t.cost and tostring(t.cost) or "MAX") .. " essence", 30, sh - 40)
-        love.graphics.setColor(t.canBuy and 0.4 or 1.0, 1.0, t.canBuy and 0.45 or 0.6)
-        love.graphics.print(status, 300, sh - 84)
     end
 end
 
@@ -605,7 +483,7 @@ local function drawRunEndResultOverlay(state, fonts)
     love.graphics.printf("Click to continue to skill tree", x, y + h - 42, w, "center")
 end
 
-function Renderer.draw(state, fonts, ui, assets, treeWorldFromScreen)
+function Renderer.draw(state, fonts, ui, assets)
     if state.mode == "run_end_result" then
         drawWorld(state, assets)
         drawRunEndResultOverlay(state, fonts)

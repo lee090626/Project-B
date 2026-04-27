@@ -1,5 +1,6 @@
 local Utils = require("src.utils")
 local C = require("src.constants")
+local Meta = require("src.meta_system")
 
 local Boss = {}
 
@@ -45,7 +46,7 @@ function Boss.enter(state)
         return false
     end
     boss.active = true
-    boss.maxHp = 1600 + state.food.consumedTotal * 12 + state.skillTree.unlockedCount * 24
+    boss.maxHp = 1600 + state.food.consumedTotal * 12 + Meta.getUnlockedCount(state.meta) * 24
     boss.hp = boss.maxHp
     boss.pulse = 0
     boss.hitFlash = 0

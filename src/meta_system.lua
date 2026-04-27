@@ -338,6 +338,20 @@ function Meta.computeBonuses(meta)
     return bonuses
 end
 
+function Meta.getUnlockedCount(meta)
+    local count = 0
+    for _, def in ipairs(DEFINITIONS) do
+        if (meta.levels[def.key] or 0) > 0 then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+function Meta.allUnlocked(meta)
+    return Meta.getUnlockedCount(meta) >= #DEFINITIONS
+end
+
 function Meta.getUpgradeInfo(meta)
     local rows = {}
     for i, def in ipairs(DEFINITIONS) do
@@ -401,10 +415,6 @@ function Meta.tryBuy(meta, index)
     meta.essence = meta.essence - cost
     meta.levels[def.key] = level + 1
     return true, nil
-end
-
-function Meta.calculateRunReward(_)
-    return 0
 end
 
 return Meta

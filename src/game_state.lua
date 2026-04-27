@@ -2,7 +2,6 @@ local C = require("src.constants")
 local Player = require("src.player_controller")
 local Food = require("src.food_system")
 local MapSystem = require("src.map_system")
-local SkillTree = require("src.skill_tree_system")
 local Boss = require("src.boss_system")
 local Meta = require("src.meta_system")
 local Save = require("src.save_system")
@@ -38,17 +37,20 @@ local function recomputeMetaBonuses(state)
     state.runDuration = C.RUN_TIME_LIMIT_SECONDS
 end
 
+local function syncMapsToMeta(state)
+    MapSystem.syncUnlocks(state.maps, Meta.getUnlockedCount(state.meta))
+end
+
 local function resetRunState(state)
     recomputeMetaBonuses(state)
 
     state.player = Player.new(nil)
     state.food = Food.new(nil)
     state.maps = MapSystem.new(nil)
-    state.skillTree = SkillTree.new(nil)
     state.boss = Boss.new(nil)
 
-    state.bonuses = SkillTree.computeBonuses(state.skillTree)
-    MapSystem.updateUnlocks(state.maps, state.skillTree.unlockedCount)
+    state.bonuses = Meta.computeBonuses(state.meta)
+    syncMapsToMeta(state)
 
     state.camera.x = 0
     state.camera.y = 0
@@ -74,17 +76,12 @@ function GameState.new(loadResult, loadErr)
         uiToastTimer = 0,
         uiAutosaveTimer = 0,
         uiLastMessage = nil,
-        treeDrag = false,
-        treeDragX = 0,
-        treeDragY = 0,
         camera = { x = 0, y = 0, zoom = 1.0 },
         metaTreeView = nil,
         message = loadErr and ("Save warning: " .. tostring(loadErr)) or nil,
         endingReached = saved.endingReached or false,
         runEnded = saved.runEnded or false,
         runEndedReason = saved.runEndedReason,
-        lastRunReward = saved.lastRunReward or 0,
-        runRewardPreview = 0,
         lastSaveStatus = "never",
         meta = Meta.new(saved.meta),
     }
@@ -94,7 +91,6 @@ function GameState.new(loadResult, loadErr)
     state.player = Player.new(saved.player)
     state.food = Food.new(saved.food)
     state.maps = MapSystem.new(saved.maps)
-    state.skillTree = SkillTree.new(saved.skills)
     state.boss = Boss.new(saved.boss)
 
     state.runTimeLeft = saved.runTimeLeft or state.runDuration
@@ -105,18 +101,16 @@ function GameState.new(loadResult, loadErr)
         playerExport = Player.export,
         foodExport = Food.export,
         mapExport = MapSystem.export,
-        skillExport = SkillTree.export,
         bossExport = Boss.export,
         metaExport = Meta.export,
     }
 
-    state.bonuses = SkillTree.computeBonuses(state.skillTree)
-    MapSystem.updateUnlocks(state.maps, state.skillTree.unlockedCount)
+    state.bonuses = Meta.computeBonuses(state.meta)
+    syncMapsToMeta(state)
 
     if state.runEnded and state.mode ~= "run_end_tree" and state.mode ~= "run_end_result" then
         state.mode = "run_end_result"
     end
-    state.runRewardPreview = 0
 
     return state
 end
@@ -128,7 +122,6 @@ end
 
 function GameState.startNewRun(state)
     resetRunState(state)
-    state.runRewardPreview = 0
     state.message = "New run started"
 end
 
@@ -143,8 +136,6 @@ function GameState.endRun(state, reason)
     resetMetaTreeView(state)
     resetPassiveState(state)
 
-    state.lastRunReward = 0
-    state.runRewardPreview = 0
     state.meta.totalRuns = state.meta.totalRuns + 1
     state.message = "Run ended"
     return true
@@ -175,11 +166,12 @@ function GameState.checkEnding(state)
     end
 
     local allMaps = MapSystem.allMapsUnlocked(state.maps)
+    local allSkills = Meta.allUnlocked(state.meta)
     local bossDefeated = state.boss.defeated
 
-    if allMaps and bossDefeated then
+    if allMaps and allSkills and bossDefeated then
         state.endingReached = true
-        state.events[#state.events + 1] = "Ending reached: All maps + boss defeated"
+        state.events[#state.events + 1] = "Ending reached: All skills + all maps + boss defeated"
         return true
     end
     return false
