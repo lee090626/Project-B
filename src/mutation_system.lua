@@ -260,6 +260,13 @@ function Mutation.getProgress(state)
     }
 end
 
+local function openChoiceState(state)
+    state.mode = "run_choice"
+    state.messageKey = "message.choose_instinct"
+    state.messageParams = nil
+    state.messageVersion = (state.messageVersion or 0) + 1
+end
+
 function Mutation.gainEssenceAndCheckLevel(state, amount)
     local gain = math.max(1, math.floor(amount + 0.5))
     state.meta.essence = state.meta.essence + gain
@@ -280,6 +287,9 @@ function Mutation.gainEssenceAndCheckLevel(state, amount)
 
     if opened and not state.runMutations.activeChoices then
         Mutation.rollChoices(state)
+        if state.runMutations.activeChoices then
+            openChoiceState(state)
+        end
     end
 
     return gain, opened
