@@ -225,7 +225,7 @@ local firePoints = {
 
 local frostPoints = {
     { x = -0.54, y = -0.36 }, { x = -0.72, y = -0.36 }, { x = -0.9, y = -0.36 }, { x = -1.08, y = -0.36 },
-    { x = -0.72, y = -0.54 }, { x = -0.9, y = -0.54 }, { x = -0.9, y = -0.18 }, { x = -1.08, y = -0.18 },
+    { x = -0.72, y = -0.54 }, { x = -0.9, y = -0.54 }, { x = -0.72, y = -0.18 }, { x = -1.08, y = -0.18 },
     { x = -0.54, y = -0.54 }, { x = -0.54, y = -0.72 }, { x = -0.72, y = -0.72 }, { x = -0.9, y = -0.72 },
     { x = -1.08, y = -0.54 }, { x = -1.26, y = -0.54 }, { x = -1.26, y = -0.36 }, { x = -1.26, y = -0.18 },
 }
@@ -291,6 +291,19 @@ for _, def in ipairs(DEFINITIONS) do
     rebalanceBonus(def)
 end
 
+local function assertUniqueLayout()
+    local seen = {}
+    for index, point in ipairs(LAYOUT) do
+        local key = point.x .. ":" .. point.y
+        local prev = seen[key]
+        if prev then
+            error(("meta tree layout overlap between %s and %s"):format(DEFINITIONS[prev].key, DEFINITIONS[index].key))
+        end
+        seen[key] = index
+    end
+end
+
+assertUniqueLayout()
 assert(#DEFINITIONS == 89, "meta tree must contain 89 nodes")
 
 local function makeDefaultLevels()
