@@ -4,6 +4,23 @@ local MapSystem = require("src.map_system")
 
 local WorldRenderer = {}
 
+local function angleFromVector(dx, dy)
+    if dx == 0 then
+        if dy > 0 then
+            return math.pi * 0.5
+        elseif dy < 0 then
+            return -math.pi * 0.5
+        end
+        return 0
+    end
+
+    local angle = math.atan(dy / dx)
+    if dx < 0 then
+        angle = angle + math.pi
+    end
+    return angle
+end
+
 local function currentMapColor(mapId)
     if mapId == 1 then
         return { 0.12, 0.17, 0.12 }, { 0.2, 0.32, 0.2 }
@@ -118,10 +135,11 @@ function WorldRenderer.draw(state, assets)
                     local sprite = assets.fireballSprite
                     local iw = sprite:getWidth()
                     local ih = sprite:getHeight()
-                    local diameter = math.max(24, projectile.radius * 0.7)
+                    local diameter = math.max(40, projectile.radius * 2.05)
                     local scale = diameter / math.max(iw, ih)
+                    local angle = angleFromVector(projectile.vx, projectile.vy)
                     love.graphics.setColor(1, 1, 1)
-                    love.graphics.draw(sprite, projectile.x, projectile.y, 0, scale, scale, iw * 0.5, ih * 0.5)
+                    love.graphics.draw(sprite, projectile.x, projectile.y, angle, scale, scale, iw * 0.5, ih * 0.5)
                 else
                     love.graphics.setColor(1.0, 0.42, 0.16)
                     love.graphics.circle("fill", projectile.x, projectile.y, math.max(7, projectile.radius * 0.16))
@@ -137,16 +155,6 @@ function WorldRenderer.draw(state, assets)
                 love.graphics.setColor(1.0, 0.82, 0.36, 0.7 * a)
                 love.graphics.setLineWidth(2)
                 love.graphics.circle("line", impact.x, impact.y, impact.radius * (0.55 + (1 - a) * 0.45))
-
-                if assets and assets.fireballSprite then
-                    local sprite = assets.fireballSprite
-                    local iw = sprite:getWidth()
-                    local ih = sprite:getHeight()
-                    local diameter = math.max(28, impact.radius * 0.8)
-                    local scale = diameter / math.max(iw, ih)
-                    love.graphics.setColor(1, 1, 1, a)
-                    love.graphics.draw(sprite, impact.x, impact.y, 0, scale, scale, iw * 0.5, ih * 0.5)
-                end
             end
         end
     end
