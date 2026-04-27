@@ -154,7 +154,7 @@ function Nest.tryUpgrade(nest, key)
 end
 
 function Nest.awardRunMatter(state)
-    local reward = math.floor((state.food.consumedTotal or 0) * C.NEST_RUN_REWARD_RATE)
+    local reward = math.floor((state.runEssenceTotal or 0) * C.NEST_RUN_REWARD_RATE)
     reward = reward + (state.maps.currentMapId or 1) * C.NEST_RUN_MAP_BONUS
     if state.boss.defeated then
         reward = reward + C.NEST_RUN_BOSS_BONUS
