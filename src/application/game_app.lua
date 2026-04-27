@@ -5,6 +5,8 @@ local Renderer = require("src.presentation.game_renderer")
 local App = {}
 App.__index = App
 
+local UI_FONT_PATH = "fonts/NanumGothic-Regular.ttf"
+
 function App.new()
     return setmetatable({
         state = nil,
@@ -26,12 +28,20 @@ local function hitRect(x, y, rect)
         and y <= rect.y + rect.h
 end
 
+local function loadUiFont(size)
+    local ok, font = pcall(love.graphics.newFont, UI_FONT_PATH, size)
+    if ok and font then
+        return font
+    end
+    return love.graphics.newFont(size)
+end
+
 function App:load()
     love.window.setTitle(Locale.text(Locale.DEFAULT, "app.title"))
     love.window.setMode(1280, 720, { resizable = true, minwidth = 960, minheight = 540 })
 
-    self.fonts.hud = love.graphics.newFont(15)
-    self.fonts.big = love.graphics.newFont(30)
+    self.fonts.hud = loadUiFont(15)
+    self.fonts.big = loadUiFont(30)
 
     local ok, playerImage = pcall(love.graphics.newImage, "BabyDragon.png")
     if ok and playerImage then
