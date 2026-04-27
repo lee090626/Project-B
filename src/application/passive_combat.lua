@@ -2,6 +2,7 @@ local C = require("src.constants")
 local Utils = require("src.utils")
 local Food = require("src.food_system")
 local Boss = require("src.boss_system")
+local MapSystem = require("src.map_system")
 local Mutation = require("src.mutation_system")
 
 local PassiveCombat = {}
@@ -60,7 +61,8 @@ function PassiveCombat.resetState(state)
         fireballTimer = 0.6,
         frostPulseTimer = 0.9,
         lightningFx = nil,
-        fireballFx = nil,
+        fireballProjectiles = {},
+        fireballImpacts = {},
         frostFxTimer = 0,
         frostFxRadius = 0,
     }
@@ -84,14 +86,39 @@ local function pushLightningFx(state, fromX, fromY, toX, toY)
     }
 end
 
-local function pushFireballFx(state, fromX, fromY, toX, toY, radius)
-    state.passives.fireballFx = {
-        fromX = fromX,
-        fromY = fromY,
-        toX = toX,
-        toY = toY,
+local function spawnFireballProjectile(state, fromX, fromY, toX, toY, radius, pulseDamage, bossDamage, maxHits)
+    local dist = Utils.distance(fromX, fromY, toX, toY)
+    if dist <= 0 then
+        dist = 1
+    end
+
+    local speed = C.PASSIVE_BASES.fireball.projectileSpeed
+    local vx = (toX - fromX) / dist * speed
+    local vy = (toY - fromY) / dist * speed
+
+    state.passives.fireballProjectiles[#state.passives.fireballProjectiles + 1] = {
+        x = fromX,
+        y = fromY,
+        prevX = fromX,
+        prevY = fromY,
+        targetX = toX,
+        targetY = toY,
+        vx = vx,
+        vy = vy,
+        speed = speed,
         radius = radius,
-        timer = 0.2,
+        pulseDamage = pulseDamage,
+        bossDamage = bossDamage,
+        maxHits = maxHits,
+    }
+end
+
+local function pushFireballImpact(state, x, y, radius)
+    state.passives.fireballImpacts[#state.passives.fireballImpacts + 1] = {
+        x = x,
+        y = y,
+        radius = radius,
+        timer = C.PASSIVE_BASES.fireball.impactFxDuration,
     }
 end
 
@@ -102,16 +129,63 @@ end
 
 function PassiveCombat.tickFx(state, dt)
     local passives = state.passives
+    local mapData = MapSystem.getCurrentMap(state.maps)
     if passives.lightningFx then
         passives.lightningFx.timer = passives.lightningFx.timer - dt
         if passives.lightningFx.timer <= 0 then
             passives.lightningFx = nil
         end
     end
-    if passives.fireballFx then
-        passives.fireballFx.timer = passives.fireballFx.timer - dt
-        if passives.fireballFx.timer <= 0 then
-            passives.fireballFx = nil
+
+    if passives.fireballImpacts then
+        for i = #passives.fireballImpacts, 1, -1 do
+            local impact = passives.fireballImpacts[i]
+            impact.timer = impact.timer - dt
+            if impact.timer <= 0 then
+                table.remove(passives.fireballImpacts, i)
+            end
+        end
+    end
+
+    if passives.fireballProjectiles then
+        for i = #passives.fireballProjectiles, 1, -1 do
+            local projectile = passives.fireballProjectiles[i]
+            projectile.prevX = projectile.x
+            projectile.prevY = projectile.y
+            projectile.x = projectile.x + projectile.vx * dt
+            projectile.y = projectile.y + projectile.vy * dt
+
+            local reachedTarget = Utils.distance(projectile.x, projectile.y, projectile.targetX, projectile.targetY)
+                <= projectile.speed * dt
+            if reachedTarget then
+                projectile.x = projectile.targetX
+                projectile.y = projectile.targetY
+                pushFireballImpact(state, projectile.x, projectile.y, projectile.radius)
+
+                if state.boss.active and not state.boss.defeated then
+                    local bossDist = Boss.distanceTo(state.boss, projectile.x, projectile.y)
+                    if bossDist <= projectile.radius + state.boss.radius then
+                        Boss.applyDamage(state, projectile.bossDamage)
+                    end
+                end
+
+                local reward = Food.damagePulse(
+                    state.food,
+                    projectile.x,
+                    projectile.y,
+                    projectile.radius,
+                    projectile.pulseDamage,
+                    mapData,
+                    state.bonuses,
+                    nil,
+                    nil,
+                    projectile.maxHits
+                )
+                table.remove(passives.fireballProjectiles, i)
+                if addEssence(state, reward) then
+                    return
+                end
+            end
         end
     end
     passives.frostFxTimer = math.max(0, passives.frostFxTimer - dt)
@@ -177,41 +251,25 @@ local function triggerFireball(state, mapData)
             return
         end
 
-        pushFireballFx(state, state.player.x, state.player.y, target.x, target.y, state.bonuses.fireballRadius)
+        local pulseDamage = state.bonuses.fireballDamage
+        local bossDamage = state.bonuses.fireballDamage
+        local maxHits = math.max(3, projectiles + 1)
         if target.kind == "boss" then
-            Boss.applyDamage(state, state.bonuses.fireballDamage)
-            local reward = Food.damagePulse(
-                state.food,
-                target.x,
-                target.y,
-                state.bonuses.fireballRadius,
-                state.bonuses.fireballDamage * 0.6,
-                mapData,
-                state.bonuses,
-                nil,
-                nil,
-                math.max(2, projectiles)
-            )
-            if addEssence(state, reward) then
-                return true
-            end
-        else
-            local reward = Food.damagePulse(
-                state.food,
-                target.x,
-                target.y,
-                state.bonuses.fireballRadius,
-                state.bonuses.fireballDamage,
-                mapData,
-                state.bonuses,
-                nil,
-                nil,
-                math.max(3, projectiles + 1)
-            )
-            if addEssence(state, reward) then
-                return true
-            end
+            pulseDamage = pulseDamage * 0.6
+            maxHits = math.max(2, projectiles)
         end
+
+        spawnFireballProjectile(
+            state,
+            state.player.x,
+            state.player.y,
+            target.x,
+            target.y,
+            state.bonuses.fireballRadius,
+            pulseDamage,
+            bossDamage,
+            maxHits
+        )
     end
     return false
 end

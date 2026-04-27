@@ -82,6 +82,8 @@ C.PASSIVE_BASES = {
         interval = 2.0,
         damage = 14,
         radius = 60,
+        projectileSpeed = 380,
+        impactFxDuration = 0.2,
     },
     frost = {
         interval = 2.4,
