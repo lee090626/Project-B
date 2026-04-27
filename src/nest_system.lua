@@ -47,21 +47,21 @@ local function getRarityShift(level)
     return level * 2
 end
 
-local function effectText(key, level)
+local function effectPayload(key, level)
     if key == "brooder" then
-        return string.format("Start with %d instinct picks", getStartChoices(level))
+        return "nest.effect.brooder", { count = getStartChoices(level) }
     end
     if key == "larder" then
         local reduction = math.floor((1 - getThresholdFactor(level)) * 100 + 0.5)
-        return string.format("Instinct level cost -%d%%", reduction)
+        return "nest.effect.larder", { percent = reduction }
     end
     if key == "roost" then
-        return string.format("Speed +%d  Magnet +%d", level * 4, level * 8)
+        return "nest.effect.roost", { speed = level * 4, magnet = level * 8 }
     end
     if key == "hatchery" then
-        return string.format("Choices %d  Rarity shift %d", getChoiceCount(level), getRarityShift(level))
+        return "nest.effect.hatchery", { count = getChoiceCount(level), shift = getRarityShift(level) }
     end
-    return ""
+    return "", {}
 end
 
 function Nest.new(saved)
@@ -110,19 +110,23 @@ function Nest.getUpgradeRows(nest)
         local maxed = level >= def.maxLevel
         local cost = maxed and nil or getCost(def, level)
         local canBuy = (not maxed) and nest.nestMatter >= cost
-        local reason = maxed and "MAX" or (canBuy and "BUY" or "NEED MATTER")
+        local reason = maxed and "MAX" or (canBuy and "BUY" or "NEED_MATTER")
+        local effectKey, effectParams = effectPayload(def.key, level)
+        local nextEffectKey, nextEffectParams = effectPayload(def.key, math.min(def.maxLevel, level + 1))
         rows[#rows + 1] = {
             key = def.key,
-            name = def.name,
-            desc = def.desc,
+            nameKey = "nest.upgrade." .. def.key .. ".name",
+            descKey = "nest.upgrade." .. def.key .. ".desc",
             level = level,
             maxLevel = def.maxLevel,
             cost = cost,
             canBuy = canBuy,
             maxed = maxed,
             reason = reason,
-            effect = effectText(def.key, level),
-            nextEffect = effectText(def.key, math.min(def.maxLevel, level + 1)),
+            effectKey = effectKey,
+            effectParams = effectParams,
+            nextEffectKey = nextEffectKey,
+            nextEffectParams = nextEffectParams,
         }
     end
     return rows
@@ -131,17 +135,17 @@ end
 function Nest.tryUpgrade(nest, key)
     local def = getDefinition(key)
     if not def then
-        return false, "invalid key"
+        return false, "invalid_key"
     end
 
     local level = nest.levels[key] or 0
     if level >= def.maxLevel then
-        return false, "already max"
+        return false, "already_max"
     end
 
     local cost = getCost(def, level)
     if nest.nestMatter < cost then
-        return false, "not enough matter"
+        return false, "not_enough_matter"
     end
 
     nest.nestMatter = nest.nestMatter - cost

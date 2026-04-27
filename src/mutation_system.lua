@@ -5,13 +5,7 @@ local Mutation = {}
 local DEFINITIONS = {
     {
         key = "hunt_bite",
-        name = "Razor Bite",
         category = "hunt",
-        desc = {
-            common = "Contact bite +8",
-            rare = "Contact bite +14",
-            mythic = "Contact bite +22",
-        },
         effects = {
             common = { contactBite = 8 },
             rare = { contactBite = 14 },
@@ -20,13 +14,7 @@ local DEFINITIONS = {
     },
     {
         key = "hunt_pursuit",
-        name = "Pursuit Muscle",
         category = "hunt",
-        desc = {
-            common = "Move speed +10",
-            rare = "Move speed +16",
-            mythic = "Move speed +24",
-        },
         effects = {
             common = { speed = 10 },
             rare = { speed = 16 },
@@ -35,13 +23,7 @@ local DEFINITIONS = {
     },
     {
         key = "hunt_jaw",
-        name = "Latch Jaw",
         category = "hunt",
-        desc = {
-            common = "Reach +1.0",
-            rare = "Reach +1.6",
-            mythic = "Reach +2.4",
-        },
         effects = {
             common = { reach = 1.0 },
             rare = { reach = 1.6 },
@@ -50,13 +32,7 @@ local DEFINITIONS = {
     },
     {
         key = "stomach_feast",
-        name = "Feast Stomach",
         category = "stomach",
-        desc = {
-            common = "Essence gain +6%",
-            rare = "Essence gain +12%",
-            mythic = "Essence gain +18%",
-        },
         effects = {
             common = { essenceMult = 0.06 },
             rare = { essenceMult = 0.12 },
@@ -65,13 +41,7 @@ local DEFINITIONS = {
     },
     {
         key = "stomach_gem",
-        name = "Gem Tongue",
         category = "stomach",
-        desc = {
-            common = "Rare value +12%",
-            rare = "Rare value +20%",
-            mythic = "Rare value +30%",
-        },
         effects = {
             common = { rareValue = 0.12 },
             rare = { rareValue = 0.20 },
@@ -80,13 +50,7 @@ local DEFINITIONS = {
     },
     {
         key = "stomach_crown",
-        name = "Royal Appetite",
         category = "stomach",
-        desc = {
-            common = "Elite value +15%",
-            rare = "Elite value +24%",
-            mythic = "Elite value +36%",
-        },
         effects = {
             common = { eliteValue = 0.15 },
             rare = { eliteValue = 0.24 },
@@ -95,13 +59,7 @@ local DEFINITIONS = {
     },
     {
         key = "sense_pull",
-        name = "Far Scent",
         category = "sense",
-        desc = {
-            common = "Magnet +10",
-            rare = "Magnet +18",
-            mythic = "Magnet +28",
-        },
         effects = {
             common = { magnet = 10 },
             rare = { magnet = 18 },
@@ -110,13 +68,7 @@ local DEFINITIONS = {
     },
     {
         key = "sense_sprint",
-        name = "Spring Tendon",
         category = "sense",
-        desc = {
-            common = "Move speed +12",
-            rare = "Move speed +20",
-            mythic = "Move speed +30",
-        },
         effects = {
             common = { speed = 12 },
             rare = { speed = 20 },
@@ -125,13 +77,7 @@ local DEFINITIONS = {
     },
     {
         key = "sense_jaw",
-        name = "Long Tongue",
         category = "sense",
-        desc = {
-            common = "Reach +0.8",
-            rare = "Reach +1.3",
-            mythic = "Reach +2.0",
-        },
         effects = {
             common = { reach = 0.8 },
             rare = { reach = 1.3 },
@@ -140,13 +86,7 @@ local DEFINITIONS = {
     },
     {
         key = "spawn_bloom",
-        name = "Brood Heat",
         category = "spawn",
-        desc = {
-            common = "Spawn speed +8%",
-            rare = "Spawn speed +14%",
-            mythic = "Spawn speed +22%",
-        },
         effects = {
             common = { spawnRate = 0.08 },
             rare = { spawnRate = 0.14 },
@@ -155,13 +95,7 @@ local DEFINITIONS = {
     },
     {
         key = "spawn_pack",
-        name = "Crowded Tracks",
         category = "spawn",
-        desc = {
-            common = "Spawn cap +4",
-            rare = "Spawn cap +7",
-            mythic = "Spawn cap +11",
-        },
         effects = {
             common = { spawnCap = 4 },
             rare = { spawnCap = 7 },
@@ -170,13 +104,7 @@ local DEFINITIONS = {
     },
     {
         key = "spawn_lure",
-        name = "Lure Gland",
         category = "spawn",
-        desc = {
-            common = "Rare and elite spawn up",
-            rare = "Rare and elite spawn up",
-            mythic = "Rare and elite spawn up",
-        },
         effects = {
             common = { rareBonus = 0.01, eliteBonus = 0.004 },
             rare = { rareBonus = 0.018, eliteBonus = 0.007 },
@@ -185,16 +113,10 @@ local DEFINITIONS = {
     },
     {
         key = "instinct_storm",
-        name = "Storm Mouth",
         category = "instinct",
         requires = function(state)
             return state.metaBonuses.lightningEnabled and state.metaBonuses.lightningEnabled > 0
         end,
-        desc = {
-            common = "Lightning damage and speed up",
-            rare = "Lightning damage and speed up",
-            mythic = "Lightning damage and speed up",
-        },
         effects = {
             common = { lightningDamage = 8, lightningIntervalCut = 0.05 },
             rare = { lightningDamage = 14, lightningIntervalCut = 0.08 },
@@ -203,16 +125,10 @@ local DEFINITIONS = {
     },
     {
         key = "instinct_ember",
-        name = "Ember Sac",
         category = "instinct",
         requires = function(state)
             return state.metaBonuses.fireballEnabled and state.metaBonuses.fireballEnabled > 0
         end,
-        desc = {
-            common = "Fireball damage and radius up",
-            rare = "Fireball damage and radius up",
-            mythic = "Fireball damage and radius up",
-        },
         effects = {
             common = { fireballDamage = 6, fireballRadius = 8 },
             rare = { fireballDamage = 11, fireballRadius = 14 },
@@ -221,16 +137,10 @@ local DEFINITIONS = {
     },
     {
         key = "instinct_frost",
-        name = "Frost Lung",
         category = "instinct",
         requires = function(state)
             return state.metaBonuses.frostEnabled and state.metaBonuses.frostEnabled > 0
         end,
-        desc = {
-            common = "Frost damage and radius up",
-            rare = "Frost damage and radius up",
-            mythic = "Frost damage and radius up",
-        },
         effects = {
             common = { frostDamage = 5, frostRadius = 8, frostDuration = 0.08 },
             rare = { frostDamage = 9, frostRadius = 14, frostDuration = 0.14 },
@@ -362,10 +272,10 @@ function Mutation.rollChoices(state)
         local rarity = rollRarity(state)
         activeChoices[#activeChoices + 1] = {
             key = def.key,
-            name = def.name,
+            nameKey = "mutation." .. def.key .. ".name",
             category = def.category,
             rarity = rarity,
-            desc = def.desc[rarity],
+            descKey = "mutation." .. def.key .. ".desc." .. rarity,
         }
         blocked[def.key] = true
     end
@@ -382,7 +292,7 @@ end
 function Mutation.applyChoice(state, choiceIndex)
     local choice = state.runMutations.activeChoices and state.runMutations.activeChoices[choiceIndex] or nil
     if not choice then
-        return false, "invalid choice"
+        return false, "invalid_choice"
     end
 
     state.runMutations.counts[choice.key] = (state.runMutations.counts[choice.key] or 0) + 1

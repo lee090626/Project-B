@@ -2,7 +2,7 @@ local C = {}
 
 C.SAVE_FILE = "save.json"
 C.BACKUP_FILE = "save.bak"
-C.SAVE_VERSION = 4
+C.SAVE_VERSION = 5
 C.AUTOSAVE_INTERVAL = 30
 C.RUN_TIME_LIMIT_SECONDS = 15
 
@@ -12,7 +12,7 @@ C.WORLD_HEIGHT = 1800
 C.MAPS = {
     {
         id = 1,
-        name = "Sprout Meadow",
+        nameKey = "map.1.name",
         reward = 1.0,
         hpScale = 1.0,
         spawn = { common = 0.78, rare = 0.2, elite = 0.02 },
@@ -20,7 +20,7 @@ C.MAPS = {
     },
     {
         id = 2,
-        name = "Crystal Cave",
+        nameKey = "map.2.name",
         reward = 1.35,
         hpScale = 1.28,
         spawn = { common = 0.68, rare = 0.26, elite = 0.06 },
@@ -28,7 +28,7 @@ C.MAPS = {
     },
     {
         id = 3,
-        name = "Molten Ridge",
+        nameKey = "map.3.name",
         reward = 1.75,
         hpScale = 1.62,
         spawn = { common = 0.56, rare = 0.32, elite = 0.12 },
@@ -36,7 +36,7 @@ C.MAPS = {
     },
     {
         id = 4,
-        name = "Abyss Nursery",
+        nameKey = "map.4.name",
         reward = 2.3,
         hpScale = 2.05,
         spawn = { common = 0.46, rare = 0.36, elite = 0.18 },
@@ -95,29 +95,21 @@ C.PASSIVE_BASES = {
 C.NEST_UPGRADES = {
     {
         key = "brooder",
-        name = "Brooder",
-        desc = "Start each run with instinct picks",
         baseCost = 20,
         maxLevel = 10,
     },
     {
         key = "larder",
-        name = "Larder",
-        desc = "Lower essence needed for instinct levels",
         baseCost = 24,
         maxLevel = 10,
     },
     {
         key = "roost",
-        name = "Roost",
-        desc = "Raise starting speed and magnet reach",
         baseCost = 18,
         maxLevel = 10,
     },
     {
         key = "hatchery",
-        name = "Hatchery",
-        desc = "More instinct cards and better rarity",
         baseCost = 28,
         maxLevel = 10,
     },

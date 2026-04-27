@@ -54,6 +54,7 @@ end
 function Save.snapshot(state)
     return {
         version = C.SAVE_VERSION,
+        locale = state.locale,
         totalPlayTime = state.totalPlayTime,
         mode = state.mode,
         runTimeLeft = state.runTimeLeft,

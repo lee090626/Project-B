@@ -1,4 +1,5 @@
 local Service = require("src.application.game_service")
+local Locale = require("src.locale")
 local Renderer = require("src.presentation.game_renderer")
 
 local App = {}
@@ -26,7 +27,7 @@ local function hitRect(x, y, rect)
 end
 
 function App:load()
-    love.window.setTitle("Baby Dragon Incremental v1")
+    love.window.setTitle(Locale.text(Locale.DEFAULT, "app.title"))
     love.window.setMode(1280, 720, { resizable = true, minwidth = 960, minheight = 540 })
 
     self.fonts.hud = love.graphics.newFont(15)
@@ -53,6 +54,11 @@ end
 function App:keypressed(key)
     if key == "h" then
         Service.toggleHelp(self.state)
+        return
+    end
+
+    if key == "l" and self.state.showHelp then
+        Service.cycleLocale(self.state)
         return
     end
 

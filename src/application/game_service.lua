@@ -2,6 +2,7 @@ local C = require("src.constants")
 local GameState = require("src.game_state")
 local MapSystem = require("src.map_system")
 local Boss = require("src.boss_system")
+local Locale = require("src.locale")
 local PassiveCombat = require("src.application.passive_combat")
 local RunLoop = require("src.application.run_loop")
 local MetaTreeController = require("src.application.meta_tree_controller")
@@ -9,15 +10,22 @@ local Mutation = require("src.mutation_system")
 
 local Service = {}
 
-local function setMessage(state, text)
-    state.message = text
-    state.uiLastMessage = text
+local function nestedKey(key)
+    return { key = key }
+end
+
+local function setMessage(state, key, params)
+    GameState.setMessage(state, key, params)
     state.uiToastTimer = C.RUN_HUD_UI.toastDuration
+end
+
+local function refreshWindowTitle(state)
+    love.window.setTitle(Locale.text(state.locale, "app.title"))
 end
 
 local function saveWithFeedback(state, reason)
     if state.mode == "run_choice" then
-        state.lastSaveStatus = "save delayed: instinct choice"
+        GameState.setSaveStatus(state, "save_status.delayed_choice")
         return false
     end
     local ok = GameState.saveNow(state, reason)
@@ -27,15 +35,23 @@ local function saveWithFeedback(state, reason)
     return ok
 end
 
+local function localizedErrorRef(domain, code)
+    if domain == "generic" then
+        return nestedKey("error.generic." .. code)
+    end
+    return nestedKey("error." .. domain .. "." .. code)
+end
+
 function Service.loadState()
     local state = GameState.loadOrDefault()
     state.camera.zoom = 1.0
+    refreshWindowTitle(state)
     return state
 end
 
 function Service.reloadState()
     local state = Service.loadState()
-    setMessage(state, "Save reloaded")
+    setMessage(state, "message.save_reloaded")
     return state
 end
 
@@ -44,7 +60,7 @@ function Service.resetAllData()
     love.filesystem.remove(C.BACKUP_FILE)
 
     local state = Service.loadState()
-    setMessage(state, "All progress reset")
+    setMessage(state, "message.all_progress_reset")
     saveWithFeedback(state, "reset-all")
     return state
 end
@@ -57,12 +73,12 @@ function Service.tick(state, dt)
         PassiveCombat.tickFx(state, dt)
     end
 
-    if state.message and state.uiLastMessage ~= state.message then
-        state.uiLastMessage = state.message
+    if state.messageKey and state.uiLastMessageVersion ~= state.messageVersion then
+        state.uiLastMessageVersion = state.messageVersion
         state.uiToastTimer = C.RUN_HUD_UI.toastDuration
     end
-    if state.message and state.uiToastTimer <= 0 then
-        state.message = nil
+    if state.messageKey and state.uiToastTimer <= 0 then
+        GameState.clearMessage(state)
     end
 
     if state.mode ~= "run_choice" and not state.runEnded then
@@ -77,7 +93,7 @@ function Service.tick(state, dt)
     if state.mode == "game" and not state.runEnded then
         local result = RunLoop.tickGameplay(state, dt)
         if result.mapUnlocked then
-            setMessage(state, "New map unlocked from skill tree")
+            setMessage(state, "message.new_map_unlocked_from_skill_tree")
         end
         if result.bossDefeated then
             saveWithFeedback(state, "boss-defeated")
@@ -100,7 +116,7 @@ end
 
 function Service.save(state, reason)
     if state.mode == "run_choice" then
-        setMessage(state, "Save delayed until instinct choice ends")
+        setMessage(state, "message.save_delayed_until_choice_ends")
         return false
     end
     saveWithFeedback(state, reason)
@@ -109,6 +125,14 @@ end
 
 function Service.toggleHelp(state)
     state.showHelp = not state.showHelp
+end
+
+function Service.cycleLocale(state)
+    state.locale = Locale.next(state.locale)
+    refreshWindowTitle(state)
+    setMessage(state, "message.language_changed", {
+        language = nestedKey("language." .. state.locale),
+    })
 end
 
 function Service.trySwitchMap(state, mapId)
@@ -122,7 +146,9 @@ function Service.trySwitchMap(state, mapId)
     local switched = MapSystem.trySetCurrent(state.maps, mapId)
     if switched then
         saveWithFeedback(state, "map-switch")
-        setMessage(state, "Map changed to " .. C.MAPS[mapId].name)
+        setMessage(state, "message.map_changed", {
+            mapName = nestedKey(C.MAPS[mapId].nameKey),
+        })
     end
     return switched
 end
@@ -136,7 +162,7 @@ function Service.tryEnterBoss(state)
         local entered = Boss.enter(state)
         if entered then
             saveWithFeedback(state, "boss-enter")
-            setMessage(state, "Final boss engaged")
+            setMessage(state, "message.final_boss_engaged")
         end
         return entered
     end
@@ -147,11 +173,15 @@ function Service.tryBuyMetaUpgrade(state, index)
     local ok, err, result = GameState.tryBuyMetaUpgrade(state, index)
     if ok then
         if result and result.mapUnlocked then
-            setMessage(state, "Meta upgrade purchased. New map unlocked")
+            setMessage(state, "message.meta_upgrade_purchased_map")
+        else
+            setMessage(state, "message.meta_upgrade_purchased")
         end
         saveWithFeedback(state, "meta-upgrade")
     else
-        setMessage(state, "Meta upgrade failed: " .. tostring(err))
+        setMessage(state, "message.meta_upgrade_failed", {
+            error = localizedErrorRef(err == "not_in_run_end" and "generic" or "meta", err),
+        })
     end
     return ok
 end
@@ -159,10 +189,12 @@ end
 function Service.tryBuyNestUpgrade(state, key)
     local ok, err = GameState.tryBuyNestUpgrade(state, key)
     if ok then
-        setMessage(state, "Nest upgrade purchased")
+        setMessage(state, "message.nest_upgrade_purchased")
         saveWithFeedback(state, "nest-upgrade")
     else
-        setMessage(state, "Nest upgrade failed: " .. tostring(err))
+        setMessage(state, "message.nest_upgrade_failed", {
+            error = localizedErrorRef(err == "not_in_run_end" and "generic" or "nest", err),
+        })
     end
     return ok
 end
@@ -195,17 +227,19 @@ end
 function Service.chooseRunMutation(state, choiceIndex)
     local ok, err = Mutation.applyChoice(state, choiceIndex)
     if not ok then
-        setMessage(state, "Instinct choice failed: " .. tostring(err))
+        setMessage(state, "message.instinct_choice_failed", {
+            error = localizedErrorRef("mutation", err),
+        })
         return false
     end
 
     GameState.refreshDerivedState(state)
     if state.runMutations.activeChoices then
         state.mode = "run_choice"
-        setMessage(state, "Choose another instinct")
+        setMessage(state, "message.choose_another_instinct")
     else
         state.mode = "game"
-        setMessage(state, "Instinct chosen")
+        setMessage(state, "message.instinct_chosen")
     end
     return true
 end

@@ -1,9 +1,22 @@
 local C = require("src.constants")
+local Locale = require("src.locale")
 local MapSystem = require("src.map_system")
 local GameState = require("src.game_state")
 local Meta = require("src.meta_system")
 
 local OverlayRenderer = {}
+
+local function t(state, key, params)
+    return Locale.text(state.locale, key, params)
+end
+
+local function runReasonRef(reason)
+    return Locale.ref("run_reason." .. tostring(reason or "unknown"))
+end
+
+local function statusText(state, reason)
+    return t(state, "status." .. reason)
+end
 
 local function formatTime(seconds)
     local total = math.max(0, math.floor(seconds))
@@ -41,16 +54,23 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
 
     love.graphics.setFont(fonts.hud)
 
-    local mapText = string.format("Map %s (%d/%d)", mapData.name, unlockedMaps, #C.MAPS)
+    local mapText = t(state, "hud.map", {
+        map = Locale.ref(mapData.nameKey),
+        unlocked = unlockedMaps,
+        total = #C.MAPS,
+    })
     mapText = ellipsize(fonts.hud, mapText, math.max(180, sw * 0.34))
 
-    local leftText = string.format("Time %s   %s", formatTime(state.runTimeLeft), mapText)
-    local rightText = string.format("Essence %d", state.meta.essence)
+    local leftText = t(state, "hud.time_map", {
+        time = formatTime(state.runTimeLeft),
+        map = mapText,
+    })
+    local rightText = t(state, "hud.essence", { essence = state.meta.essence })
 
     local leftW = fonts.hud:getWidth(leftText) + cfg.chipPadX * 2
     local rightW = fonts.hud:getWidth(rightText) + cfg.chipPadX * 2
     local saveW = ui.saveBtn.w
-    local helpText = "[H] Help"
+    local helpText = t(state, "hud.help")
     local helpW = fonts.hud:getWidth(helpText) + cfg.chipPadX * 2
     local rightGroupW = rightW + cfg.groupGap + saveW + cfg.groupGap + helpW
 
@@ -75,7 +95,7 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
     love.graphics.rectangle("fill", ui.saveBtn.x, ui.saveBtn.y, ui.saveBtn.w, ui.saveBtn.h, 6, 6)
     love.graphics.setColor(0.75, 0.92, 0.85, 0.95)
     love.graphics.rectangle("line", ui.saveBtn.x, ui.saveBtn.y, ui.saveBtn.w, ui.saveBtn.h, 6, 6)
-    local saveText = "Manual Save"
+    local saveText = t(state, "hud.manual_save")
     local saveTextX = ui.saveBtn.x + (ui.saveBtn.w - fonts.hud:getWidth(saveText)) * 0.5
     love.graphics.print(saveText, saveTextX, ui.saveBtn.y + 8)
 
@@ -98,7 +118,7 @@ function OverlayRenderer.drawBossBar(state, fonts)
     love.graphics.rectangle("fill", sw * 0.22 + 2, y + 2, (sw * 0.56 - 4) * pct, 16)
     love.graphics.setColor(1, 1, 1)
     love.graphics.setFont(fonts.hud)
-    love.graphics.printf("Final Boss", sw * 0.22, y + 2, sw * 0.56, "center")
+    love.graphics.printf(t(state, "boss.title"), sw * 0.22, y + 2, sw * 0.56, "center")
 end
 
 function OverlayRenderer.drawGameToasts(state, fonts)
@@ -106,16 +126,22 @@ function OverlayRenderer.drawGameToasts(state, fonts)
     local sh = love.graphics.getHeight()
     local cfg = C.RUN_HUD_UI
 
-    if state.uiAutosaveTimer > 0 then
+    if state.uiAutosaveTimer > 0 and state.lastSaveStatusKey then
         local a = math.min(1, state.uiAutosaveTimer / cfg.autosaveDuration)
         love.graphics.setColor(0, 0, 0, 0.42 * a)
         love.graphics.rectangle("fill", sw * 0.34, sh - 36, sw * 0.32, 22, 6, 6)
         love.graphics.setColor(0.85, 0.9, 0.98, a)
         love.graphics.setFont(fonts.hud)
-        love.graphics.printf(state.lastSaveStatus, sw * 0.35, sh - 31, sw * 0.3, "center")
+        love.graphics.printf(
+            t(state, state.lastSaveStatusKey, state.lastSaveStatusParams),
+            sw * 0.35,
+            sh - 31,
+            sw * 0.3,
+            "center"
+        )
     end
 
-    if state.message and state.uiToastTimer > 0 then
+    if state.messageKey and state.uiToastTimer > 0 then
         local a = math.min(1, state.uiToastTimer / cfg.toastDuration)
         local w = math.min(sw - 24, 780)
         local x = (sw - w) * 0.5
@@ -124,7 +150,7 @@ function OverlayRenderer.drawGameToasts(state, fonts)
         love.graphics.rectangle("fill", x, y, w, 36, 8, 8)
         love.graphics.setColor(1, 0.92, 0.78, a)
         love.graphics.setFont(fonts.hud)
-        love.graphics.printf(state.message, x + 10, y + 10, w - 20, "center")
+        love.graphics.printf(t(state, state.messageKey, state.messageParams), x + 10, y + 10, w - 20, "center")
     end
 end
 
@@ -136,7 +162,7 @@ function OverlayRenderer.drawHelpPanel(state, fonts)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
     local w = math.min(760, sw - 60)
-    local h = 220
+    local h = 252
     local x = (sw - w) * 0.5
     local y = (sh - h) * 0.5
 
@@ -147,35 +173,48 @@ function OverlayRenderer.drawHelpPanel(state, fonts)
 
     love.graphics.setFont(fonts.big)
     love.graphics.setColor(1, 0.95, 0.8)
-    love.graphics.printf("HELP", x, y + 14, w, "center")
+    love.graphics.printf(t(state, "help.title"), x, y + 14, w, "center")
 
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(1, 1, 1)
     if state.mode == "run_end_tree" then
         love.graphics.printf(
-            string.format("Reason: %s | Essence: %d | Matter: %d", state.runEndedReason or "unknown", state.meta.essence, state.nest.nestMatter),
+            t(state, "help.run_end.summary", {
+                reason = runReasonRef(state.runEndedReason),
+                essence = state.meta.essence,
+                matter = state.nest.nestMatter,
+            }),
             x + 24,
             y + 62,
             w - 48,
             "left"
         )
-        love.graphics.printf("[Drag] Pan view", x + 24, y + 86, w - 48, "left")
-        love.graphics.printf("[Wheel] Zoom in/out", x + 24, y + 110, w - 48, "left")
-        love.graphics.printf("[Click Tab] Switch Meta and Nest", x + 24, y + 134, w - 48, "left")
-        love.graphics.printf("[Click] Buy upgrade  |  [R] Start new run", x + 24, y + 158, w - 48, "left")
-        love.graphics.printf("[H] Close help", x + 24, y + 182, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_end.drag"), x + 24, y + 86, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_end.wheel"), x + 24, y + 110, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_end.tab"), x + 24, y + 134, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_end.buy"), x + 24, y + 158, w - 48, "left")
     elseif state.mode == "run_choice" then
-        love.graphics.printf("Choose one instinct to shape this run", x + 24, y + 62, w - 48, "left")
-        love.graphics.printf("Time and combat pause while choosing", x + 24, y + 92, w - 48, "left")
-        love.graphics.printf("Brooder and Hatchery improve this system", x + 24, y + 122, w - 48, "left")
-        love.graphics.printf("[Click] Pick one card  |  [H] Close help", x + 24, y + 152, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_choice.line1"), x + 24, y + 62, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_choice.line2"), x + 24, y + 92, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_choice.line3"), x + 24, y + 122, w - 48, "left")
+        love.graphics.printf(t(state, "help.run_choice.line4"), x + 24, y + 152, w - 48, "left")
     else
-        love.graphics.printf("Goal: keep eating, grow fast, and challenge the boss before time runs out.", x + 24, y + 62, w - 48, "left")
-        love.graphics.printf("[1-4] Switch map", x + 24, y + 92, w - 48, "left")
-        love.graphics.printf("[B] Enter boss", x + 24, y + 116, w - 48, "left")
-        love.graphics.printf("[F5/F9] Save / Load  |  [F10] Reset all data", x + 24, y + 140, w - 48, "left")
-        love.graphics.printf("[H] Close help", x + 24, y + 164, w - 48, "left")
+        love.graphics.printf(t(state, "help.game.goal"), x + 24, y + 62, w - 48, "left")
+        love.graphics.printf(t(state, "help.game.map"), x + 24, y + 92, w - 48, "left")
+        love.graphics.printf(t(state, "help.game.boss"), x + 24, y + 116, w - 48, "left")
+        love.graphics.printf(t(state, "help.game.save"), x + 24, y + 140, w - 48, "left")
     end
+
+    love.graphics.setColor(0.8, 0.9, 1.0)
+    love.graphics.printf(
+        t(state, "help.language", { language = Locale.ref("language." .. state.locale) }),
+        x + 24,
+        y + h - 68,
+        w - 48,
+        "left"
+    )
+    love.graphics.printf(t(state, "help.toggle_language"), x + 24, y + h - 44, w - 48, "left")
+    love.graphics.printf(t(state, "help.close"), x + 24, y + h - 20, w - 48, "left")
 end
 
 local function metaTreeWorldToScreen(state, wx, wy, sw, sh)
@@ -233,8 +272,8 @@ local function drawRunEndTabs(state, fonts, ui, sw)
     ui.runEnd.tabs.nest = { x = startX + tabW + gap, y = y, w = tabW, h = tabH }
 
     for _, tab in ipairs({
-        { key = "meta", label = "Meta Tree", rect = ui.runEnd.tabs.meta },
-        { key = "nest", label = "Nest", rect = ui.runEnd.tabs.nest },
+        { key = "meta", labelKey = "tab.meta", rect = ui.runEnd.tabs.meta },
+        { key = "nest", labelKey = "tab.nest", rect = ui.runEnd.tabs.nest },
     }) do
         local active = state.runEndTab == tab.key
         love.graphics.setColor(active and 0.08 or 0.04, active and 0.22 or 0.08, active and 0.16 or 0.1, 0.96)
@@ -242,7 +281,7 @@ local function drawRunEndTabs(state, fonts, ui, sw)
         love.graphics.setColor(active and 0.4 or 0.25, 1.0, active and 0.55 or 0.95, 0.95)
         love.graphics.rectangle("line", tab.rect.x, tab.rect.y, tab.rect.w, tab.rect.h, 8, 8)
         love.graphics.setColor(1, 1, 1)
-        love.graphics.printf(tab.label, tab.rect.x, tab.rect.y + 9, tab.rect.w, "center")
+        love.graphics.printf(t(state, tab.labelKey), tab.rect.x, tab.rect.y + 9, tab.rect.w, "center")
     end
 end
 
@@ -262,7 +301,7 @@ local function drawNestTab(state, fonts, ui, sw, sh)
     love.graphics.rectangle("line", panelX, panelY, panelW, panelH, 12, 12)
 
     love.graphics.setColor(1, 0.95, 0.78)
-    love.graphics.printf("Nest Matter: " .. tostring(state.nest.nestMatter), panelX, panelY + 18, panelW, "center")
+    love.graphics.printf(t(state, "nest.matter", { matter = state.nest.nestMatter }), panelX, panelY + 18, panelW, "center")
 
     for i, row in ipairs(rows) do
         local x = panelX + 18
@@ -282,24 +321,28 @@ local function drawNestTab(state, fonts, ui, sw, sh)
 
         love.graphics.setColor(1, 1, 1)
         love.graphics.printf(
-            string.format("%s  Lv.%d/%d", row.name, row.level, row.maxLevel),
+            t(state, "nest.level", {
+                name = Locale.ref(row.nameKey),
+                level = row.level,
+                max = row.maxLevel,
+            }),
             x + 14,
             y + 10,
             w - 160,
             "left"
         )
         love.graphics.setColor(0.86, 0.92, 0.98)
-        love.graphics.printf(row.effect, x + 14, y + 34, w - 180, "left")
+        love.graphics.printf(t(state, row.effectKey, row.effectParams), x + 14, y + 34, w - 180, "left")
 
-        local costText = row.maxed and "MAX" or ("Cost " .. tostring(row.cost))
+        local costText = row.maxed and t(state, "status.MAX") or t(state, "nest.cost", { cost = row.cost })
         love.graphics.setColor(row.canBuy and 0.9 or 0.78, 0.95, row.maxed and 0.68 or 0.55)
         love.graphics.printf(costText, x + w - 136, y + 12, 120, "right")
         love.graphics.setColor(0.72, 0.8, 0.9)
-        love.graphics.printf(row.nextEffect, x + w - 220, y + 38, 204, "right")
+        love.graphics.printf(t(state, row.nextEffectKey, row.nextEffectParams), x + w - 220, y + 38, 204, "right")
     end
 
     love.graphics.setColor(0.78, 0.85, 0.92)
-    love.graphics.printf("Brooder and Hatchery reshape each new run", panelX, panelY + panelH - 30, panelW, "center")
+    love.graphics.printf(t(state, "nest.footer"), panelX, panelY + panelH - 30, panelW, "center")
 end
 
 function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts, ui)
@@ -311,7 +354,7 @@ function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts, ui)
 
     love.graphics.setFont(fonts.big)
     love.graphics.setColor(1, 0.95, 0.78)
-    love.graphics.printf("RUN ENDED", 0, 24, sw, "center")
+    love.graphics.printf(t(state, "run_end.title"), 0, 24, sw, "center")
     love.graphics.setFont(fonts.hud)
     drawRunEndTabs(state, fonts, ui, sw)
 
@@ -423,16 +466,16 @@ function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts, ui)
     local tooltipY = sh - tooltipH - 58
 
     if hovered then
-        local costText = hovered.cost and tostring(hovered.cost) or "MAX"
-        local status = hovered.reason
+        local costText = hovered.cost and tostring(hovered.cost) or t(state, "status.MAX")
+        local status = statusText(state, hovered.reason)
         local statusColor = { 1, 1, 1 }
-        if status == "BUY" then
+        if hovered.reason == "BUY" then
             statusColor = { 0.45, 1.0, 0.55 }
-        elseif status == "LOCKED" then
+        elseif hovered.reason == "LOCKED" then
             statusColor = { 1.0, 0.65, 0.65 }
-        elseif status == "NEED ESSENCE" then
+        elseif hovered.reason == "NEED_ESSENCE" then
             statusColor = { 1.0, 0.85, 0.45 }
-        elseif status == "MAX" then
+        elseif hovered.reason == "MAX" then
             statusColor = { 0.65, 1.0, 0.75 }
         end
 
@@ -440,16 +483,24 @@ function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts, ui)
         love.graphics.rectangle("fill", tooltipX, tooltipY, tooltipW, tooltipH, 8, 8)
         love.graphics.setColor(1, 1, 1)
         love.graphics.printf(
-            string.format("[%d] %s  Lv.%d/%d", hovered.index, hovered.name, hovered.level, hovered.maxLevel),
+            t(state, "run_end.tooltip.title", {
+                index = hovered.index,
+                name = Locale.ref(hovered.nameKey),
+                level = hovered.level,
+                max = hovered.maxLevel,
+            }),
             tooltipX + 14,
             tooltipY + 12,
             tooltipW - 28,
             "left"
         )
-        love.graphics.printf(hovered.desc, tooltipX + 14, tooltipY + 36, tooltipW - 28, "left")
+        love.graphics.printf(t(state, hovered.descKey), tooltipX + 14, tooltipY + 36, tooltipW - 28, "left")
         love.graphics.setColor(statusColor)
         love.graphics.printf(
-            string.format("Cost: %s | Status: %s", costText, status),
+            t(state, "run_end.tooltip.cost_status", {
+                cost = costText,
+                status = status,
+            }),
             tooltipX + 14,
             tooltipY + 62,
             tooltipW - 28,
@@ -459,7 +510,7 @@ function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts, ui)
         love.graphics.setColor(0, 0, 0, 0.45)
         love.graphics.rectangle("fill", tooltipX, tooltipY, tooltipW, tooltipH, 8, 8)
         love.graphics.setColor(0.85, 0.86, 0.9)
-        love.graphics.printf("Hover a node to inspect details", tooltipX, tooltipY + tooltipH * 0.35, tooltipW, "center")
+        love.graphics.printf(t(state, "run_end.hover"), tooltipX, tooltipY + tooltipH * 0.35, tooltipW, "center")
     end
 end
 
@@ -481,17 +532,17 @@ function OverlayRenderer.drawRunEndResultOverlay(state, fonts)
 
     love.graphics.setFont(fonts.big)
     love.graphics.setColor(1, 0.95, 0.8)
-    love.graphics.printf("RUN ENDED", x, y + 24, w, "center")
+    love.graphics.printf(t(state, "run_end.title"), x, y + 24, w, "center")
 
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(1, 1, 1)
-    love.graphics.printf("Reason: " .. tostring(state.runEndedReason or "unknown"), x + 36, y + 94, w - 72, "left")
-    love.graphics.printf("Total Eaten: " .. tostring(state.food and state.food.consumedTotal or 0), x + 36, y + 124, w - 72, "left")
-    love.graphics.printf("Current Essence: " .. tostring(state.meta and state.meta.essence or 0), x + 36, y + 154, w - 72, "left")
-    love.graphics.printf("Nest Matter Gained: " .. tostring(state.lastNestMatterReward or 0), x + 36, y + 184, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.reason", { reason = runReasonRef(state.runEndedReason) }), x + 36, y + 94, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.total_eaten", { total = state.food and state.food.consumedTotal or 0 }), x + 36, y + 124, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.current_essence", { essence = state.meta and state.meta.essence or 0 }), x + 36, y + 154, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.nest_matter", { matter = state.lastNestMatterReward or 0 }), x + 36, y + 184, w - 72, "left")
 
     love.graphics.setColor(0.84, 0.9, 1.0)
-    love.graphics.printf("Click to continue to growth view", x, y + h - 42, w, "center")
+    love.graphics.printf(t(state, "run_end.result.continue"), x, y + h - 42, w, "center")
 end
 
 function OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
@@ -510,11 +561,14 @@ function OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
     love.graphics.setFont(fonts.big)
     love.graphics.setColor(1, 0.95, 0.78)
-    love.graphics.printf("CHOOSE AN INSTINCT", 0, y - 92, sw, "center")
+    love.graphics.printf(t(state, "run_choice.title"), 0, y - 92, sw, "center")
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(0.84, 0.9, 1.0)
     love.graphics.printf(
-        string.format("Run essence %d   Pending choices %d", state.runEssenceTotal or 0, state.runMutations.pendingChoices + 1),
+        t(state, "run_choice.summary", {
+            essence = state.runEssenceTotal or 0,
+            pending = state.runMutations.pendingChoices + 1,
+        }),
         0,
         y - 48,
         sw,
@@ -539,15 +593,15 @@ function OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
         love.graphics.rectangle("line", x, y, cfg.cardWidth, cfg.cardHeight, 12, 12)
 
         love.graphics.setColor(1, 1, 1)
-        love.graphics.printf(card.name, x + 14, y + 18, cfg.cardWidth - 28, "center")
+        love.graphics.printf(t(state, card.nameKey), x + 14, y + 18, cfg.cardWidth - 28, "center")
         love.graphics.setColor(0.82, 0.9, 1.0)
-        love.graphics.printf(string.upper(card.category), x + 14, y + 56, cfg.cardWidth - 28, "center")
+        love.graphics.printf(t(state, "category." .. card.category), x + 14, y + 56, cfg.cardWidth - 28, "center")
         love.graphics.setColor(line[1], line[2], line[3], line[4])
-        love.graphics.printf(string.upper(card.rarity), x + 14, y + 84, cfg.cardWidth - 28, "center")
+        love.graphics.printf(t(state, "rarity." .. card.rarity), x + 14, y + 84, cfg.cardWidth - 28, "center")
         love.graphics.setColor(0.95, 0.95, 0.95)
-        love.graphics.printf(card.desc, x + 18, y + 124, cfg.cardWidth - 36, "center")
+        love.graphics.printf(t(state, card.descKey), x + 18, y + 124, cfg.cardWidth - 36, "center")
         love.graphics.setColor(0.84, 0.9, 1.0)
-        love.graphics.printf("Click to choose", x + 14, y + cfg.cardHeight - 34, cfg.cardWidth - 28, "center")
+        love.graphics.printf(t(state, "run_choice.click"), x + 14, y + cfg.cardHeight - 34, cfg.cardWidth - 28, "center")
     end
 end
 

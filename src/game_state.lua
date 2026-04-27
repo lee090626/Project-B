@@ -6,6 +6,7 @@ local Boss = require("src.boss_system")
 local Meta = require("src.meta_system")
 local Nest = require("src.nest_system")
 local Save = require("src.save_system")
+local Locale = require("src.locale")
 local PassiveCombat = require("src.application.passive_combat")
 local Mutation = require("src.mutation_system")
 
@@ -77,6 +78,22 @@ local function resetMetaTreeView(state)
     }
 end
 
+function GameState.setMessage(state, key, params)
+    state.messageKey = key
+    state.messageParams = params
+    state.messageVersion = (state.messageVersion or 0) + 1
+end
+
+function GameState.clearMessage(state)
+    state.messageKey = nil
+    state.messageParams = nil
+end
+
+function GameState.setSaveStatus(state, key, params)
+    state.lastSaveStatusKey = key
+    state.lastSaveStatusParams = params
+end
+
 local function resetRunState(state)
     state.player = Player.new(nil)
     state.food = Food.new(nil)
@@ -105,13 +122,17 @@ local function resetRunState(state)
         Mutation.rollChoices(state)
         if state.runMutations.activeChoices then
             state.mode = "run_choice"
-            state.message = "Choose an instinct"
+            GameState.setMessage(state, "message.choose_instinct")
         end
     end
 end
 
 function GameState.new(loadResult, loadErr)
     local saved = loadResult or {}
+    local locale = Locale.isSupported(saved.locale) and saved.locale or Locale.DEFAULT
+    local messageKey = loadErr and "message.save_warning" or nil
+    local messageParams = loadErr and { error = tostring(loadErr) } or nil
+
     local state = {
         totalPlayTime = saved.totalPlayTime or 0,
         events = {},
@@ -120,14 +141,18 @@ function GameState.new(loadResult, loadErr)
         showHelp = false,
         uiToastTimer = 0,
         uiAutosaveTimer = 0,
-        uiLastMessage = nil,
         camera = { x = 0, y = 0, zoom = 1.0 },
         metaTreeView = nil,
-        message = loadErr and ("Save warning: " .. tostring(loadErr)) or nil,
+        locale = locale,
+        messageKey = messageKey,
+        messageParams = messageParams,
+        messageVersion = messageKey and 1 or 0,
+        uiLastMessageVersion = 0,
         endingReached = saved.endingReached or false,
         runEnded = saved.runEnded or false,
         runEndedReason = saved.runEndedReason,
-        lastSaveStatus = "never",
+        lastSaveStatusKey = "save_status.never",
+        lastSaveStatusParams = nil,
         meta = Meta.new(saved.meta),
         nest = Nest.new(saved.nest),
         runMutations = Mutation.newRunState(),
@@ -189,7 +214,7 @@ end
 function GameState.startNewRun(state)
     resetRunState(state)
     if state.mode ~= "run_choice" then
-        state.message = "New run started"
+        GameState.setMessage(state, "message.new_run_started")
     end
 end
 
@@ -206,13 +231,13 @@ function GameState.endRun(state, reason)
 
     state.meta.totalRuns = state.meta.totalRuns + 1
     state.lastNestMatterReward = Nest.awardRunMatter(state)
-    state.message = "Run ended"
+    GameState.setMessage(state, "message.run_ended")
     return true
 end
 
 function GameState.tryBuyMetaUpgrade(state, index)
     if not state.runEnded then
-        return false, "not in run end", nil
+        return false, "not_in_run_end", nil
     end
 
     local ok, err = Meta.tryBuy(state.meta, index)
@@ -222,7 +247,7 @@ function GameState.tryBuyMetaUpgrade(state, index)
 
     GameState.refreshDerivedState(state)
     local mapUnlocked = MapSystem.updateUnlocks(state.maps, Meta.getUnlockedCount(state.meta))
-    state.message = "Meta upgrade purchased"
+    GameState.setMessage(state, "message.meta_upgrade_purchased")
     return true, nil, { mapUnlocked = mapUnlocked }
 end
 
@@ -236,7 +261,7 @@ end
 
 function GameState.tryBuyNestUpgrade(state, key)
     if not state.runEnded then
-        return false, "not in run end"
+        return false, "not_in_run_end"
     end
 
     local ok, err = Nest.tryUpgrade(state.nest, key)
@@ -265,14 +290,14 @@ function GameState.checkEnding(state)
     return false
 end
 
-function GameState.saveNow(state, reason)
+function GameState.saveNow(state, _reason)
     local payload = Save.snapshot(state)
     local ok, err = Save.write(payload)
     if ok then
-        state.lastSaveStatus = "saved (" .. reason .. ")"
+        GameState.setSaveStatus(state, "save_status.saved")
         return true
     end
-    state.lastSaveStatus = "save failed: " .. tostring(err)
+    GameState.setSaveStatus(state, "save_status.failed", { error = tostring(err) })
     return false
 end
 
