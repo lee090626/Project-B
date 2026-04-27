@@ -106,14 +106,48 @@ function WorldRenderer.draw(state, assets)
             love.graphics.line(fx.fromX, fx.fromY, fx.toX, fx.toY)
         end
 
-        if state.passives.fireballFx then
-            local fx = state.passives.fireballFx
-            local a = math.max(0, fx.timer / 0.2)
-            love.graphics.setColor(1.0, 0.65, 0.2, a)
-            love.graphics.setLineWidth(2)
-            love.graphics.line(fx.fromX, fx.fromY, fx.toX, fx.toY)
-            love.graphics.setColor(1.0, 0.42, 0.16, 0.18 * a)
-            love.graphics.circle("fill", fx.toX, fx.toY, fx.radius or 0)
+        if state.passives.fireballProjectiles then
+            for _, projectile in ipairs(state.passives.fireballProjectiles) do
+                love.graphics.setColor(1.0, 0.68, 0.24, 0.34)
+                love.graphics.setLineWidth(2)
+                love.graphics.line(projectile.prevX, projectile.prevY, projectile.x, projectile.y)
+                love.graphics.setColor(1.0, 0.86, 0.5, 0.2)
+                love.graphics.circle("fill", projectile.x, projectile.y, math.max(8, projectile.radius * 0.2))
+
+                if assets and assets.fireballSprite then
+                    local sprite = assets.fireballSprite
+                    local iw = sprite:getWidth()
+                    local ih = sprite:getHeight()
+                    local diameter = math.max(24, projectile.radius * 0.7)
+                    local scale = diameter / math.max(iw, ih)
+                    love.graphics.setColor(1, 1, 1)
+                    love.graphics.draw(sprite, projectile.x, projectile.y, 0, scale, scale, iw * 0.5, ih * 0.5)
+                else
+                    love.graphics.setColor(1.0, 0.42, 0.16)
+                    love.graphics.circle("fill", projectile.x, projectile.y, math.max(7, projectile.radius * 0.16))
+                end
+            end
+        end
+
+        if state.passives.fireballImpacts then
+            for _, impact in ipairs(state.passives.fireballImpacts) do
+                local a = math.max(0, impact.timer / C.PASSIVE_BASES.fireball.impactFxDuration)
+                love.graphics.setColor(1.0, 0.52, 0.18, 0.18 * a)
+                love.graphics.circle("fill", impact.x, impact.y, impact.radius)
+                love.graphics.setColor(1.0, 0.82, 0.36, 0.7 * a)
+                love.graphics.setLineWidth(2)
+                love.graphics.circle("line", impact.x, impact.y, impact.radius * (0.55 + (1 - a) * 0.45))
+
+                if assets and assets.fireballSprite then
+                    local sprite = assets.fireballSprite
+                    local iw = sprite:getWidth()
+                    local ih = sprite:getHeight()
+                    local diameter = math.max(28, impact.radius * 0.8)
+                    local scale = diameter / math.max(iw, ih)
+                    love.graphics.setColor(1, 1, 1, a)
+                    love.graphics.draw(sprite, impact.x, impact.y, 0, scale, scale, iw * 0.5, ih * 0.5)
+                end
+            end
         end
     end
 
