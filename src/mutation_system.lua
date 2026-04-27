@@ -1,4 +1,5 @@
 local C = require("src.constants")
+local Nest = require("src.nest_system")
 
 local Mutation = {}
 
@@ -226,6 +227,10 @@ end
 function Mutation.gainEssenceAndCheckLevel(state, amount)
     local gain = math.max(1, math.floor(amount + 0.5))
     state.meta.essence = state.meta.essence + gain
+    state.nest.totalEssence = (state.nest.totalEssence or 0) + gain
+    if state.nestProgress then
+        state.nestProgress = Nest.getProgress(state.nest)
+    end
     state.runEssenceTotal = state.runEssenceTotal + gain
 
     local thresholds = getThresholds(state)

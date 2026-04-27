@@ -411,4 +411,15 @@ function Meta.tryBuy(metaState, index)
     return true, nil
 end
 
+function Meta.getSpentEssence(metaState)
+    local spent = 0
+    for _, def in ipairs(DEFINITIONS) do
+        local level = math.max(0, math.floor(metaState.levels[def.key] or 0))
+        for current = 0, level - 1 do
+            spent = spent + getCost(def, current)
+        end
+    end
+    return spent
+end
+
 return Meta

@@ -133,6 +133,9 @@ function GameState.new(loadResult, loadErr)
     local messageKey = loadErr and "message.save_warning" or nil
     local messageParams = loadErr and { error = tostring(loadErr) } or nil
 
+    local metaState = Meta.new(saved.meta)
+    local fallbackNestEssence = metaState.essence + Meta.getSpentEssence(metaState)
+
     local state = {
         totalPlayTime = saved.totalPlayTime or 0,
         events = {},
@@ -153,13 +156,17 @@ function GameState.new(loadResult, loadErr)
         runEndedReason = saved.runEndedReason,
         lastSaveStatusKey = "save_status.never",
         lastSaveStatusParams = nil,
-        meta = Meta.new(saved.meta),
+        meta = metaState,
         nest = Nest.new(saved.nest),
         runMutations = Mutation.newRunState(),
         runEssenceTotal = 0,
-        lastNestMatterReward = 0,
         runEndTab = "meta",
     }
+    if saved.nest and saved.nest.totalEssence ~= nil then
+        state.nest.totalEssence = math.max(0, math.floor(saved.nest.totalEssence or 0))
+    else
+        state.nest.totalEssence = fallbackNestEssence
+    end
 
     state.player = Player.new(saved.player)
     state.food = Food.new(saved.food)
@@ -198,6 +205,7 @@ function GameState.loadOrDefault()
 end
 
 function GameState.refreshDerivedState(state)
+    state.nestProgress = Nest.getProgress(state.nest)
     state.metaBonuses = Meta.computeBonuses(state.meta)
     state.nestBonuses = Nest.computeBonuses(state.nest)
     state.runOnlyBonuses = Mutation.buildRunBonuses(state.runMutations)
@@ -230,7 +238,6 @@ function GameState.endRun(state, reason)
     PassiveCombat.resetState(state)
 
     state.meta.totalRuns = state.meta.totalRuns + 1
-    state.lastNestMatterReward = Nest.awardRunMatter(state)
     GameState.setMessage(state, "message.run_ended")
     return true
 end

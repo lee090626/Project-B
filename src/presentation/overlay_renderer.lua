@@ -65,7 +65,10 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
         time = formatTime(state.runTimeLeft),
         map = mapText,
     })
-    local rightText = t(state, "hud.essence", { essence = state.meta.essence })
+    local rightText = t(state, "hud.essence", {
+        essence = state.meta.essence,
+        level = state.nestProgress and state.nestProgress.level or 0,
+    })
 
     local leftW = fonts.hud:getWidth(leftText) + cfg.chipPadX * 2
     local rightW = fonts.hud:getWidth(rightText) + cfg.chipPadX * 2
@@ -182,7 +185,8 @@ function OverlayRenderer.drawHelpPanel(state, fonts)
             t(state, "help.run_end.summary", {
                 reason = runReasonRef(state.runEndedReason),
                 essence = state.meta.essence,
-                matter = state.nest.nestMatter,
+                level = state.nestProgress.level,
+                points = state.nestProgress.availablePoints,
             }),
             x + 24,
             y + 62,
@@ -287,6 +291,7 @@ end
 
 local function drawNestTab(state, fonts, ui, sw, sh)
     local rows = GameState.getNestUpgradeRows(state)
+    local progress = state.nestProgress
     local panelW = math.min(sw - 80, 860)
     local panelH = math.min(sh - 180, 470)
     local panelX = (sw - panelW) * 0.5
@@ -301,11 +306,20 @@ local function drawNestTab(state, fonts, ui, sw, sh)
     love.graphics.rectangle("line", panelX, panelY, panelW, panelH, 12, 12)
 
     love.graphics.setColor(1, 0.95, 0.78)
-    love.graphics.printf(t(state, "nest.matter", { matter = state.nest.nestMatter }), panelX, panelY + 18, panelW, "center")
+    love.graphics.printf(t(state, "nest.summary", {
+        level = progress.level,
+        points = progress.availablePoints,
+        evolution = Locale.ref(progress.evolutionKey),
+    }), panelX, panelY + 18, panelW, "center")
+    love.graphics.setColor(0.82, 0.9, 0.98)
+    love.graphics.printf(t(state, "nest.progress", {
+        essence = progress.totalEssence,
+        next = progress.nextLevelEssence,
+    }), panelX, panelY + 42, panelW, "center")
 
     for i, row in ipairs(rows) do
         local x = panelX + 18
-        local y = panelY + 56 + (i - 1) * (rowH + 10)
+        local y = panelY + 84 + (i - 1) * (rowH + 10)
         local w = panelW - 36
         ui.runEnd.nestButtons[i] = { key = row.key, x = x, y = y, w = w, h = rowH }
 
@@ -518,7 +532,7 @@ function OverlayRenderer.drawRunEndResultOverlay(state, fonts)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
     local w = math.min(760, sw - 80)
-    local h = 310
+    local h = 350
     local x = (sw - w) * 0.5
     local y = (sh - h) * 0.5
 
@@ -539,7 +553,9 @@ function OverlayRenderer.drawRunEndResultOverlay(state, fonts)
     love.graphics.printf(t(state, "run_end.result.reason", { reason = runReasonRef(state.runEndedReason) }), x + 36, y + 94, w - 72, "left")
     love.graphics.printf(t(state, "run_end.result.total_eaten", { total = state.food and state.food.consumedTotal or 0 }), x + 36, y + 124, w - 72, "left")
     love.graphics.printf(t(state, "run_end.result.current_essence", { essence = state.meta and state.meta.essence or 0 }), x + 36, y + 154, w - 72, "left")
-    love.graphics.printf(t(state, "run_end.result.nest_matter", { matter = state.lastNestMatterReward or 0 }), x + 36, y + 184, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.level", { level = state.nestProgress.level }), x + 36, y + 184, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.points", { points = state.nestProgress.availablePoints }), x + 36, y + 214, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.evolution", { evolution = Locale.ref(state.nestProgress.evolutionKey) }), x + 36, y + 244, w - 72, "left")
 
     love.graphics.setColor(0.84, 0.9, 1.0)
     love.graphics.printf(t(state, "run_end.result.continue"), x, y + h - 42, w, "center")

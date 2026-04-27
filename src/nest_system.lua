@@ -25,7 +25,7 @@ local function getDefinition(key)
 end
 
 local function getCost(def, level)
-    return math.floor(def.baseCost * (C.NEST_UPGRADE_SCALE ^ level))
+    return C.NEST_UPGRADE_POINT_COST
 end
 
 local function getStartChoices(level)
@@ -75,15 +75,50 @@ function Nest.new(saved)
     end
 
     return {
-        nestMatter = saved and saved.nestMatter or 0,
+        totalEssence = saved and math.max(0, math.floor(saved.totalEssence or 0)) or 0,
         levels = levels,
     }
 end
 
 function Nest.export(nest)
     return {
-        nestMatter = nest.nestMatter,
+        totalEssence = nest.totalEssence,
         levels = nest.levels,
+    }
+end
+
+local function getSpentPoints(nest)
+    local spent = 0
+    for _, key in ipairs(ORDER) do
+        spent = spent + math.max(0, math.floor(nest.levels[key] or 0))
+    end
+    return spent
+end
+
+function Nest.getProgress(nest)
+    local totalEssence = math.max(0, math.floor(nest.totalEssence or 0))
+    local step = C.DRAGON_LEVEL_ESSENCE_STEP
+    local level = math.floor(totalEssence / step)
+    local spentPoints = getSpentPoints(nest)
+    local availablePoints = math.max(0, level - spentPoints)
+
+    local evolutionIndex = 1
+    for i, threshold in ipairs(C.DRAGON_EVOLUTION_LEVELS) do
+        if level >= threshold then
+            evolutionIndex = i + 1
+        end
+    end
+
+    return {
+        totalEssence = totalEssence,
+        level = level,
+        spentPoints = spentPoints,
+        availablePoints = availablePoints,
+        nextLevelEssence = (level + 1) * step,
+        currentLevelProgress = totalEssence - level * step,
+        essencePerLevel = step,
+        evolutionIndex = evolutionIndex,
+        evolutionKey = "evolution.stage." .. evolutionIndex,
     }
 end
 
@@ -105,12 +140,13 @@ end
 
 function Nest.getUpgradeRows(nest)
     local rows = {}
+    local progress = Nest.getProgress(nest)
     for _, def in ipairs(C.NEST_UPGRADES) do
         local level = nest.levels[def.key] or 0
         local maxed = level >= def.maxLevel
         local cost = maxed and nil or getCost(def, level)
-        local canBuy = (not maxed) and nest.nestMatter >= cost
-        local reason = maxed and "MAX" or (canBuy and "BUY" or "NEED_MATTER")
+        local canBuy = (not maxed) and progress.availablePoints >= cost
+        local reason = maxed and "MAX" or (canBuy and "BUY" or "NEED_POINTS")
         local effectKey, effectParams = effectPayload(def.key, level)
         local nextEffectKey, nextEffectParams = effectPayload(def.key, math.min(def.maxLevel, level + 1))
         rows[#rows + 1] = {
@@ -144,24 +180,13 @@ function Nest.tryUpgrade(nest, key)
     end
 
     local cost = getCost(def, level)
-    if nest.nestMatter < cost then
-        return false, "not_enough_matter"
+    local progress = Nest.getProgress(nest)
+    if progress.availablePoints < cost then
+        return false, "not_enough_points"
     end
 
-    nest.nestMatter = nest.nestMatter - cost
     nest.levels[key] = level + 1
     return true, nil
-end
-
-function Nest.awardRunMatter(state)
-    local reward = math.floor((state.runEssenceTotal or 0) * C.NEST_RUN_REWARD_RATE)
-    reward = reward + (state.maps.currentMapId or 1) * C.NEST_RUN_MAP_BONUS
-    if state.boss.defeated then
-        reward = reward + C.NEST_RUN_BOSS_BONUS
-    end
-    reward = math.max(C.NEST_MIN_RUN_REWARD, reward)
-    state.nest.nestMatter = state.nest.nestMatter + reward
-    return reward
 end
 
 return Nest
