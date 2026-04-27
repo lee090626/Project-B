@@ -8,6 +8,7 @@ local Nest = require("src.nest_system")
 local Save = require("src.save_system")
 local Locale = require("src.locale")
 local PassiveCombat = require("src.application.passive_combat")
+local Guide = require("src.application.guide_system")
 local Mutation = require("src.mutation_system")
 
 local GameState = {}
@@ -116,6 +117,7 @@ local function resetRunState(state)
     state.runEndTab = "meta"
     resetMetaTreeView(state)
     PassiveCombat.resetState(state)
+    Guide.resetRuntime(state.guides)
 
     state.runMutations.pendingChoices = state.nestBonuses.startingChoices or 0
     if state.runMutations.pendingChoices > 0 then
@@ -158,6 +160,7 @@ function GameState.new(loadResult, loadErr)
         lastSaveStatusParams = nil,
         meta = metaState,
         nest = Nest.new(saved.nest),
+        guides = Guide.new(saved.uxGuides),
         runMutations = Mutation.newRunState(),
         runEssenceTotal = 0,
         runEndTab = "meta",
@@ -183,6 +186,7 @@ function GameState.new(loadResult, loadErr)
         bossExport = Boss.export,
         metaExport = Meta.export,
         nestExport = Nest.export,
+        guideExport = Guide.export,
     }
 
     GameState.refreshDerivedState(state)

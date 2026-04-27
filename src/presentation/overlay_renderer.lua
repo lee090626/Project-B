@@ -367,6 +367,60 @@ function OverlayRenderer.drawGameToasts(state, fonts)
     end
 end
 
+function OverlayRenderer.drawGuidePanel(state, fonts, ui)
+    local active = state.guides and state.guides.active or nil
+    ui.guide.button = nil
+    if not active then
+        return
+    end
+
+    local sw = love.graphics.getWidth()
+    local cfg = C.GUIDE_UI
+    local theme = C.GUIDE_THEME
+    local w = math.min(cfg.width, sw - 40)
+    local bodyW = w - cfg.padX * 2 - 54
+    local body = t(state, active.bodyKey)
+    local _, wrappedBody = fonts.hud:getWrap(body, bodyW)
+    local bodyH = #wrappedBody * fonts.hud:getHeight()
+    local h = math.max(cfg.minHeight, cfg.padY * 2 + bodyH + 42)
+    local x = (sw - w) * 0.5
+    local y = cfg.topYGame
+    if state.mode == "run_choice" then
+        y = cfg.topYChoice
+    elseif state.mode == "run_end_tree" then
+        y = cfg.topYRunEnd
+    end
+
+    drawDecoratedPanel(x, y, w, h, {
+        panelFill = theme.panelFill,
+        panelInner = theme.panelInner,
+        panelLine = theme.panelLine,
+        panelGlow = theme.panelGlow,
+        accent = theme.panelLine,
+    })
+    drawPanelRule(x + 18, y + 48, w - 36, theme.panelLine)
+    drawRuneBadge(active.icon or "help", x + 30, y + 28, 11, theme.chipFill, theme.chipLine)
+
+    love.graphics.setFont(fonts.hud)
+    setPaletteColor(theme.title)
+    love.graphics.print(t(state, active.titleKey), x + 52, y + 16)
+    setPaletteColor(theme.text)
+    love.graphics.printf(body, x + 22, y + 58, w - 44, "left")
+
+    local buttonW = cfg.buttonWidth
+    local buttonH = cfg.buttonHeight
+    local buttonX = x + w - buttonW - cfg.padX
+    local buttonY = y + h - buttonH - cfg.padY
+    ui.guide.button = { x = buttonX, y = buttonY, w = buttonW, h = buttonH }
+
+    setPaletteColor(theme.buttonFill)
+    love.graphics.rectangle("fill", buttonX, buttonY, buttonW, buttonH, 8, 8)
+    setPaletteColor(theme.buttonLine)
+    love.graphics.rectangle("line", buttonX, buttonY, buttonW, buttonH, 8, 8)
+    setPaletteColor(theme.dim)
+    love.graphics.printf(t(state, "guide.confirm"), buttonX, buttonY + 7, buttonW, "center")
+end
+
 function OverlayRenderer.drawHelpPanel(state, fonts)
     if not state.showHelp then
         return

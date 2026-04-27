@@ -7,12 +7,14 @@ function Renderer.draw(state, fonts, ui, assets)
     if state.mode == "run_end_result" then
         WorldRenderer.draw(state, assets)
         OverlayRenderer.drawRunEndResultOverlay(state, fonts)
+        OverlayRenderer.drawGuidePanel(state, fonts, ui)
         OverlayRenderer.drawHelpPanel(state, fonts)
         return
     end
 
     if state.mode == "run_end_tree" then
         OverlayRenderer.drawRunEndTreeFullscreen(state, fonts, ui)
+        OverlayRenderer.drawGuidePanel(state, fonts, ui)
         OverlayRenderer.drawHelpPanel(state, fonts)
         return
     end
@@ -24,6 +26,7 @@ function Renderer.draw(state, fonts, ui, assets)
     if state.mode == "run_choice" then
         OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
     end
+    OverlayRenderer.drawGuidePanel(state, fonts, ui)
     OverlayRenderer.drawHelpPanel(state, fonts)
 end
 

@@ -4,6 +4,7 @@ local MapSystem = require("src.map_system")
 local Boss = require("src.boss_system")
 local Locale = require("src.locale")
 local PassiveCombat = require("src.application.passive_combat")
+local Guide = require("src.application.guide_system")
 local RunLoop = require("src.application.run_loop")
 local MetaTreeController = require("src.application.meta_tree_controller")
 local Mutation = require("src.mutation_system")
@@ -46,6 +47,7 @@ function Service.loadState()
     local state = GameState.loadOrDefault()
     state.camera.zoom = 1.0
     refreshWindowTitle(state)
+    Guide.tick(state)
     return state
 end
 
@@ -96,12 +98,17 @@ function Service.tick(state, dt)
             setMessage(state, "message.new_map_unlocked_from_skill_tree")
         end
         if result.bossDefeated then
+            if not result.runEndedReason then
+                setMessage(state, "message.final_boss_defeated")
+            end
             saveWithFeedback(state, "boss-defeated")
         end
         if result.runEndedReason == "victory" then
             saveWithFeedback(state, "run-victory")
         end
     end
+
+    Guide.tick(state)
 
     if state.mode == "run_choice" then
         return
@@ -201,6 +208,7 @@ end
 
 function Service.restartRun(state)
     GameState.startNewRun(state)
+    Guide.tick(state)
     saveWithFeedback(state, "run-restart")
 end
 
@@ -210,6 +218,7 @@ function Service.openRunEndTree(state)
     end
     state.runEndTab = "meta"
     state.mode = "run_end_tree"
+    Guide.tick(state)
 end
 
 function Service.openMetaTab(state)
@@ -241,7 +250,13 @@ function Service.chooseRunMutation(state, choiceIndex)
         state.mode = "game"
         setMessage(state, "message.instinct_chosen")
     end
+    Guide.tick(state)
     return true
+end
+
+function Service.dismissGuide(state)
+    Guide.dismiss(state)
+    Guide.tick(state)
 end
 
 function Service.metaUpgradeIndexAtScreen(state, sx, sy)

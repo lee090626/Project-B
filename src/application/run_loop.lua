@@ -61,6 +61,7 @@ function RunLoop.tickGameplay(state, dt)
         state.bonuses
     )
     if essenceGain > 0 then
+        PassiveCombat.triggerEatFx(state, essenceGain)
         Mutation.gainEssenceAndCheckLevel(state, essenceGain)
         if state.mode == "run_choice" then
             updateCamera(state)

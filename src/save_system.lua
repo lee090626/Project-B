@@ -3,6 +3,20 @@ local Serialize = require("src.serialize")
 
 local Save = {}
 
+local function migrate(data)
+    if type(data) ~= "table" then
+        return data
+    end
+
+    local version = math.max(0, math.floor(tonumber(data.version) or 0))
+    if version < 7 then
+        data.uxGuides = data.uxGuides or { shown = {} }
+        data.version = 7
+    end
+
+    return data
+end
+
 local function readAndDecode(path)
     if not love.filesystem.getInfo(path) then
         return nil, "not found"
@@ -15,7 +29,7 @@ local function readAndDecode(path)
     if not decoded then
         return nil, decodeErr or "decode failed"
     end
-    return decoded, nil
+    return migrate(decoded), nil
 end
 
 function Save.load()
@@ -68,6 +82,7 @@ function Save.snapshot(state)
         boss = state.modules.bossExport(state.boss),
         meta = state.modules.metaExport(state.meta),
         nest = state.modules.nestExport(state.nest),
+        uxGuides = state.modules.guideExport(state.guides),
     }
 end
 

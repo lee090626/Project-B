@@ -274,6 +274,17 @@ function WorldRenderer.draw(state, assets)
     end
 
     if state.passives then
+        if state.passives.eatFxTimer and state.passives.eatFxTimer > 0
+            and playerVisible then
+            local a = state.passives.eatFxTimer / 0.18
+            local radius = (state.passives.eatFxRadius or C.WORLD_THEME.eatPulseMinRadius) * (1.18 - a * 0.2)
+            love.graphics.setColor(1.0, 0.82, 0.34, 0.12 * a)
+            love.graphics.circle("fill", state.player.x, state.player.y, radius)
+            love.graphics.setColor(1.0, 0.95, 0.72, 0.72 * a)
+            love.graphics.setLineWidth(2)
+            love.graphics.circle("line", state.player.x, state.player.y, radius)
+        end
+
         if state.passives.frostFxTimer and state.passives.frostFxTimer > 0
             and playerVisible then
             local a = state.passives.frostFxTimer / 0.22

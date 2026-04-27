@@ -2,7 +2,7 @@ local C = {}
 
 C.SAVE_FILE = "save.json"
 C.BACKUP_FILE = "save.bak"
-C.SAVE_VERSION = 6
+C.SAVE_VERSION = 7
 C.AUTOSAVE_INTERVAL = 30
 C.RUN_TIME_LIMIT_SECONDS = 15
 
@@ -155,6 +155,18 @@ C.RUN_HUD_UI = {
     autosaveDuration = 2.8,
 }
 
+C.GUIDE_UI = {
+    width = 620,
+    minHeight = 132,
+    topYGame = 100,
+    topYChoice = 24,
+    topYRunEnd = 126,
+    buttonWidth = 116,
+    buttonHeight = 30,
+    padX = 22,
+    padY = 18,
+}
+
 C.HUD_THEME = {
     panelFill = { 0.04, 0.08, 0.08, 0.92 },
     panelInner = { 0.08, 0.12, 0.12, 0.82 },
@@ -184,6 +196,20 @@ C.HELP_THEME = {
     dim = { 0.8, 0.84, 0.78, 1.0 },
     chipFill = { 0.14, 0.12, 0.1, 0.96 },
     chipLine = { 0.33, 0.77, 0.61, 0.96 },
+}
+
+C.GUIDE_THEME = {
+    panelFill = { 0.07, 0.08, 0.11, 0.96 },
+    panelInner = { 0.12, 0.14, 0.18, 0.92 },
+    panelLine = { 0.93, 0.79, 0.44, 0.98 },
+    panelGlow = { 0.32, 0.8, 0.65, 0.28 },
+    title = { 0.98, 0.95, 0.85, 1.0 },
+    text = { 0.86, 0.93, 0.95, 1.0 },
+    dim = { 0.74, 0.82, 0.88, 1.0 },
+    chipFill = { 0.08, 0.1, 0.12, 0.96 },
+    chipLine = { 0.38, 0.82, 0.7, 0.98 },
+    buttonFill = { 0.14, 0.18, 0.24, 0.98 },
+    buttonLine = { 0.93, 0.79, 0.44, 0.98 },
 }
 
 C.RUN_CHOICE_THEME = {
@@ -224,6 +250,8 @@ C.WORLD_THEME = {
     playerAuraLineScale = 2.45,
     fireballGlowScale = 0.12,
     fireballImpactFillScale = 0.22,
+    eatPulseMinRadius = 18,
+    eatPulseRadiusScale = 1.5,
     cullMargin = 64,
     maps = {
         [1] = {

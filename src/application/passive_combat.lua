@@ -66,13 +66,26 @@ function PassiveCombat.resetState(state)
         fireballImpacts = {},
         frostFxTimer = 0,
         frostFxRadius = 0,
+        eatFxTimer = 0,
+        eatFxRadius = 0,
     }
+end
+
+function PassiveCombat.triggerEatFx(state, amount)
+    local passives = state.passives
+    if not passives or amount <= 0 then
+        return
+    end
+    passives.eatFxTimer = 0.18
+    passives.eatFxRadius = C.WORLD_THEME.eatPulseMinRadius
+        + math.min(30, amount * C.WORLD_THEME.eatPulseRadiusScale)
 end
 
 local function addEssence(state, rawAmount)
     if rawAmount <= 0 then
         return false
     end
+    PassiveCombat.triggerEatFx(state, rawAmount)
     local _, opened = Mutation.gainEssenceAndCheckLevel(state, rawAmount)
     return opened
 end
@@ -191,6 +204,7 @@ function PassiveCombat.tickFx(state, dt)
         end
     end
     passives.frostFxTimer = math.max(0, passives.frostFxTimer - dt)
+    passives.eatFxTimer = math.max(0, passives.eatFxTimer - dt)
 end
 
 local function findNearestHostile(state, fromX, fromY)

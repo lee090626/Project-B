@@ -16,6 +16,7 @@ function App.new()
             saveBtn = { x = 0, y = 0, w = 120, h = 32 },
             runEnd = { tabs = {}, nestButtons = {} },
             runChoice = { cards = {} },
+            guide = { button = nil },
         },
     }, App)
 end
@@ -131,6 +132,16 @@ end
 
 function App:mousepressed(x, y, button)
     if button ~= 1 then
+        return
+    end
+
+    if self.state.showHelp then
+        return
+    end
+
+    local guideButton = self.ui.guide.button
+    if guideButton and hitRect(x, y, guideButton) then
+        Service.dismissGuide(self.state)
         return
     end
 
