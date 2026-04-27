@@ -31,7 +31,7 @@ function Controller.nodeAtScreen(state, sx, sy)
                 local dx = wx - point.x
                 local dy = wy - point.y
                 local distSq = dx * dx + dy * dy
-                if distSq <= bestDistSq then
+                if distSq < bestDistSq then
                     bestDistSq = distSq
                     best = row.index
                 end

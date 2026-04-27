@@ -444,6 +444,10 @@ function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts, ui)
             local sx, sy = metaTreeWorldToScreen(state, point.x, point.y, sw, sh)
             local size = treeUi.nodeRadius
             if row.maxed then
+                love.graphics.setColor(0.95, 0.88, 0.32, 0.12)
+                love.graphics.circle("fill", sx, sy, size + 12)
+            end
+            if row.maxed then
                 love.graphics.setColor(0.12, 0.2, 0.12, 0.95)
             elseif row.canBuy then
                 love.graphics.setColor(0.08, 0.2, 0.14, 0.95)
@@ -465,11 +469,33 @@ function OverlayRenderer.drawRunEndTreeFullscreen(state, fonts, ui)
             love.graphics.setLineWidth(3)
             love.graphics.polygon("line", sx, sy - size, sx + size, sy, sx, sy + size, sx - size, sy)
 
+            if row.maxed then
+                local inner = math.max(10, size - 8)
+                love.graphics.setColor(0.96, 0.88, 0.34, 0.95)
+                love.graphics.setLineWidth(2)
+                love.graphics.polygon("line", sx, sy - inner, sx + inner, sy, sx, sy + inner, sx - inner, sy)
+                love.graphics.setColor(1.0, 0.92, 0.42, 0.95)
+                love.graphics.polygon(
+                    "fill",
+                    sx + size - 9, sy - 4,
+                    sx + size - 3, sy - 10,
+                    sx + size + 3, sy - 4,
+                    sx + size - 3, sy + 2
+                )
+            end
+
             love.graphics.setColor(0.95, 0.95, 0.95)
             local icon = row.icon or tostring(row.index)
+            if row.maxed then
+                love.graphics.setColor(1.0, 0.95, 0.72)
+            end
             local iconWidth = fonts.hud:getWidth(icon)
             love.graphics.print(icon, sx - iconWidth * 0.5, sy - 10)
-            love.graphics.setColor(0.9, 0.95, 0.55)
+            if row.maxed then
+                love.graphics.setColor(1.0, 0.9, 0.45)
+            else
+                love.graphics.setColor(0.9, 0.95, 0.55)
+            end
             love.graphics.printf(string.format("%d/%d", row.level, row.maxLevel), sx - 24, sy + size + 4, 48, "center")
         end
     end
