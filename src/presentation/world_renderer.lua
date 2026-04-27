@@ -170,10 +170,13 @@ function WorldRenderer.draw(state, assets)
 
         if state.passives.lightningFx then
             local fx = state.passives.lightningFx
-            local a = math.max(0, fx.timer / 0.12)
+            local a = math.max(0, fx.timer / 0.18)
             love.graphics.setColor(0.8, 0.95, 1.0, a)
-            love.graphics.setLineWidth(3)
-            love.graphics.line(fx.fromX, fx.fromY, fx.toX, fx.toY)
+            love.graphics.setLineWidth(4)
+            for _, segment in ipairs(fx.segments or {}) do
+                love.graphics.line(segment.fromX, segment.fromY, segment.toX, segment.toY)
+                love.graphics.circle("fill", segment.toX, segment.toY, 4)
+            end
         end
 
         if state.passives.fireballProjectiles then

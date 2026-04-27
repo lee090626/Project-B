@@ -76,7 +76,7 @@ C.PASSIVE_BASES = {
     lightning = {
         interval = 1.7,
         damage = 18,
-        chainRadius = 220,
+        chainRadius = 300,
     },
     fireball = {
         interval = 2.0,

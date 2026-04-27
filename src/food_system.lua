@@ -223,42 +223,77 @@ function Food.damagePulse(food, x, y, radius, damage, mapData, bonuses, slowPowe
     return essenceGain, killed, hits
 end
 
+local function findIndexByItem(food, targetItem)
+    for i, item in ipairs(food.list) do
+        if item == targetItem then
+            return i
+        end
+    end
+    return nil
+end
+
+local function buildLightningRoute(food, startIndex, chainCount, chainRadius)
+    local route = {}
+    local currentItem = food.list[startIndex]
+    local hitItems = {}
+    local maxJump = chainRadius or math.huge
+
+    while currentItem and #route < chainCount do
+        route[#route + 1] = currentItem
+        hitItems[currentItem] = true
+
+        local bestItem
+        local bestDist = math.huge
+        for _, nextItem in ipairs(food.list) do
+            if not hitItems[nextItem] then
+                local dist = Utils.distance(currentItem.x, currentItem.y, nextItem.x, nextItem.y)
+                if dist <= maxJump and dist < bestDist then
+                    bestDist = dist
+                    bestItem = nextItem
+                end
+            end
+        end
+        currentItem = bestItem
+    end
+
+    return route
+end
+
+local function buildLightningSegments(route)
+    local segments = {}
+    for i = 1, #route - 1 do
+        local fromItem = route[i]
+        local toItem = route[i + 1]
+        segments[#segments + 1] = {
+            fromX = fromItem.x,
+            fromY = fromItem.y,
+            toX = toItem.x,
+            toY = toItem.y,
+        }
+    end
+    return segments
+end
+
 function Food.chainLightning(food, startIndex, damage, chainCount, chainRadius, mapData, bonuses)
     local essenceGain = 0
     local killed = 0
     local hitCount = 0
+    local route = buildLightningRoute(food, startIndex, chainCount, chainRadius)
+    local segments = buildLightningSegments(route)
 
-    local currentIndex = startIndex
-    local currentX, currentY
-    local hitIndices = {}
-
-    while currentIndex and food.list[currentIndex] and hitCount < chainCount do
-        local item = food.list[currentIndex]
-        currentX, currentY = item.x, item.y
-        hitIndices[currentIndex] = true
-
-        local reward, didKill = Food.applyDamageAtIndex(food, currentIndex, damage, mapData, bonuses)
-        essenceGain = essenceGain + reward
-        hitCount = hitCount + 1
-        if didKill then
-            killed = killed + 1
-        end
-
-        local bestIndex
-        local bestDist = math.huge
-        for i, nextItem in ipairs(food.list) do
-            if not hitIndices[i] then
-                local dist = Utils.distance(currentX, currentY, nextItem.x, nextItem.y)
-                if dist <= chainRadius and dist < bestDist then
-                    bestDist = dist
-                    bestIndex = i
-                end
+    for _, item in ipairs(route) do
+        local currentIndex = findIndexByItem(food, item)
+        if currentIndex then
+            local reward, didKill = Food.applyDamageAtIndex(food, currentIndex, damage, mapData, bonuses)
+            essenceGain = essenceGain + reward
+            hitCount = hitCount + 1
+            if didKill then
+                killed = killed + 1
             end
         end
-        currentIndex = bestIndex
     end
 
-    return essenceGain, killed, hitCount
+    return essenceGain, killed, hitCount, segments
 end
 
 return Food

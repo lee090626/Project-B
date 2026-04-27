@@ -25,6 +25,7 @@ function PassiveCombat.buildRunBonuses(metaBonuses)
     out.lightningEnabled = (metaBonuses.lightningEnabled or 0) > 0
     out.lightningDamage = C.PASSIVE_BASES.lightning.damage + (metaBonuses.lightningDamage or 0)
     out.lightningChain = math.max(1, 1 + math.floor(metaBonuses.lightningChain or 0))
+    out.lightningChainRadius = C.PASSIVE_BASES.lightning.chainRadius + math.max(0, out.lightningChain - 1) * 70
     out.lightningInterval = Utils.clamp(
         C.PASSIVE_BASES.lightning.interval - (metaBonuses.lightningIntervalCut or 0),
         0.24,
@@ -76,13 +77,14 @@ local function addEssence(state, rawAmount)
     return opened
 end
 
-local function pushLightningFx(state, fromX, fromY, toX, toY)
+local function pushLightningFx(state, segments)
+    if not segments or #segments == 0 then
+        state.passives.lightningFx = nil
+        return
+    end
     state.passives.lightningFx = {
-        fromX = fromX,
-        fromY = fromY,
-        toX = toX,
-        toY = toY,
-        timer = 0.12,
+        segments = segments,
+        timer = 0.18,
     }
 end
 
@@ -225,21 +227,51 @@ local function triggerLightning(state, mapData)
         return false
     end
 
-    pushLightningFx(state, state.player.x, state.player.y, target.x, target.y)
     if target.kind == "boss" then
+        pushLightningFx(state, {
+            {
+                fromX = state.player.x,
+                fromY = state.player.y,
+                toX = target.x,
+                toY = target.y,
+            },
+        })
         Boss.applyDamage(state, state.bonuses.lightningDamage)
         return false
     end
 
-    local reward = select(1, Food.chainLightning(
+    local reward, _, _, segments = Food.chainLightning(
         state.food,
         target.index,
         state.bonuses.lightningDamage,
         state.bonuses.lightningChain,
-        C.PASSIVE_BASES.lightning.chainRadius,
+        state.bonuses.lightningChainRadius,
         mapData,
         state.bonuses
-    ))
+    )
+    if segments and #segments > 0 then
+        local fullSegments = {
+            {
+                fromX = state.player.x,
+                fromY = state.player.y,
+                toX = segments[1].fromX,
+                toY = segments[1].fromY,
+            },
+        }
+        for _, segment in ipairs(segments) do
+            fullSegments[#fullSegments + 1] = segment
+        end
+        pushLightningFx(state, fullSegments)
+    else
+        pushLightningFx(state, {
+            {
+                fromX = state.player.x,
+                fromY = state.player.y,
+                toX = target.x,
+                toY = target.y,
+            },
+        })
+    end
     return addEssence(state, reward)
 end
 

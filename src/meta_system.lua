@@ -16,6 +16,11 @@ local INTEGER_REBALANCE_KEYS = {
     frostDamage = true,
     frostRadius = true,
 }
+local DISCRETE_STEP_KEYS = {
+    lightningChain = true,
+    fireballCount = true,
+    fireballSplit = true,
+}
 local ECONOMY_REBALANCE_KEYS = {
     essenceMult = true,
     rareValue = true,
@@ -46,7 +51,12 @@ local function rebalanceBonus(def)
 
     local value = def.bonusPerLevel
     if INTEGER_REBALANCE_KEYS[def.bonusKey] then
-        def.bonusPerLevel = math.floor(value * 0.75)
+        local scaled = math.floor(value * 0.75)
+        if value > 0 and DISCRETE_STEP_KEYS[def.bonusKey] then
+            def.bonusPerLevel = math.max(1, scaled)
+        else
+            def.bonusPerLevel = scaled
+        end
     elseif def.bonusKey == "reach" then
         def.bonusPerLevel = round(value * 0.8, 1)
     elseif ECONOMY_REBALANCE_KEYS[def.bonusKey] then
