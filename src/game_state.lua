@@ -5,6 +5,7 @@ local MapSystem = require("src.map_system")
 local Boss = require("src.boss_system")
 local Meta = require("src.meta_system")
 local Save = require("src.save_system")
+local PassiveCombat = require("src.application.passive_combat")
 
 local GameState = {}
 
@@ -20,37 +21,13 @@ local function resetMetaTreeView(state)
     }
 end
 
-local function resetPassiveState(state)
-    state.passives = {
-        lightningTimer = 0.35,
-        fireballTimer = 0.6,
-        frostPulseTimer = 0.9,
-        lightningFx = nil,
-        fireballFx = nil,
-        frostFxTimer = 0,
-        frostFxRadius = 0,
-    }
-end
-
-local function recomputeMetaBonuses(state)
-    state.metaBonuses = Meta.computeBonuses(state.meta)
-    state.runDuration = C.RUN_TIME_LIMIT_SECONDS
-end
-
-local function syncMapsToMeta(state)
-    MapSystem.syncUnlocks(state.maps, Meta.getUnlockedCount(state.meta))
-end
-
 local function resetRunState(state)
-    recomputeMetaBonuses(state)
-
     state.player = Player.new(nil)
     state.food = Food.new(nil)
     state.maps = MapSystem.new(nil)
     state.boss = Boss.new(nil)
-
-    state.bonuses = Meta.computeBonuses(state.meta)
-    syncMapsToMeta(state)
+    GameState.refreshDerivedState(state)
+    GameState.normalizeProgression(state)
 
     state.camera.x = 0
     state.camera.y = 0
@@ -62,7 +39,7 @@ local function resetRunState(state)
     state.endingReached = false
     state.mode = "game"
     resetMetaTreeView(state)
-    resetPassiveState(state)
+    PassiveCombat.resetState(state)
 end
 
 function GameState.new(loadResult, loadErr)
@@ -86,16 +63,13 @@ function GameState.new(loadResult, loadErr)
         meta = Meta.new(saved.meta),
     }
 
-    recomputeMetaBonuses(state)
-
     state.player = Player.new(saved.player)
     state.food = Food.new(saved.food)
     state.maps = MapSystem.new(saved.maps)
     state.boss = Boss.new(saved.boss)
 
-    state.runTimeLeft = saved.runTimeLeft or state.runDuration
     resetMetaTreeView(state)
-    resetPassiveState(state)
+    PassiveCombat.resetState(state)
 
     state.modules = {
         playerExport = Player.export,
@@ -105,8 +79,9 @@ function GameState.new(loadResult, loadErr)
         metaExport = Meta.export,
     }
 
-    state.bonuses = Meta.computeBonuses(state.meta)
-    syncMapsToMeta(state)
+    GameState.refreshDerivedState(state)
+    GameState.normalizeProgression(state)
+    state.runTimeLeft = saved.runTimeLeft or state.runDuration
 
     if state.runEnded and state.mode ~= "run_end_tree" and state.mode ~= "run_end_result" then
         state.mode = "run_end_result"
@@ -118,6 +93,16 @@ end
 function GameState.loadOrDefault()
     local loaded, err = Save.load()
     return GameState.new(loaded, err)
+end
+
+function GameState.refreshDerivedState(state)
+    state.metaBonuses = Meta.computeBonuses(state.meta)
+    state.bonuses = PassiveCombat.buildRunBonuses(state.metaBonuses)
+    state.runDuration = C.RUN_TIME_LIMIT_SECONDS
+end
+
+function GameState.normalizeProgression(state)
+    MapSystem.syncUnlocks(state.maps, Meta.getUnlockedCount(state.meta))
 end
 
 function GameState.startNewRun(state)
@@ -134,7 +119,7 @@ function GameState.endRun(state, reason)
     state.runEndedReason = reason
     state.mode = "run_end_result"
     resetMetaTreeView(state)
-    resetPassiveState(state)
+    PassiveCombat.resetState(state)
 
     state.meta.totalRuns = state.meta.totalRuns + 1
     state.message = "Run ended"
@@ -143,17 +128,18 @@ end
 
 function GameState.tryBuyMetaUpgrade(state, index)
     if not state.runEnded then
-        return false, "not in run end"
+        return false, "not in run end", nil
     end
 
     local ok, err = Meta.tryBuy(state.meta, index)
     if not ok then
-        return false, err
+        return false, err, nil
     end
 
-    recomputeMetaBonuses(state)
+    GameState.refreshDerivedState(state)
+    local mapUnlocked = MapSystem.updateUnlocks(state.maps, Meta.getUnlockedCount(state.meta))
     state.message = "Meta upgrade purchased"
-    return true, nil
+    return true, nil, { mapUnlocked = mapUnlocked }
 end
 
 function GameState.getMetaUpgradeRows(state)
