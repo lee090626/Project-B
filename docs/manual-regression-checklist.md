@@ -28,3 +28,18 @@
 - Switch maps, save, reload, and confirm current map and unlock state are preserved.
 - Enter the final boss, save before or after the fight, reload, and confirm boss state restores safely.
 - Finish a run, open the Meta Tree, buy an upgrade, reload, and confirm purchases persist.
+
+## Acceptance Gates
+
+- First instinct appears within `5 minutes` on a fresh save.
+- Map 2 opens in the early session and Map 3 is reachable before `2 hours`.
+- Map 4 and boss entry remain late-game goals but are visible before full tree completion.
+- Full completion on a skilled route lands inside `8-10 hours`.
+- No run produces a `30 minute` or longer no-buy gap.
+- Boss success is not locked to a single dominant build.
+
+## V1 Candidate Signoff
+
+- Record `3` fresh-save sessions and `2` existing-save sessions in `docs/v1-balance-notes.md`.
+- Re-run every checklist item after the final balance pass.
+- Freeze feature work after signoff and allow only critical bug fixes.

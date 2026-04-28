@@ -5,31 +5,28 @@
 - Target full completion time: `8-10 hours`
 - Curve shape: `fast first 20-30 minutes then longer late-game finish`
 
-## Current Tables Worth Externalizing Later
+## Current Balance Data Modules
 
-- `C.MAPS`
-  - reward multipliers
-  - hp scale
-  - spawn rarity tables
-- `C.NEST_LEVEL_COST_BANDS`
-- `C.FOOD_BY_TIER`
-  - hp
-  - essence
-  - speed
-- `C.META_COST_DEPTH_MULTIPLIERS`
-- `C.META_PASSIVE_COST_DEPTH_MULTIPLIERS`
-- `C.PASSIVE_BASES`
-  - lightning
-  - fireball
-  - frost
-- `C.MUTATION_LEVEL_THRESHOLDS`
+- `src/data/progression_balance.lua`
+  - map rewards
+  - map unlock requirements
+  - nest level cost bands
+  - meta tree depth multipliers
+- `src/data/combat_balance.lua`
+  - food tier stats
+  - passive base values
+  - boss arena values
+- `src/data/mutation_balance.lua`
+  - instinct thresholds
+  - rarity weights
+  - instinct card effect values
+
+## Remaining Tables Worth Externalizing Later
+
 - `src/meta_system.lua`
   - branch node costs
-  - scaling
+  - branch scaling
   - per-level bonus values
-- `src/mutation_system.lua`
-  - mutation rarity weights
-  - per-rarity bonus values
 
 ## Manual Balance Checks For v1 Closeout
 
@@ -41,8 +38,8 @@
 
 ## Notes
 
-- Keep final v1 tuning inside the current Lua tables unless repeated balance passes become too slow.
-- If more than one pass requires editing the same values across multiple files, move map, passive, and mutation tuning into dedicated data tables next.
+- Keep final v1 tuning inside the current data modules unless repeated balance passes become too slow.
+- If more than one pass still requires editing the same values across multiple systems, move meta node definitions into a dedicated data module next.
 
 ## 2026-04-28 Tuning Pass
 
@@ -69,3 +66,29 @@
   - Mutation thresholds
   - Passive base damage and cooldowns
   - Boss arena timer and HP
+
+## Playtest Session Log
+
+| Session | Save | Build focus | First instinct | Map 2 | Map 3 | Map 4 | Boss ready | First victory | Ending | Longest no-buy gap | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | fresh |  |  |  |  |  |  |  |  |  |  |
+| 2 | fresh |  |  |  |  |  |  |  |  |  |  |
+| 3 | fresh |  |  |  |  |  |  |  |  |  |  |
+| 4 | existing |  |  |  |  |  |  |  |  |  |  |
+| 5 | existing |  |  |  |  |  |  |  |  |  |  |
+
+## Second Pass Tuning Rules
+
+- If the first instinct exceeds `5 minutes`, only lower `thresholds` in `src/data/mutation_balance.lua`.
+- If Map 2 or Map 3 is too late, lower `unlockRequires` only and keep `reward` unchanged.
+- If late-game income spikes again after Map 4, lower `reward` only and keep `hpScale` unchanged.
+- If the boss is still too hard, tune in this order only: `bossHp`, `weakPointHp`, `arenaTimer`.
+- If any run produces a no-buy gap over `30 minutes`, relax meta depth multipliers before touching nest bands.
+
+## V1 Candidate Freeze Gate
+
+- Full completion on a skilled route must land inside `8-10 hours`.
+- New save runs must reach the first instinct inside `5 minutes`.
+- Map 3 must be reachable before `2 hours`.
+- No single build should trivialize the boss while other builds consistently fail.
+- Once these targets are met, run the full manual regression checklist and freeze new feature work except critical bugs.
