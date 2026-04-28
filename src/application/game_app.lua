@@ -37,26 +37,31 @@ local function loadUiFont(size)
     return love.graphics.newFont(size)
 end
 
+local function loadOptionalImage(path)
+    local ok, image = pcall(love.graphics.newImage, path)
+    if ok and image then
+        return image
+    end
+    return nil
+end
+
 function App:load()
     love.window.setTitle(Locale.text(Locale.DEFAULT, "app.title"))
     love.window.setMode(1280, 720, { resizable = true, minwidth = 960, minheight = 540 })
+    love.graphics.setDefaultFilter("nearest", "nearest")
 
     self.fonts.hud = loadUiFont(15)
     self.fonts.big = loadUiFont(30)
 
-    local ok, playerImage = pcall(love.graphics.newImage, "BabyDragon.png")
-    if ok and playerImage then
-        self.assets.playerSprite = playerImage
-    else
-        self.assets.playerSprite = nil
-    end
-
-    local fireballOk, fireballImage = pcall(love.graphics.newImage, "FireBall.png")
-    if fireballOk and fireballImage then
-        self.assets.fireballSprite = fireballImage
-    else
-        self.assets.fireballSprite = nil
-    end
+    self.assets.playerSprite = loadOptionalImage("BabyDragon.png")
+    self.assets.fireballSprite = loadOptionalImage("FireBall.png")
+    self.assets.monsterSprites = {
+        common = loadOptionalImage("MonsterCommon.png"),
+        rare = loadOptionalImage("MonsterRare.png"),
+        elite = loadOptionalImage("MonsterElite.png"),
+    }
+    self.assets.bossSprite = loadOptionalImage("BossFinal.png")
+    self.assets.bossWeakPointSprite = loadOptionalImage("BossWeakPoint.png")
 
     self.state = Service.loadState()
 end
