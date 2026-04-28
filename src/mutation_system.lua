@@ -122,6 +122,25 @@ local function openChoiceState(state)
     state.messageVersion = (state.messageVersion or 0) + 1
 end
 
+function Mutation.grantChoices(state, count)
+    local amount = math.max(0, math.floor(count or 0))
+    if amount <= 0 then
+        return false
+    end
+
+    state.runMutations.pendingChoices = (state.runMutations.pendingChoices or 0) + amount
+    if state.runMutations.activeChoices then
+        return false
+    end
+
+    Mutation.rollChoices(state)
+    if state.runMutations.activeChoices then
+        openChoiceState(state)
+        return true
+    end
+    return false
+end
+
 function Mutation.gainEssenceAndCheckLevel(state, amount)
     local gain = math.max(1, math.floor(amount + 0.5))
     state.meta.essence = state.meta.essence + gain
@@ -232,9 +251,6 @@ function Mutation.buildRunBonuses(runMutations)
         lightningIntervalCut = 0,
         fireballDamage = 0,
         fireballRadius = 0,
-        frostDamage = 0,
-        frostRadius = 0,
-        frostDuration = 0,
     }
 
     for _, pick in ipairs(runMutations.picks) do

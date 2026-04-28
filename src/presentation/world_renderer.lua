@@ -311,6 +311,15 @@ function WorldRenderer.draw(state, assets)
 
             love.graphics.setColor(1, 1, 1, flash)
             love.graphics.circle("line", drawX, drawY, item.radius + 1)
+            if item.eventTarget then
+                local pulse = 0.82 + math.sin((state.totalPlayTime or 0) * 6 + item.eventId) * 0.18
+                local lineColor = item.eventKind == "final" and { 1.0, 0.74, 0.3, 0.92 } or { 0.48, 0.96, 0.82, 0.9 }
+                love.graphics.setColor(lineColor[1], lineColor[2], lineColor[3], lineColor[4])
+                love.graphics.setLineWidth(3)
+                love.graphics.circle("line", drawX, drawY, item.radius + 6 + (1 - pulse) * 3)
+                love.graphics.setColor(lineColor[1], lineColor[2], lineColor[3], 0.28)
+                love.graphics.circle("fill", drawX, drawY, item.radius + 4)
+            end
 
             local hpPct = item.maxHp > 0 and math.max(0, item.hp / item.maxHp) or 0
             local barW = item.radius * 2.1
@@ -442,15 +451,6 @@ function WorldRenderer.draw(state, assets)
             love.graphics.setColor(1.0, 0.95, 0.72, 0.72 * a)
             love.graphics.setLineWidth(2)
             love.graphics.circle("line", state.player.x, state.player.y, radius)
-        end
-
-        if state.passives.frostFxTimer and state.passives.frostFxTimer > 0
-            and playerVisible then
-            local a = state.passives.frostFxTimer / 0.22
-            love.graphics.setColor(0.55, 0.85, 1.0, 0.24 * a)
-            love.graphics.circle("fill", state.player.x, state.player.y, state.passives.frostFxRadius or 0)
-            love.graphics.setColor(0.8, 0.95, 1.0, 0.45 * a)
-            love.graphics.circle("line", state.player.x, state.player.y, state.passives.frostFxRadius or 0)
         end
 
         if state.passives.lightningFx then

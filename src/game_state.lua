@@ -10,6 +10,7 @@ local Locale = require("src.locale")
 local PassiveCombat = require("src.application.passive_combat")
 local Guide = require("src.application.guide_system")
 local Mutation = require("src.mutation_system")
+local RunEvent = require("src.run_event_system")
 
 local GameState = {}
 
@@ -32,12 +33,11 @@ local BONUS_KEYS = {
     "fireballRadius",
     "fireballIntervalCut",
     "fireballSplit",
-    "frostEnabled",
-    "frostDamage",
-    "frostRadius",
-    "frostSlow",
-    "frostDuration",
-    "frostIntervalCut",
+    "eventBiteBonus",
+    "midBonusTime",
+    "finalBonusTime",
+    "bonusTimeCap",
+    "finalWindowMin",
 }
 
 local MULT_KEYS = {
@@ -102,8 +102,13 @@ local function resetRunState(state)
     state.boss = Boss.new(nil)
     state.runMutations = Mutation.newRunState()
     state.runEssenceTotal = 0
+    state.runBonusTimeEarned = 0
+    state.runStarsEarned = 0
+    state.runMapsUnlocked = false
+    state.runGrade = "F"
     GameState.refreshDerivedState(state)
     GameState.normalizeProgression(state)
+    state.runEvent = RunEvent.newRunState(MapSystem.getCurrentMap(state.maps))
 
     state.camera.x = 0
     state.camera.y = 0
@@ -119,14 +124,7 @@ local function resetRunState(state)
     PassiveCombat.resetState(state)
     Guide.resetRuntime(state.guides)
 
-    state.runMutations.pendingChoices = state.nestBonuses.startingChoices or 0
-    if state.runMutations.pendingChoices > 0 then
-        Mutation.rollChoices(state)
-        if state.runMutations.activeChoices then
-            state.mode = "run_choice"
-            GameState.setMessage(state, "message.choose_instinct")
-        end
-    end
+    Mutation.grantChoices(state, math.max(1, state.nestBonuses.startingChoices or 0))
 end
 
 function GameState.new(loadResult, loadErr)
@@ -163,6 +161,10 @@ function GameState.new(loadResult, loadErr)
         guides = Guide.new(saved.uxGuides),
         runMutations = Mutation.newRunState(),
         runEssenceTotal = 0,
+        runBonusTimeEarned = 0,
+        runStarsEarned = 0,
+        runMapsUnlocked = false,
+        runGrade = "F",
         runEndTab = "meta",
     }
     if saved.nest and saved.nest.totalEssence ~= nil then
@@ -175,6 +177,7 @@ function GameState.new(loadResult, loadErr)
     state.food = Food.new(saved.food)
     state.maps = MapSystem.new(saved.maps)
     state.boss = Boss.new(saved.boss)
+    state.runEvent = RunEvent.newRunState(MapSystem.getCurrentMap(state.maps))
 
     resetMetaTreeView(state)
     PassiveCombat.resetState(state)
@@ -223,7 +226,7 @@ function GameState.refreshDerivedState(state)
 end
 
 function GameState.normalizeProgression(state)
-    MapSystem.syncUnlocks(state.maps, Meta.getUnlockedCount(state.meta))
+    MapSystem.syncUnlocks(state.maps, state.meta.runStars or 0)
 end
 
 function GameState.startNewRun(state)
@@ -243,9 +246,15 @@ function GameState.endRun(state, reason)
     state.mode = "run_end_result"
     resetMetaTreeView(state)
     PassiveCombat.resetState(state)
+    RunEvent.finalize(state)
+    state.runMapsUnlocked = MapSystem.updateUnlocks(state.maps, state.meta.runStars or 0)
 
     state.meta.totalRuns = state.meta.totalRuns + 1
-    GameState.setMessage(state, "message.run_ended")
+    if state.runMapsUnlocked then
+        GameState.setMessage(state, "message.new_map_unlocked_from_stars")
+    else
+        GameState.setMessage(state, "message.run_ended")
+    end
     return true
 end
 
@@ -260,9 +269,8 @@ function GameState.tryBuyMetaUpgrade(state, index)
     end
 
     GameState.refreshDerivedState(state)
-    local mapUnlocked = MapSystem.updateUnlocks(state.maps, Meta.getUnlockedCount(state.meta))
     GameState.setMessage(state, "message.meta_upgrade_purchased")
-    return true, nil, { mapUnlocked = mapUnlocked }
+    return true, nil, nil
 end
 
 function GameState.getMetaUpgradeRows(state)

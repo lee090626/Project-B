@@ -88,7 +88,7 @@ function Boss.canEnter(state)
         and not state.runEnded
         and state.maps.currentMapId == #C.MAPS
         and allMapsUnlocked(state)
-        and Meta.allUnlocked(state.meta)
+        and Meta.hasRequiredCapstones(state.meta)
         and not state.boss.defeated
         and not state.boss.active
 end

@@ -20,6 +20,11 @@ function PassiveCombat.buildRunBonuses(metaBonuses)
         spawnCap = metaBonuses.spawnCap or 0,
         rareValue = metaBonuses.rareValue or 1,
         eliteValue = metaBonuses.eliteValue or 1,
+        eventBiteBonus = metaBonuses.eventBiteBonus or 0,
+        midBonusTime = metaBonuses.midBonusTime or 0,
+        finalBonusTime = metaBonuses.finalBonusTime or 0,
+        bonusTimeCap = metaBonuses.bonusTimeCap or 0,
+        finalWindowMin = metaBonuses.finalWindowMin or 0,
     }
 
     out.lightningEnabled = (metaBonuses.lightningEnabled or 0) > 0
@@ -42,17 +47,6 @@ function PassiveCombat.buildRunBonuses(metaBonuses)
         3.4
     )
 
-    out.frostEnabled = (metaBonuses.frostEnabled or 0) > 0
-    out.frostDamage = C.PASSIVE_BASES.frost.damage + (metaBonuses.frostDamage or 0)
-    out.frostRadius = C.PASSIVE_BASES.frost.radius + (metaBonuses.frostRadius or 0)
-    out.frostSlow = Utils.clamp(C.PASSIVE_BASES.frost.slow + (metaBonuses.frostSlow or 0), 0.05, 0.85)
-    out.frostDuration = C.PASSIVE_BASES.frost.duration + (metaBonuses.frostDuration or 0)
-    out.frostInterval = Utils.clamp(
-        C.PASSIVE_BASES.frost.interval - (metaBonuses.frostIntervalCut or 0),
-        0.28,
-        3.6
-    )
-
     return out
 end
 
@@ -60,12 +54,9 @@ function PassiveCombat.resetState(state)
     state.passives = {
         lightningTimer = 0.35,
         fireballTimer = 0.6,
-        frostPulseTimer = 0.9,
         lightningFx = nil,
         fireballProjectiles = {},
         fireballImpacts = {},
-        frostFxTimer = 0,
-        frostFxRadius = 0,
         eatFxTimer = 0,
         eatFxRadius = 0,
     }
@@ -139,11 +130,6 @@ local function pushFireballImpact(state, x, y, radius)
     }
 end
 
-local function triggerFrostFx(state, radius)
-    state.passives.frostFxTimer = 0.22
-    state.passives.frostFxRadius = radius
-end
-
 function PassiveCombat.tickFx(state, dt)
     local passives = state.passives
     local mapData = MapSystem.getCurrentMap(state.maps)
@@ -201,7 +187,8 @@ function PassiveCombat.tickFx(state, dt)
                     state.bonuses,
                     nil,
                     nil,
-                    projectile.maxHits
+                    projectile.maxHits,
+                    "fireball"
                 )
                 table.remove(passives.fireballProjectiles, i)
                 if addEssence(state, reward) then
@@ -210,7 +197,6 @@ function PassiveCombat.tickFx(state, dt)
             end
         end
     end
-    passives.frostFxTimer = math.max(0, passives.frostFxTimer - dt)
     passives.eatFxTimer = math.max(0, passives.eatFxTimer - dt)
 end
 
@@ -320,7 +306,7 @@ local function triggerLightning(state, mapData)
                 toY = target.y,
             },
         })
-        Boss.applyDamage(state, state.bonuses.lightningDamage)
+        Boss.applyDamage(state, math.max(1, state.bonuses.lightningDamage * 0.18))
         return false
     elseif target.kind == "weak_point" then
         pushLightningFx(state, {
@@ -331,7 +317,7 @@ local function triggerLightning(state, mapData)
                 toY = target.y,
             },
         })
-        Boss.applyWeakPointDamage(state, target.index, state.bonuses.lightningDamage)
+        Boss.applyWeakPointDamage(state, target.index, math.max(1, state.bonuses.lightningDamage * 0.18))
         return false
     end
 
@@ -382,11 +368,13 @@ local function triggerFireball(state, mapData)
         local targetX, targetY = getFireballAimPoint(target, shotIndex, projectiles, state.bonuses.fireballRadius)
 
         local pulseDamage = state.bonuses.fireballDamage
-        local bossDamage = state.bonuses.fireballDamage
+        local bossDamage = state.bonuses.fireballDamage * 0.35
         local maxHits = math.max(3, projectiles + 1)
         if target.kind == "boss" then
             pulseDamage = pulseDamage * 0.6
             maxHits = math.max(2, projectiles)
+        elseif target.kind == "weak_point" then
+            bossDamage = state.bonuses.fireballDamage * 0.35
         end
 
         spawnFireballProjectile(
@@ -402,50 +390,6 @@ local function triggerFireball(state, mapData)
             target.kind,
             target.index
         )
-    end
-    return false
-end
-
-local function triggerFrost(state, mapData)
-    if state.mode == "boss_arena" then
-        triggerFrostFx(state, state.bonuses.frostRadius)
-        local target = Boss.getPriorityTarget(state, state.player.x, state.player.y)
-        if not target then
-            return false
-        end
-
-        if target.kind == "weak_point" then
-            if target.dist <= state.bonuses.frostRadius + target.radius then
-                Boss.applyWeakPointDamage(state, target.index, state.bonuses.frostDamage)
-            end
-        elseif target.dist <= state.bonuses.frostRadius + state.boss.radius then
-            Boss.applyDamage(state, state.bonuses.frostDamage * 0.7)
-        end
-        return false
-    end
-
-    triggerFrostFx(state, state.bonuses.frostRadius)
-    local reward = Food.damagePulse(
-        state.food,
-        state.player.x,
-        state.player.y,
-        state.bonuses.frostRadius,
-        state.bonuses.frostDamage,
-        mapData,
-        state.bonuses,
-        state.bonuses.frostSlow,
-        state.bonuses.frostDuration,
-        nil
-    )
-    if addEssence(state, reward) then
-        return true
-    end
-
-    if state.boss.active and not state.boss.defeated then
-        local dist = Boss.distanceTo(state.boss, state.player.x, state.player.y)
-        if dist <= state.bonuses.frostRadius + state.boss.radius then
-            Boss.applyDamage(state, state.bonuses.frostDamage * 0.7)
-        end
     end
     return false
 end
@@ -469,16 +413,6 @@ function PassiveCombat.tickPassives(state, dt, mapData)
         while passives.fireballTimer <= 0 do
             passives.fireballTimer = passives.fireballTimer + bonuses.fireballInterval
             if triggerFireball(state, mapData) or state.mode == "run_choice" then
-                return
-            end
-        end
-    end
-
-    if bonuses.frostEnabled then
-        passives.frostPulseTimer = passives.frostPulseTimer - dt
-        while passives.frostPulseTimer <= 0 do
-            passives.frostPulseTimer = passives.frostPulseTimer + bonuses.frostInterval
-            if triggerFrost(state, mapData) or state.mode == "run_choice" then
                 return
             end
         end

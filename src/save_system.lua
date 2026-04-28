@@ -13,6 +13,9 @@ local function migrate(data)
         data.uxGuides = data.uxGuides or { shown = {} }
         data.version = 7
     end
+    if version < 8 then
+        data.version = 8
+    end
 
     return data
 end

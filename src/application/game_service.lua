@@ -48,10 +48,6 @@ local function localizedErrorRef(domain, code)
 end
 
 local function handleLoopResult(state, result)
-    if result.mapUnlocked then
-        setMessage(state, "message.new_map_unlocked_from_skill_tree")
-    end
-
     if result.bossDefeated and not result.runEndedReason then
         setMessage(state, "message.final_boss_defeated")
         saveWithFeedback(state, "boss-defeated")
@@ -204,13 +200,9 @@ function Service.tryEnterBoss(state)
 end
 
 function Service.tryBuyMetaUpgrade(state, index)
-    local ok, err, result = GameState.tryBuyMetaUpgrade(state, index)
+    local ok, err = GameState.tryBuyMetaUpgrade(state, index)
     if ok then
-        if result and result.mapUnlocked then
-            setMessage(state, "message.meta_upgrade_purchased_map")
-        else
-            setMessage(state, "message.meta_upgrade_purchased")
-        end
+        setMessage(state, "message.meta_upgrade_purchased")
         saveWithFeedback(state, "meta-upgrade")
     else
         setMessage(state, "message.meta_upgrade_failed", {

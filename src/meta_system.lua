@@ -4,69 +4,13 @@ local Meta = {}
 
 local DEFINITIONS = {}
 local LAYOUT = {}
-local INTEGER_REBALANCE_KEYS = {
-    speed = true,
-    magnet = true,
-    contactBite = true,
-    spawnCap = true,
-    lightningDamage = true,
-    lightningChain = true,
-    fireballDamage = true,
-    fireballCount = true,
-    fireballRadius = true,
-    fireballSplit = true,
-    frostDamage = true,
-    frostRadius = true,
+local CAPSTONE_KEYS = {
+    "core_apex",
+    "hunt_apex",
+    "economy_apex",
+    "lightning_apex",
+    "fireball_apex",
 }
-local DISCRETE_STEP_KEYS = {
-    lightningChain = true,
-    fireballCount = true,
-    fireballSplit = true,
-}
-local ECONOMY_REBALANCE_KEYS = {
-    essenceMult = true,
-    rareValue = true,
-    eliteValue = true,
-    spawnRate = true,
-    rareBonus = true,
-    eliteBonus = true,
-}
-local COOLDOWN_REBALANCE_KEYS = {
-    lightningIntervalCut = true,
-    fireballIntervalCut = true,
-    frostIntervalCut = true,
-}
-local STATUS_REBALANCE_KEYS = {
-    frostSlow = true,
-    frostDuration = true,
-}
-
-local function round(value, digits)
-    local scale = 10 ^ digits
-    return math.floor(value * scale + 0.5) / scale
-end
-
-local function rebalanceBonus(def)
-    if not def.bonusKey then
-        return
-    end
-
-    local value = def.bonusPerLevel
-    if INTEGER_REBALANCE_KEYS[def.bonusKey] then
-        local scaled = math.floor(value * 0.75)
-        if value > 0 and DISCRETE_STEP_KEYS[def.bonusKey] then
-            def.bonusPerLevel = math.max(1, scaled)
-        else
-            def.bonusPerLevel = scaled
-        end
-    elseif def.bonusKey == "reach" then
-        def.bonusPerLevel = round(value * 0.8, 1)
-    elseif ECONOMY_REBALANCE_KEYS[def.bonusKey] then
-        def.bonusPerLevel = round(value * 0.7, 2)
-    elseif COOLDOWN_REBALANCE_KEYS[def.bonusKey] or STATUS_REBALANCE_KEYS[def.bonusKey] then
-        def.bonusPerLevel = round(value * 0.75, 2)
-    end
-end
 
 local function addNode(args)
     local index = #DEFINITIONS + 1
@@ -77,12 +21,10 @@ local function addNode(args)
         category = args.category,
         icon = args.icon,
         deps = args.deps or {},
-        maxLevel = args.maxLevel,
-        baseCost = args.baseCost,
-        scale = args.scale,
-        bonusKey = args.bonusKey,
-        bonusPerLevel = args.bonusPerLevel,
-        clusterDepth = args.clusterDepth,
+        maxLevel = args.maxLevel or 1,
+        baseCost = args.baseCost or 1,
+        scale = args.scale or 1.0,
+        bonusPack = args.bonusPack or {},
     }
     LAYOUT[index] = { x = args.x, y = args.y }
     return index
@@ -102,7 +44,7 @@ refs.origin = addNode {
     y = 0.0,
 }
 
-local function addMainBranch(prefix, category, nodes)
+local function addBranch(prefix, category, nodes)
     local out = {}
     for i, node in ipairs(nodes) do
         local deps = {}
@@ -121,8 +63,7 @@ local function addMainBranch(prefix, category, nodes)
             maxLevel = node.maxLevel,
             baseCost = node.baseCost,
             scale = node.scale,
-            bonusKey = node.bonusKey,
-            bonusPerLevel = node.bonusPerLevel,
+            bonusPack = node.bonusPack,
             x = node.x,
             y = node.y,
         }
@@ -130,174 +71,110 @@ local function addMainBranch(prefix, category, nodes)
     return out
 end
 
-refs.up = addMainBranch("up", "mobility", {
-    { key = "swift", icon = "SPD", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "speed", bonusPerLevel = 8, x = 0.0, y = -0.18 },
-    { key = "maw", icon = "MAW", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "reach", bonusPerLevel = 1.2, x = 0.0, y = -0.36 },
-    { key = "bite", icon = "BTE", deps = { 2 }, maxLevel = 8, baseCost = 9, scale = 1.26, bonusKey = "contactBite", bonusPerLevel = 4, x = 0.0, y = -0.54 },
-    { key = "rush", icon = "RSH", deps = { 3 }, maxLevel = 7, baseCost = 12, scale = 1.27, bonusKey = "speed", bonusPerLevel = 12, x = 0.0, y = -0.72 },
-    { key = "crown", icon = "CRN", deps = { 4 }, maxLevel = 6, baseCost = 17, scale = 1.28, bonusKey = "contactBite", bonusPerLevel = 7, x = 0.0, y = -0.9 },
-    { key = "drift", icon = "DWF", deps = { 1 }, maxLevel = 7, baseCost = 7, scale = 1.25, bonusKey = "speed", bonusPerLevel = 6, x = -0.18, y = -0.18 },
-    { key = "jaws", icon = "JAW", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "reach", bonusPerLevel = 1.0, x = 0.18, y = -0.36 },
-    { key = "ram", icon = "RAM", deps = { 3 }, maxLevel = 6, baseCost = 11, scale = 1.27, bonusKey = "contactBite", bonusPerLevel = 5, x = -0.18, y = -0.54 },
-    { key = "feather", icon = "LSH", deps = { 4 }, maxLevel = 6, baseCost = 15, scale = 1.28, bonusKey = "speed", bonusPerLevel = 15, x = 0.18, y = -0.72 },
-    { key = "majesty", icon = "PRD", deps = { 5, 9 }, maxLevel = 5, baseCost = 22, scale = 1.3, bonusKey = "reach", bonusPerLevel = 2.1, x = 0.18, y = -0.9 },
+refs.core = addBranch("core", "time", {
+    { key = "mid_clock", icon = "MID", deps = { "origin" }, maxLevel = 1, baseCost = 6, scale = 1.0, bonusPack = { midBonusTime = 1 }, x = 0.0, y = -0.18 },
+    { key = "final_clock", icon = "FIN", deps = { 1 }, maxLevel = 1, baseCost = 8, scale = 1.0, bonusPack = { finalBonusTime = 1 }, x = 0.0, y = -0.36 },
+    { key = "overtime", icon = "OT", deps = { 2 }, maxLevel = 2, baseCost = 10, scale = 1.22, bonusPack = { bonusTimeCap = 1 }, x = 0.0, y = -0.54 },
+    { key = "last_window", icon = "WND", deps = { 3 }, maxLevel = 2, baseCost = 12, scale = 1.24, bonusPack = { finalWindowMin = 1 }, x = 0.0, y = -0.72 },
+    { key = "flow", icon = "SPD", deps = { 4 }, maxLevel = 3, baseCost = 14, scale = 1.26, bonusPack = { speed = 8 }, x = -0.14, y = -0.9 },
+    { key = "focus", icon = "BTE", deps = { 4 }, maxLevel = 3, baseCost = 14, scale = 1.26, bonusPack = { eventBiteBonus = 10 }, x = 0.14, y = -0.9 },
+    { key = "hoard", icon = "ESS", deps = { 5, 6 }, maxLevel = 3, baseCost = 18, scale = 1.28, bonusPack = { essenceMult = 0.08 }, x = 0.0, y = -1.08 },
+    {
+        key = "apex",
+        icon = "APX",
+        deps = { 7 },
+        maxLevel = 1,
+        baseCost = 28,
+        scale = 1.0,
+        bonusPack = { midBonusTime = 1, finalBonusTime = 1, bonusTimeCap = 1, eventBiteBonus = 14 },
+        x = 0.0,
+        y = -1.26,
+    },
 })
 
-refs.right = addMainBranch("right", "economy", {
-    { key = "greed", icon = "ECO", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "essenceMult", bonusPerLevel = 0.06, x = 0.18, y = 0.0 },
-    { key = "lure", icon = "RAR", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "rareBonus", bonusPerLevel = 0.008, x = 0.36, y = 0.0 },
-    { key = "feast", icon = "ELT", deps = { 2 }, maxLevel = 8, baseCost = 10, scale = 1.26, bonusKey = "eliteBonus", bonusPerLevel = 0.0045, x = 0.54, y = 0.0 },
-    { key = "hoard", icon = "GLD", deps = { 3 }, maxLevel = 7, baseCost = 13, scale = 1.27, bonusKey = "essenceMult", bonusPerLevel = 0.08, x = 0.72, y = 0.0 },
-    { key = "royal", icon = "ROY", deps = { 4 }, maxLevel = 6, baseCost = 18, scale = 1.29, bonusKey = "eliteValue", bonusPerLevel = 0.18, x = 0.9, y = 0.0 },
-    { key = "gold", icon = "GLD", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "rareValue", bonusPerLevel = 0.10, x = 0.36, y = -0.18 },
-    { key = "brood", icon = "MAG", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "magnet", bonusPerLevel = 9, x = 0.36, y = 0.18 },
-    { key = "nest", icon = "POP", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "spawnCap", bonusPerLevel = 5, x = 0.54, y = -0.18 },
-    { key = "bloom", icon = "SPN", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "spawnRate", bonusPerLevel = 0.07, x = 0.54, y = 0.18 },
-    { key = "vault", icon = "VLT", deps = { 5, 8 }, maxLevel = 5, baseCost = 24, scale = 1.3, bonusKey = "essenceMult", bonusPerLevel = 0.12, x = 0.9, y = -0.18 },
+refs.hunt = addBranch("hunt", "hunt", {
+    { key = "stride", icon = "SPD", deps = { "origin" }, maxLevel = 4, baseCost = 5, scale = 1.22, bonusPack = { speed = 12 }, x = 0.18, y = 0.0 },
+    { key = "maw", icon = "MAW", deps = { 1 }, maxLevel = 4, baseCost = 7, scale = 1.23, bonusPack = { reach = 1.8 }, x = 0.36, y = 0.0 },
+    { key = "bite", icon = "BTE", deps = { 2 }, maxLevel = 4, baseCost = 9, scale = 1.24, bonusPack = { contactBite = 8 }, x = 0.54, y = 0.0 },
+    { key = "pursuit", icon = "RSH", deps = { 3 }, maxLevel = 4, baseCost = 11, scale = 1.25, bonusPack = { speed = 16 }, x = 0.72, y = 0.0 },
+    { key = "hook", icon = "JAW", deps = { 4 }, maxLevel = 3, baseCost = 13, scale = 1.26, bonusPack = { reach = 2.2 }, x = 0.9, y = -0.1 },
+    { key = "maul", icon = "RAM", deps = { 4 }, maxLevel = 3, baseCost = 13, scale = 1.26, bonusPack = { contactBite = 12 }, x = 0.9, y = 0.1 },
+    { key = "lock", icon = "LCK", deps = { 5, 6 }, maxLevel = 3, baseCost = 18, scale = 1.28, bonusPack = { eventBiteBonus = 18 }, x = 1.08, y = 0.0 },
+    {
+        key = "apex",
+        icon = "APX",
+        deps = { 7 },
+        maxLevel = 1,
+        baseCost = 28,
+        scale = 1.0,
+        bonusPack = { contactBite = 18, eventBiteBonus = 24 },
+        x = 1.26,
+        y = 0.0,
+    },
 })
 
-refs.down = addMainBranch("down", "combat", {
-    { key = "fang", icon = "DMG", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "contactBite", bonusPerLevel = 5, x = 0.0, y = 0.18 },
-    { key = "stride", icon = "SPD", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "speed", bonusPerLevel = 7, x = 0.0, y = 0.36 },
-    { key = "arc", icon = "LNK", deps = { 2 }, maxLevel = 5, baseCost = 10, scale = 1.27, bonusKey = "lightningChain", bonusPerLevel = 1, x = 0.0, y = 0.54 },
-    { key = "burst", icon = "FIR", deps = { 3 }, maxLevel = 4, baseCost = 14, scale = 1.28, bonusKey = "fireballSplit", bonusPerLevel = 1, x = 0.0, y = 0.72 },
-    { key = "blizzard", icon = "ICE", deps = { 4 }, maxLevel = 5, baseCost = 18, scale = 1.29, bonusKey = "frostDuration", bonusPerLevel = 0.25, x = 0.0, y = 0.9 },
-    { key = "ram", icon = "JAW", deps = { 1 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "contactBite", bonusPerLevel = 6, x = -0.18, y = 0.18 },
-    { key = "field", icon = "PUL", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "magnet", bonusPerLevel = 10, x = 0.18, y = 0.36 },
-    { key = "fork", icon = "THN", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "lightningDamage", bonusPerLevel = 6, x = -0.18, y = 0.54 },
-    { key = "ember", icon = "EMB", deps = { 4 }, maxLevel = 6, baseCost = 13, scale = 1.28, bonusKey = "fireballDamage", bonusPerLevel = 5, x = 0.18, y = 0.72 },
-    { key = "cold", icon = "CLD", deps = { 5, 9 }, maxLevel = 5, baseCost = 22, scale = 1.31, bonusKey = "frostDamage", bonusPerLevel = 4, x = 0.18, y = 0.9 },
+refs.economy = addBranch("economy", "economy", {
+    { key = "greed", icon = "ESS", deps = { "origin" }, maxLevel = 4, baseCost = 5, scale = 1.22, bonusPack = { essenceMult = 0.08 }, x = -0.18, y = 0.0 },
+    { key = "scent", icon = "RAR", deps = { 1 }, maxLevel = 3, baseCost = 7, scale = 1.23, bonusPack = { rareBonus = 0.015 }, x = -0.36, y = 0.0 },
+    { key = "crown", icon = "ELT", deps = { 2 }, maxLevel = 3, baseCost = 9, scale = 1.24, bonusPack = { eliteBonus = 0.008 }, x = -0.54, y = 0.0 },
+    { key = "pull", icon = "MAG", deps = { 3 }, maxLevel = 4, baseCost = 11, scale = 1.25, bonusPack = { magnet = 16 }, x = -0.72, y = 0.0 },
+    { key = "trail", icon = "SPN", deps = { 4 }, maxLevel = 4, baseCost = 13, scale = 1.26, bonusPack = { spawnRate = 0.10 }, x = -0.9, y = -0.1 },
+    { key = "brood", icon = "CAP", deps = { 4 }, maxLevel = 3, baseCost = 13, scale = 1.26, bonusPack = { spawnCap = 8 }, x = -0.9, y = 0.1 },
+    { key = "gold", icon = "VAL", deps = { 5, 6 }, maxLevel = 3, baseCost = 18, scale = 1.28, bonusPack = { rareValue = 0.18, eliteValue = 0.2 }, x = -1.08, y = 0.0 },
+    {
+        key = "apex",
+        icon = "APX",
+        deps = { 7 },
+        maxLevel = 1,
+        baseCost = 28,
+        scale = 1.0,
+        bonusPack = { essenceMult = 0.14, magnet = 24, spawnCap = 10 },
+        x = -1.26,
+        y = 0.0,
+    },
 })
 
-refs.left = addMainBranch("left", "utility", {
-    { key = "drag", icon = "MAG", deps = { "origin" }, maxLevel = 8, baseCost = 5, scale = 1.24, bonusKey = "magnet", bonusPerLevel = 8, x = -0.18, y = 0.0 },
-    { key = "trail", icon = "SNF", deps = { 1 }, maxLevel = 8, baseCost = 7, scale = 1.25, bonusKey = "spawnRate", bonusPerLevel = 0.06, x = -0.36, y = 0.0 },
-    { key = "brood", icon = "CAL", deps = { 2 }, maxLevel = 8, baseCost = 10, scale = 1.26, bonusKey = "spawnCap", bonusPerLevel = 6, x = -0.54, y = 0.0 },
-    { key = "sweep", icon = "SWP", deps = { 3 }, maxLevel = 7, baseCost = 13, scale = 1.27, bonusKey = "speed", bonusPerLevel = 10, x = -0.72, y = 0.0 },
-    { key = "vacuum", icon = "VAC", deps = { 4 }, maxLevel = 6, baseCost = 18, scale = 1.29, bonusKey = "magnet", bonusPerLevel = 16, x = -0.9, y = 0.0 },
-    { key = "wide", icon = "RNG", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "reach", bonusPerLevel = 1.1, x = -0.36, y = -0.18 },
-    { key = "dash", icon = "DSH", deps = { 2 }, maxLevel = 7, baseCost = 8, scale = 1.25, bonusKey = "speed", bonusPerLevel = 8, x = -0.36, y = 0.18 },
-    { key = "grid", icon = "GRD", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "essenceMult", bonusPerLevel = 0.05, x = -0.54, y = -0.18 },
-    { key = "pack", icon = "PAC", deps = { 3 }, maxLevel = 6, baseCost = 12, scale = 1.27, bonusKey = "spawnRate", bonusPerLevel = 0.08, x = -0.54, y = 0.18 },
-    { key = "storm", icon = "SRH", deps = { 5, 8 }, maxLevel = 5, baseCost = 24, scale = 1.3, bonusKey = "spawnCap", bonusPerLevel = 10, x = -0.9, y = -0.18 },
+refs.lightning = addBranch("lightning", "lightning", {
+    { key = "root", icon = "LIT", deps = { "origin" }, maxLevel = 1, baseCost = 8, scale = 1.0, bonusPack = { lightningEnabled = 1 }, x = 0.18, y = 0.18 },
+    { key = "shock", icon = "DMG", deps = { 1 }, maxLevel = 4, baseCost = 10, scale = 1.23, bonusPack = { lightningDamage = 10 }, x = 0.36, y = 0.36 },
+    { key = "link", icon = "LNK", deps = { 2 }, maxLevel = 2, baseCost = 12, scale = 1.24, bonusPack = { lightningChain = 1 }, x = 0.54, y = 0.54 },
+    { key = "pulse", icon = "CLD", deps = { 3 }, maxLevel = 3, baseCost = 14, scale = 1.26, bonusPack = { lightningIntervalCut = 0.12 }, x = 0.72, y = 0.72 },
+    { key = "storm", icon = "STM", deps = { 4 }, maxLevel = 3, baseCost = 16, scale = 1.27, bonusPack = { lightningDamage = 14 }, x = 0.9, y = 0.72 },
+    { key = "arc", icon = "ARC", deps = { 4 }, maxLevel = 2, baseCost = 16, scale = 1.27, bonusPack = { lightningChain = 1, lightningDamage = 8 }, x = 0.9, y = 0.54 },
+    { key = "relay", icon = "RLY", deps = { 5, 6 }, maxLevel = 3, baseCost = 20, scale = 1.29, bonusPack = { lightningIntervalCut = 0.14 }, x = 1.08, y = 0.63 },
+    {
+        key = "apex",
+        icon = "APX",
+        deps = { 7 },
+        maxLevel = 1,
+        baseCost = 30,
+        scale = 1.0,
+        bonusPack = { lightningDamage = 18, lightningChain = 1 },
+        x = 1.26,
+        y = 0.63,
+    },
 })
 
-local function addPassiveCluster(prefix, category, icon, rootDeps, points, defs)
-    local indices = {}
-    local clusterDepths = {}
-    for i, def in ipairs(defs) do
-        local deps = {}
-        local clusterDepth = 0
-        if i == 1 then
-            for _, depIndex in ipairs(rootDeps) do
-                deps[#deps + 1] = depIndex
-            end
-        else
-            for _, depRef in ipairs(def.deps) do
-                deps[#deps + 1] = indices[depRef]
-                clusterDepth = math.max(clusterDepth, (clusterDepths[depRef] or 0) + 1)
-            end
-        end
-        clusterDepths[i] = clusterDepth
-        indices[i] = addNode {
-            key = prefix .. "_" .. def.key,
-            category = category,
-            icon = def.icon or icon,
-            deps = deps,
-            maxLevel = def.maxLevel,
-            baseCost = def.baseCost,
-            scale = def.scale,
-            bonusKey = def.bonusKey,
-            bonusPerLevel = def.bonusPerLevel,
-            clusterDepth = clusterDepth,
-            x = points[i].x,
-            y = points[i].y,
-        }
-    end
-    return indices
-end
-
-local lightningPoints = {
-    { x = 0.54, y = 0.54 }, { x = 0.72, y = 0.54 }, { x = 0.9, y = 0.54 }, { x = 1.08, y = 0.54 },
-    { x = 0.72, y = 0.72 }, { x = 0.9, y = 0.72 }, { x = 0.9, y = 0.36 }, { x = 1.08, y = 0.36 },
-    { x = 0.54, y = 0.72 }, { x = 0.54, y = 0.9 }, { x = 0.72, y = 0.9 }, { x = 0.9, y = 0.9 },
-    { x = 1.08, y = 0.72 }, { x = 1.26, y = 0.72 }, { x = 1.26, y = 0.54 }, { x = 1.26, y = 0.36 },
-}
-
-local firePoints = {
-    { x = -0.36, y = 0.72 }, { x = -0.54, y = 0.72 }, { x = -0.72, y = 0.72 }, { x = -0.9, y = 0.72 },
-    { x = -0.54, y = 0.9 }, { x = -0.72, y = 0.9 }, { x = -0.72, y = 0.54 }, { x = -0.9, y = 0.54 },
-    { x = -0.36, y = 0.9 }, { x = -0.36, y = 1.08 }, { x = -0.54, y = 1.08 }, { x = -0.72, y = 1.08 },
-    { x = -0.9, y = 0.9 }, { x = -1.08, y = 0.9 }, { x = -1.08, y = 0.72 }, { x = -1.08, y = 0.54 },
-}
-
-local frostPoints = {
-    { x = -0.54, y = -0.36 }, { x = -0.72, y = -0.36 }, { x = -0.9, y = -0.36 }, { x = -1.08, y = -0.36 },
-    { x = -0.72, y = -0.54 }, { x = -0.9, y = -0.54 }, { x = -0.72, y = -0.18 }, { x = -1.08, y = -0.18 },
-    { x = -0.54, y = -0.54 }, { x = -0.54, y = -0.72 }, { x = -0.72, y = -0.72 }, { x = -0.9, y = -0.72 },
-    { x = -1.08, y = -0.54 }, { x = -1.26, y = -0.54 }, { x = -1.26, y = -0.36 }, { x = -1.26, y = -0.18 },
-}
-
-refs.lightning = addPassiveCluster("lightning", "lightning", "LIT", { refs.down[3], refs.right[3] }, lightningPoints, {
-    { key = "root", maxLevel = 1, baseCost = 18, scale = 1.0, bonusKey = "lightningEnabled", bonusPerLevel = 1 },
-    { key = "dmg1", deps = { 1 }, maxLevel = 6, baseCost = 10, scale = 1.27, bonusKey = "lightningDamage", bonusPerLevel = 8 },
-    { key = "rate1", deps = { 2 }, maxLevel = 6, baseCost = 12, scale = 1.28, bonusKey = "lightningIntervalCut", bonusPerLevel = 0.08 },
-    { key = "dmg2", deps = { 3 }, maxLevel = 5, baseCost = 16, scale = 1.29, bonusKey = "lightningDamage", bonusPerLevel = 12 },
-    { key = "chain1", deps = { 2 }, maxLevel = 3, baseCost = 13, scale = 1.28, bonusKey = "lightningChain", bonusPerLevel = 1 },
-    { key = "chain2", deps = { 5 }, maxLevel = 3, baseCost = 18, scale = 1.29, bonusKey = "lightningChain", bonusPerLevel = 1 },
-    { key = "rate2", deps = { 3 }, maxLevel = 5, baseCost = 15, scale = 1.29, bonusKey = "lightningIntervalCut", bonusPerLevel = 0.1 },
-    { key = "dmg3", deps = { 4 }, maxLevel = 4, baseCost = 20, scale = 1.3, bonusKey = "lightningDamage", bonusPerLevel = 16 },
-    { key = "arc1", deps = { 1 }, maxLevel = 5, baseCost = 11, scale = 1.27, bonusKey = "lightningDamage", bonusPerLevel = 6 },
-    { key = "arc2", deps = { 9 }, maxLevel = 5, baseCost = 13, scale = 1.28, bonusKey = "lightningIntervalCut", bonusPerLevel = 0.06 },
-    { key = "arc3", deps = { 10 }, maxLevel = 5, baseCost = 15, scale = 1.29, bonusKey = "lightningDamage", bonusPerLevel = 9 },
-    { key = "arc4", deps = { 11 }, maxLevel = 2, baseCost = 22, scale = 1.3, bonusKey = "lightningChain", bonusPerLevel = 1 },
-    { key = "surge1", deps = { 4 }, maxLevel = 4, baseCost = 22, scale = 1.3, bonusKey = "lightningDamage", bonusPerLevel = 18 },
-    { key = "surge2", deps = { 13 }, maxLevel = 4, baseCost = 24, scale = 1.31, bonusKey = "lightningIntervalCut", bonusPerLevel = 0.12 },
-    { key = "surge3", deps = { 14 }, maxLevel = 3, baseCost = 28, scale = 1.32, bonusKey = "lightningDamage", bonusPerLevel = 24 },
-    { key = "apex", deps = { 15, 8 }, maxLevel = 2, baseCost = 34, scale = 1.34, bonusKey = "lightningChain", bonusPerLevel = 2 },
+refs.fireball = addBranch("fireball", "fireball", {
+    { key = "root", icon = "FIR", deps = { "origin" }, maxLevel = 1, baseCost = 8, scale = 1.0, bonusPack = { fireballEnabled = 1 }, x = -0.18, y = 0.18 },
+    { key = "blast", icon = "DMG", deps = { 1 }, maxLevel = 4, baseCost = 10, scale = 1.23, bonusPack = { fireballDamage = 9 }, x = -0.36, y = 0.36 },
+    { key = "core", icon = "RAD", deps = { 2 }, maxLevel = 3, baseCost = 12, scale = 1.24, bonusPack = { fireballRadius = 12 }, x = -0.54, y = 0.54 },
+    { key = "count", icon = "CNT", deps = { 3 }, maxLevel = 2, baseCost = 14, scale = 1.26, bonusPack = { fireballCount = 1 }, x = -0.72, y = 0.72 },
+    { key = "cinder", icon = "CLD", deps = { 4 }, maxLevel = 3, baseCost = 16, scale = 1.27, bonusPack = { fireballIntervalCut = 0.12 }, x = -0.9, y = 0.72 },
+    { key = "salvo", icon = "SPL", deps = { 4 }, maxLevel = 2, baseCost = 16, scale = 1.27, bonusPack = { fireballDamage = 14, fireballSplit = 1 }, x = -0.9, y = 0.54 },
+    { key = "furnace", icon = "FRN", deps = { 5, 6 }, maxLevel = 3, baseCost = 20, scale = 1.29, bonusPack = { fireballRadius = 18, fireballIntervalCut = 0.14 }, x = -1.08, y = 0.63 },
+    {
+        key = "apex",
+        icon = "APX",
+        deps = { 7 },
+        maxLevel = 1,
+        baseCost = 30,
+        scale = 1.0,
+        bonusPack = { fireballDamage = 18, fireballCount = 1, fireballRadius = 20 },
+        x = -1.26,
+        y = 0.63,
+    },
 })
-
-refs.fireball = addPassiveCluster("fireball", "fireball", "FIR", { refs.down[4], refs.up[3] }, firePoints, {
-    { key = "root", maxLevel = 1, baseCost = 18, scale = 1.0, bonusKey = "fireballEnabled", bonusPerLevel = 1 },
-    { key = "dmg1", deps = { 1 }, maxLevel = 6, baseCost = 10, scale = 1.27, bonusKey = "fireballDamage", bonusPerLevel = 7 },
-    { key = "rate1", deps = { 2 }, maxLevel = 6, baseCost = 12, scale = 1.28, bonusKey = "fireballIntervalCut", bonusPerLevel = 0.08 },
-    { key = "dmg2", deps = { 3 }, maxLevel = 5, baseCost = 16, scale = 1.29, bonusKey = "fireballDamage", bonusPerLevel = 10 },
-    { key = "count1", deps = { 2 }, maxLevel = 2, baseCost = 14, scale = 1.28, bonusKey = "fireballCount", bonusPerLevel = 1 },
-    { key = "count2", deps = { 5 }, maxLevel = 2, baseCost = 20, scale = 1.29, bonusKey = "fireballCount", bonusPerLevel = 1 },
-    { key = "rate2", deps = { 3 }, maxLevel = 5, baseCost = 15, scale = 1.29, bonusKey = "fireballIntervalCut", bonusPerLevel = 0.1 },
-    { key = "dmg3", deps = { 4 }, maxLevel = 4, baseCost = 20, scale = 1.3, bonusKey = "fireballDamage", bonusPerLevel = 14 },
-    { key = "rad1", deps = { 1 }, maxLevel = 5, baseCost = 11, scale = 1.27, bonusKey = "fireballRadius", bonusPerLevel = 10 },
-    { key = "rad2", deps = { 9 }, maxLevel = 5, baseCost = 13, scale = 1.28, bonusKey = "fireballRadius", bonusPerLevel = 12 },
-    { key = "rad3", deps = { 10 }, maxLevel = 5, baseCost = 15, scale = 1.29, bonusKey = "fireballDamage", bonusPerLevel = 8 },
-    { key = "rad4", deps = { 11 }, maxLevel = 2, baseCost = 22, scale = 1.3, bonusKey = "fireballCount", bonusPerLevel = 1 },
-    { key = "split1", deps = { 4 }, maxLevel = 3, baseCost = 22, scale = 1.3, bonusKey = "fireballSplit", bonusPerLevel = 1 },
-    { key = "split2", deps = { 13 }, maxLevel = 4, baseCost = 24, scale = 1.31, bonusKey = "fireballIntervalCut", bonusPerLevel = 0.12 },
-    { key = "split3", deps = { 14 }, maxLevel = 3, baseCost = 28, scale = 1.32, bonusKey = "fireballDamage", bonusPerLevel = 18 },
-    { key = "apex", deps = { 15, 8 }, maxLevel = 3, baseCost = 34, scale = 1.34, bonusKey = "fireballRadius", bonusPerLevel = 18 },
-})
-
-refs.frost = addPassiveCluster("frost", "frost", "ICE", { refs.left[3], refs.up[2] }, frostPoints, {
-    { key = "root", maxLevel = 1, baseCost = 18, scale = 1.0, bonusKey = "frostEnabled", bonusPerLevel = 1 },
-    { key = "dmg1", deps = { 1 }, maxLevel = 6, baseCost = 10, scale = 1.27, bonusKey = "frostDamage", bonusPerLevel = 5 },
-    { key = "rate1", deps = { 2 }, maxLevel = 6, baseCost = 12, scale = 1.28, bonusKey = "frostIntervalCut", bonusPerLevel = 0.08 },
-    { key = "dmg2", deps = { 3 }, maxLevel = 5, baseCost = 16, scale = 1.29, bonusKey = "frostDamage", bonusPerLevel = 7 },
-    { key = "slow1", deps = { 2 }, maxLevel = 4, baseCost = 13, scale = 1.28, bonusKey = "frostSlow", bonusPerLevel = 0.05 },
-    { key = "slow2", deps = { 5 }, maxLevel = 4, baseCost = 18, scale = 1.29, bonusKey = "frostSlow", bonusPerLevel = 0.06 },
-    { key = "rate2", deps = { 3 }, maxLevel = 5, baseCost = 15, scale = 1.29, bonusKey = "frostIntervalCut", bonusPerLevel = 0.1 },
-    { key = "dmg3", deps = { 4 }, maxLevel = 4, baseCost = 20, scale = 1.3, bonusKey = "frostDamage", bonusPerLevel = 10 },
-    { key = "rad1", deps = { 1 }, maxLevel = 5, baseCost = 11, scale = 1.27, bonusKey = "frostRadius", bonusPerLevel = 10 },
-    { key = "rad2", deps = { 9 }, maxLevel = 5, baseCost = 13, scale = 1.28, bonusKey = "frostRadius", bonusPerLevel = 12 },
-    { key = "rad3", deps = { 10 }, maxLevel = 5, baseCost = 15, scale = 1.29, bonusKey = "frostDamage", bonusPerLevel = 6 },
-    { key = "rad4", deps = { 11 }, maxLevel = 4, baseCost = 22, scale = 1.3, bonusKey = "frostDuration", bonusPerLevel = 0.2 },
-    { key = "veil1", deps = { 4 }, maxLevel = 4, baseCost = 22, scale = 1.3, bonusKey = "frostRadius", bonusPerLevel = 16 },
-    { key = "veil2", deps = { 13 }, maxLevel = 4, baseCost = 24, scale = 1.31, bonusKey = "frostIntervalCut", bonusPerLevel = 0.12 },
-    { key = "veil3", deps = { 14 }, maxLevel = 3, baseCost = 28, scale = 1.32, bonusKey = "frostDamage", bonusPerLevel = 14 },
-    { key = "apex", deps = { 15, 8 }, maxLevel = 3, baseCost = 34, scale = 1.34, bonusKey = "frostDuration", bonusPerLevel = 0.35 },
-})
-
-for _, def in ipairs(DEFINITIONS) do
-    rebalanceBonus(def)
-end
 
 local function computeTreeDepth(index)
     local def = DEFINITIONS[index]
@@ -319,14 +196,8 @@ local function computeTreeDepth(index)
 end
 
 local function depthMultiplierFor(def)
-    local depth = def.clusterDepth
-    local tableRef = C.META_PASSIVE_COST_DEPTH_MULTIPLIERS
-    if depth == nil then
-        depth = def.treeDepth or 0
-        tableRef = C.META_COST_DEPTH_MULTIPLIERS
-    end
-
-    for _, rule in ipairs(tableRef) do
+    local depth = def.treeDepth or 0
+    for _, rule in ipairs(C.META_COST_DEPTH_MULTIPLIERS) do
         if depth <= rule.maxDepth then
             return rule.multiplier
         end
@@ -351,7 +222,7 @@ local function assertUniqueLayout()
 end
 
 assertUniqueLayout()
-assert(#DEFINITIONS == 89, "meta tree must contain 89 nodes")
+assert(#DEFINITIONS == 41, "meta tree must contain 41 nodes")
 
 local function makeDefaultLevels()
     local levels = {}
@@ -393,19 +264,24 @@ function Meta.getTreeLayout()
     return LAYOUT
 end
 
+function Meta.getRequiredCapstoneKeys()
+    return CAPSTONE_KEYS
+end
+
 function Meta.new(saved)
     local levels = makeDefaultLevels()
     if saved and saved.levels then
         for key, value in pairs(saved.levels) do
             if levels[key] ~= nil then
-                levels[key] = value
+                levels[key] = math.max(0, math.floor(value))
             end
         end
     end
 
     return {
-        essence = saved and saved.essence or 0,
-        totalRuns = saved and saved.totalRuns or 0,
+        essence = saved and math.max(0, math.floor(saved.essence or 0)) or 0,
+        totalRuns = saved and math.max(0, math.floor(saved.totalRuns or 0)) or 0,
+        runStars = saved and math.max(0, math.floor(saved.runStars or 0)) or 0,
         levels = levels,
     }
 end
@@ -414,6 +290,7 @@ function Meta.export(metaState)
     return {
         essence = metaState.essence,
         totalRuns = metaState.totalRuns,
+        runStars = metaState.runStars or 0,
         levels = metaState.levels,
     }
 end
@@ -441,18 +318,23 @@ function Meta.computeBonuses(metaState)
         fireballRadius = 0,
         fireballIntervalCut = 0,
         fireballSplit = 0,
-        frostEnabled = 0,
-        frostDamage = 0,
-        frostRadius = 0,
-        frostSlow = 0,
-        frostDuration = 0,
-        frostIntervalCut = 0,
+        eventBiteBonus = 0,
+        midBonusTime = 0,
+        finalBonusTime = 0,
+        bonusTimeCap = 0,
+        finalWindowMin = 0,
     }
 
     for _, def in ipairs(DEFINITIONS) do
         local level = metaState.levels[def.key] or 0
-        if level > 0 and def.bonusKey then
-            bonuses[def.bonusKey] = bonuses[def.bonusKey] + def.bonusPerLevel * level
+        if level > 0 then
+            for key, value in pairs(def.bonusPack or {}) do
+                if key == "essenceMult" or key == "rareValue" or key == "eliteValue" then
+                    bonuses[key] = bonuses[key] + value * level
+                else
+                    bonuses[key] = (bonuses[key] or 0) + value * level
+                end
+            end
         end
     end
 
@@ -471,6 +353,15 @@ end
 
 function Meta.allUnlocked(metaState)
     return Meta.getUnlockedCount(metaState) >= #DEFINITIONS
+end
+
+function Meta.hasRequiredCapstones(metaState)
+    for _, key in ipairs(CAPSTONE_KEYS) do
+        if (metaState.levels[key] or 0) <= 0 then
+            return false
+        end
+    end
+    return true
 end
 
 function Meta.getUpgradeInfo(metaState)

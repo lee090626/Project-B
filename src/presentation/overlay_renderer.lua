@@ -4,6 +4,7 @@ local MapSystem = require("src.map_system")
 local GameState = require("src.game_state")
 local Meta = require("src.meta_system")
 local Mutation = require("src.mutation_system")
+local RunEvent = require("src.run_event_system")
 
 local OverlayRenderer = {}
 
@@ -189,6 +190,26 @@ local function getCategorySymbol(category)
     return "instinct"
 end
 
+local function eventStripLabel(state, hud)
+    local eventState = state.runEvent or {}
+    if hud.activeLabelKey then
+        return t(state, hud.activeLabelKey)
+    end
+    if eventState.finalCompleted then
+        return t(state, "hud.event.done")
+    end
+    if eventState.finalTriggered then
+        return t(state, "hud.event.final")
+    end
+    if eventState.midCompleted then
+        return t(state, "hud.event.final_prep")
+    end
+    if eventState.midTriggered then
+        return t(state, "hud.event.mid")
+    end
+    return t(state, "hud.event.opening")
+end
+
 function OverlayRenderer.drawGameTopBar(state, fonts, ui)
     local sw = love.graphics.getWidth()
     local mapData = MapSystem.getCurrentMap(state.maps)
@@ -293,6 +314,33 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
     drawRuneBadge("help", helpX + 14, topY + 23, 7, theme.chipFill, theme.chipLine)
     setPaletteColor(theme.text)
     love.graphics.print(helpText, helpX + 28, topY + 15)
+
+    if state.mode ~= "game" or state.runEnded or state.boss.active then
+        return
+    end
+
+    local hud = RunEvent.getHudState(state)
+    if not hud then
+        return
+    end
+
+    local label = eventStripLabel(state, hud)
+    local starText = t(state, "hud.stars_short", { stars = hud.starsEarned or 0 })
+    local bonusText = t(state, "hud.bonus_time_short", { time = hud.bonusTimeEarned or 0 })
+    local chipText = string.format("%s   %s   %s", label, starText, bonusText)
+    local chipW = math.min(sw - 40, math.max(280, fonts.hud:getWidth(chipText) + 42))
+    local chipX = (sw - chipW) * 0.5
+    local chipY = topY + barH + 8
+
+    drawDecoratedPanel(chipX, chipY, chipW, 28, {
+        panelFill = { 0.07, 0.08, 0.09, 0.93 },
+        panelInner = { 0.11, 0.13, 0.14, 0.88 },
+        panelLine = theme.accentSoft,
+        panelGlow = theme.accentSoft,
+        accent = theme.accent,
+    })
+    setPaletteColor(theme.text)
+    love.graphics.printf(chipText, chipX + 14, chipY + 7, chipW - 28, "center")
 end
 
 function OverlayRenderer.drawBossBar(state, fonts)
@@ -846,9 +894,20 @@ function OverlayRenderer.drawRunEndResultOverlay(state, fonts)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
     local w = math.min(760, sw - 80)
-    local h = 350
+    local h = 394
     local x = (sw - w) * 0.5
     local y = (sh - h) * 0.5
+    local nextUnlock = MapSystem.getNextUnlockInfo(state.maps, state.meta.runStars or 0)
+    local nextUnlockText
+    if nextUnlock then
+        nextUnlockText = t(state, "run_end.result.next_map", {
+            map = Locale.ref(nextUnlock.nameKey),
+            current = nextUnlock.current,
+            required = nextUnlock.required,
+        })
+    else
+        nextUnlockText = t(state, "run_end.result.all_maps")
+    end
 
     love.graphics.setColor(0, 0, 0, 0.74)
     love.graphics.rectangle("fill", 0, 0, sw, sh)
@@ -865,11 +924,14 @@ function OverlayRenderer.drawRunEndResultOverlay(state, fonts)
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(1, 1, 1)
     love.graphics.printf(t(state, "run_end.result.reason", { reason = runReasonRef(state.runEndedReason) }), x + 36, y + 94, w - 72, "left")
-    love.graphics.printf(t(state, "run_end.result.total_eaten", { total = state.food and state.food.consumedTotal or 0 }), x + 36, y + 124, w - 72, "left")
-    love.graphics.printf(t(state, "run_end.result.current_essence", { essence = state.meta and state.meta.essence or 0 }), x + 36, y + 154, w - 72, "left")
-    love.graphics.printf(t(state, "run_end.result.level", { level = state.nestProgress.level }), x + 36, y + 184, w - 72, "left")
-    love.graphics.printf(t(state, "run_end.result.points", { points = state.nestProgress.availablePoints }), x + 36, y + 214, w - 72, "left")
-    love.graphics.printf(t(state, "run_end.result.evolution", { evolution = Locale.ref(state.nestProgress.evolutionKey) }), x + 36, y + 244, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.grade", { grade = state.runGrade or "F" }), x + 36, y + 124, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.bonus_time", { time = state.runBonusTimeEarned or 0 }), x + 36, y + 154, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.stars", { stars = state.runStarsEarned or 0 }), x + 36, y + 184, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.total_stars", { stars = state.meta and state.meta.runStars or 0 }), x + 36, y + 214, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.current_essence", { essence = state.meta and state.meta.essence or 0 }), x + 36, y + 244, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.level", { level = state.nestProgress.level }), x + 36, y + 274, w - 72, "left")
+    love.graphics.printf(nextUnlockText, x + 36, y + 304, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.evolution", { evolution = Locale.ref(state.nestProgress.evolutionKey) }), x + 36, y + 334, w - 72, "left")
 
     love.graphics.setColor(0.84, 0.9, 1.0)
     love.graphics.printf(t(state, "run_end.result.continue"), x, y + h - 42, w, "center")

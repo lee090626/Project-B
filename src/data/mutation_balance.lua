@@ -138,18 +138,6 @@ local MutationBalance = {
                 mythic = { fireballDamage = 18, fireballRadius = 22 },
             },
         },
-        {
-            key = "instinct_frost",
-            category = "instinct",
-            requires = function(state)
-                return state.metaBonuses.frostEnabled and state.metaBonuses.frostEnabled > 0
-            end,
-            effects = {
-                common = { frostDamage = 5, frostRadius = 8, frostDuration = 0.08 },
-                rare = { frostDamage = 9, frostRadius = 14, frostDuration = 0.14 },
-                mythic = { frostDamage = 15, frostRadius = 20, frostDuration = 0.20 },
-            },
-        },
     },
 }
 

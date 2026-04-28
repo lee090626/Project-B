@@ -42,10 +42,14 @@ function MapSystem.getCurrentMap(maps)
     return C.MAPS[maps.currentMapId]
 end
 
-function MapSystem.updateUnlocks(maps, unlockedSkillCount)
+local function unlockRequirement(mapData)
+    return mapData.starUnlockRequires or mapData.unlockRequires or 0
+end
+
+function MapSystem.updateUnlocks(maps, progressValue)
     local unlockedAny = false
     for _, mapData in ipairs(C.MAPS) do
-        if not maps.unlocked[mapData.id] and unlockedSkillCount >= mapData.unlockRequires then
+        if not maps.unlocked[mapData.id] and progressValue >= unlockRequirement(mapData) then
             maps.unlocked[mapData.id] = true
             unlockedAny = true
         end
@@ -53,9 +57,9 @@ function MapSystem.updateUnlocks(maps, unlockedSkillCount)
     return unlockedAny
 end
 
-function MapSystem.syncUnlocks(maps, unlockedSkillCount)
+function MapSystem.syncUnlocks(maps, progressValue)
     for _, mapData in ipairs(C.MAPS) do
-        maps.unlocked[mapData.id] = unlockedSkillCount >= mapData.unlockRequires
+        maps.unlocked[mapData.id] = progressValue >= unlockRequirement(mapData)
     end
 
     if not maps.unlocked[maps.currentMapId] then
@@ -70,6 +74,20 @@ function MapSystem.allMapsUnlocked(maps)
         end
     end
     return true
+end
+
+function MapSystem.getNextUnlockInfo(maps, progressValue)
+    for _, mapData in ipairs(C.MAPS) do
+        if not maps.unlocked[mapData.id] then
+            return {
+                mapId = mapData.id,
+                nameKey = mapData.nameKey,
+                current = progressValue,
+                required = unlockRequirement(mapData),
+            }
+        end
+    end
+    return nil
 end
 
 function MapSystem.trySetCurrent(maps, mapId)

@@ -35,6 +35,74 @@ local function rewardForKill(item, mapData, bonuses)
     return item.essence * mapData.reward * essenceMult * tierMult
 end
 
+local function buildItem(args)
+    return {
+        x = args.x,
+        y = args.y,
+        vx = args.vx,
+        vy = args.vy,
+        tier = args.tier,
+        radius = args.radius,
+        essence = args.essence,
+        color = args.color,
+        speed = args.speed,
+        maxHp = args.maxHp,
+        hp = args.hp,
+        slowFactor = 0,
+        slowTimer = 0,
+        hitFlash = 0,
+        eventTarget = args.eventTarget == true,
+        eventKind = args.eventKind,
+        eventId = args.eventId,
+        eventLabelKey = args.eventLabelKey,
+        moveStyle = args.moveStyle,
+    }
+end
+
+local function makeNormalItem(mapData, bonuses)
+    local tier = randomTier(mapData.spawn, bonuses)
+    local info = C.FOOD_BY_TIER[tier]
+    local edgePad = 40
+    local hpScale = mapData.hpScale or 1
+
+    return buildItem {
+        x = love.math.random(edgePad, C.WORLD_WIDTH - edgePad),
+        y = love.math.random(edgePad, C.WORLD_HEIGHT - edgePad),
+        vx = love.math.random(-100, 100) * 0.01,
+        vy = love.math.random(-100, 100) * 0.01,
+        tier = tier,
+        radius = info.radius,
+        essence = info.essence,
+        color = info.color,
+        speed = info.speed,
+        maxHp = math.floor(info.hp * hpScale + 0.5),
+        hp = math.floor(info.hp * hpScale + 0.5),
+    }
+end
+
+local function steerEventTarget(item, player, dt)
+    if not player or not item.eventTarget then
+        return
+    end
+
+    local dx = player.x - item.x
+    local dy = player.y - item.y
+    local dist = math.max(1, math.sqrt(dx * dx + dy * dy))
+    local nx = dx / dist
+    local ny = dy / dist
+
+    if item.moveStyle == "evade" then
+        item.vx = Utils.clamp(item.vx - nx * 1.9 * dt, -1.15, 1.15)
+        item.vy = Utils.clamp(item.vy - ny * 1.9 * dt, -1.15, 1.15)
+    elseif item.moveStyle == "surge" then
+        item.vx = Utils.clamp(item.vx + nx * 1.65 * dt, -1.2, 1.2)
+        item.vy = Utils.clamp(item.vy + ny * 1.65 * dt, -1.2, 1.2)
+    elseif item.moveStyle == "orbit" then
+        item.vx = Utils.clamp(item.vx + (-ny) * 1.4 * dt, -1.0, 1.0)
+        item.vy = Utils.clamp(item.vy + nx * 1.4 * dt, -1.0, 1.0)
+    end
+end
+
 function Food.new(savedFood)
     local system = {
         list = {},
@@ -56,37 +124,58 @@ function Food.export(food)
 end
 
 function Food.spawnOne(food, mapData, bonuses)
-    local tier = randomTier(mapData.spawn, bonuses)
-    local info = C.FOOD_BY_TIER[tier]
-    local edgePad = 40
-    local hpScale = mapData.hpScale or 1
+    food.list[#food.list + 1] = makeNormalItem(mapData, bonuses)
+end
 
-    local item = {
-        x = love.math.random(edgePad, C.WORLD_WIDTH - edgePad),
-        y = love.math.random(edgePad, C.WORLD_HEIGHT - edgePad),
-        vx = love.math.random(-100, 100) * 0.01,
-        vy = love.math.random(-100, 100) * 0.01,
-        tier = tier,
-        radius = info.radius,
-        essence = info.essence,
-        color = info.color,
-        speed = info.speed,
-        maxHp = math.floor(info.hp * hpScale + 0.5),
-        hp = math.floor(info.hp * hpScale + 0.5),
-        slowFactor = 0,
-        slowTimer = 0,
-        hitFlash = 0,
+function Food.spawnEventTarget(food, spec)
+    local info = C.FOOD_BY_TIER[spec.tier] or C.FOOD_BY_TIER.elite
+    local item = buildItem {
+        x = spec.x,
+        y = spec.y,
+        vx = spec.vx or love.math.random(-100, 100) * 0.006,
+        vy = spec.vy or love.math.random(-100, 100) * 0.006,
+        tier = spec.tier,
+        radius = spec.radius or info.radius,
+        essence = spec.essence or info.essence,
+        color = spec.color or info.color,
+        speed = spec.speed or info.speed,
+        maxHp = math.max(1, math.floor(spec.hp or info.hp)),
+        hp = math.max(1, math.floor(spec.hp or info.hp)),
+        eventTarget = true,
+        eventKind = spec.eventKind,
+        eventId = spec.eventId,
+        eventLabelKey = spec.labelKey,
+        moveStyle = spec.moveStyle,
     }
 
     food.list[#food.list + 1] = item
+    return item
+end
+
+function Food.removeEventTarget(food, eventId)
+    for i = #food.list, 1, -1 do
+        local item = food.list[i]
+        if item.eventTarget and item.eventId == eventId then
+            table.remove(food.list, i)
+            return true
+        end
+    end
+    return false
 end
 
 function Food.update(food, dt, mapData, bonuses, player)
     food.spawnTimer = food.spawnTimer - dt
 
+    local eventCount = 0
+    for _, item in ipairs(food.list) do
+        if item.eventTarget then
+            eventCount = eventCount + 1
+        end
+    end
+
     local targetCount = C.MAX_FOOD + math.floor((bonuses.spawnCap or 0) + 0.5)
     targetCount = math.max(20, targetCount)
-    if #food.list < targetCount and food.spawnTimer <= 0 then
+    if (#food.list - eventCount) < targetCount and food.spawnTimer <= 0 then
         Food.spawnOne(food, mapData, bonuses)
         local spawnRate = math.max(0, bonuses.spawnRate or 0)
         food.spawnTimer = C.FOOD_SPAWN_INTERVAL / (1 + spawnRate)
@@ -102,7 +191,7 @@ function Food.update(food, dt, mapData, bonuses, player)
             item.slowFactor = 0
         end
 
-        if player and magnetRadius > 0 then
+        if player and magnetRadius > 0 and not item.eventTarget then
             local dx = player.x - item.x
             local dy = player.y - item.y
             local dist = math.sqrt(dx * dx + dy * dy)
@@ -113,10 +202,14 @@ function Food.update(food, dt, mapData, bonuses, player)
             end
         end
 
-        local noiseX = love.math.random(-100, 100) * 0.003
-        local noiseY = love.math.random(-100, 100) * 0.003
-        item.vx = Utils.clamp(item.vx + noiseX, -1.0, 1.0)
-        item.vy = Utils.clamp(item.vy + noiseY, -1.0, 1.0)
+        if item.eventTarget then
+            steerEventTarget(item, player, dt)
+        else
+            local noiseX = love.math.random(-100, 100) * 0.003
+            local noiseY = love.math.random(-100, 100) * 0.003
+            item.vx = Utils.clamp(item.vx + noiseX, -1.0, 1.0)
+            item.vy = Utils.clamp(item.vy + noiseY, -1.0, 1.0)
+        end
 
         local slowScale = 1 - Utils.clamp(item.slowFactor, 0, 0.85)
         item.x = item.x + item.vx * item.speed * slowScale * dt
@@ -133,7 +226,7 @@ function Food.update(food, dt, mapData, bonuses, player)
     end
 end
 
-function Food.applyDamageAtIndex(food, index, damage, mapData, bonuses)
+function Food.applyDamageAtIndex(food, index, damage, mapData, bonuses, source)
     local item = food.list[index]
     if not item or damage <= 0 then
         return 0, false, nil
@@ -141,6 +234,10 @@ function Food.applyDamageAtIndex(food, index, damage, mapData, bonuses)
 
     item.hp = item.hp - damage
     item.hitFlash = 0.9
+    if item.eventTarget and source ~= "contact" and item.hp <= 1 then
+        item.hp = 1
+        return 0, false, item
+    end
     if item.hp > 0 then
         return 0, false, item
     end
@@ -179,24 +276,30 @@ end
 function Food.damageTouching(food, player, eatRadius, dps, dt, mapData, bonuses)
     local essenceGain = 0
     local killed = 0
+    local killedItems = {}
     local totalDamage = dps * dt
 
     for i = #food.list, 1, -1 do
         local item = food.list[i]
         local dist = Utils.distance(player.x, player.y, item.x, item.y)
         if dist <= eatRadius + item.radius then
-            local reward, didKill = Food.applyDamageAtIndex(food, i, totalDamage, mapData, bonuses)
+            local damage = totalDamage
+            if item.eventTarget then
+                damage = damage + (bonuses.eventBiteBonus or 0)
+            end
+            local reward, didKill, killedItem = Food.applyDamageAtIndex(food, i, damage, mapData, bonuses, "contact")
             essenceGain = essenceGain + reward
             if didKill then
                 killed = killed + 1
+                killedItems[#killedItems + 1] = killedItem
             end
         end
     end
 
-    return essenceGain, killed
+    return essenceGain, killed, killedItems
 end
 
-function Food.damagePulse(food, x, y, radius, damage, mapData, bonuses, slowPower, slowDuration, maxHits)
+function Food.damagePulse(food, x, y, radius, damage, mapData, bonuses, slowPower, slowDuration, maxHits, source)
     local essenceGain = 0
     local killed = 0
     local hits = 0
@@ -208,7 +311,7 @@ function Food.damagePulse(food, x, y, radius, damage, mapData, bonuses, slowPowe
             if slowPower and slowPower > 0 then
                 Food.applySlow(item, slowPower, slowDuration)
             end
-            local reward, didKill = Food.applyDamageAtIndex(food, i, damage, mapData, bonuses)
+            local reward, didKill = Food.applyDamageAtIndex(food, i, damage, mapData, bonuses, source or "pulse")
             essenceGain = essenceGain + reward
             hits = hits + 1
             if didKill then
@@ -284,7 +387,7 @@ function Food.chainLightning(food, startIndex, damage, chainCount, chainRadius, 
     for _, item in ipairs(route) do
         local currentIndex = findIndexByItem(food, item)
         if currentIndex then
-            local reward, didKill = Food.applyDamageAtIndex(food, currentIndex, damage, mapData, bonuses)
+            local reward, didKill = Food.applyDamageAtIndex(food, currentIndex, damage, mapData, bonuses, "lightning")
             essenceGain = essenceGain + reward
             hitCount = hitCount + 1
             if didKill then

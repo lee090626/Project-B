@@ -35,13 +35,6 @@ local CombatBalance = {
             projectileSpeed = 380,
             impactFxDuration = 0.2,
         },
-        frost = {
-            interval = 2.4,
-            damage = 9,
-            radius = 85,
-            slow = 0.32,
-            duration = 1.2,
-        },
     },
     bossArena = {
         timeLimit = 8,

@@ -8,6 +8,7 @@ local Meta = require("src.meta_system")
 local GameState = require("src.game_state")
 local PassiveCombat = require("src.application.passive_combat")
 local Mutation = require("src.mutation_system")
+local RunEvent = require("src.run_event_system")
 
 local RunLoop = {}
 
@@ -34,7 +35,6 @@ end
 
 function RunLoop.tickGameplay(state, dt)
     local result = {
-        mapUnlocked = false,
         bossDefeated = false,
         runEndedReason = nil,
     }
@@ -51,7 +51,7 @@ function RunLoop.tickGameplay(state, dt)
     Food.update(state.food, dt, mapData, state.bonuses, state.player)
 
     local contactDamage = C.PLAYER_CONTACT_DAMAGE + state.bonuses.contactBite
-    local essenceGain = Food.damageTouching(
+    local essenceGain, _, killedItems = Food.damageTouching(
         state.food,
         state.player,
         eatRadius,
@@ -69,13 +69,21 @@ function RunLoop.tickGameplay(state, dt)
         end
     end
 
+    for _, item in ipairs(killedItems or {}) do
+        RunEvent.resolveEventTargetKill(state, item)
+        if state.mode == "run_choice" then
+            updateCamera(state)
+            return result
+        end
+    end
+
     PassiveCombat.tickPassives(state, dt, mapData)
     if state.mode == "run_choice" then
         updateCamera(state)
         return result
     end
 
-    result.mapUnlocked = MapSystem.updateUnlocks(state.maps, Meta.getUnlockedCount(state.meta))
+    RunEvent.tick(state, dt)
 
     updateCamera(state)
     return result
@@ -83,7 +91,6 @@ end
 
 function RunLoop.tickBossArena(state, dt)
     local result = {
-        mapUnlocked = false,
         bossDefeated = false,
         runEndedReason = nil,
     }
