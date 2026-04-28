@@ -246,6 +246,65 @@ local function findNearestHostile(state, fromX, fromY)
     return best
 end
 
+local function collectFireballTargets(state, fromX, fromY)
+    local targets = {}
+
+    if state.mode == "boss_arena" then
+        if state.boss.active and not state.boss.defeated then
+            if state.boss.shielded then
+                for index, point in ipairs(state.boss.weakPoints or {}) do
+                    targets[#targets + 1] = {
+                        kind = "weak_point",
+                        index = index,
+                        dist = Utils.distance(fromX, fromY, point.x, point.y),
+                        x = point.x,
+                        y = point.y,
+                        radius = point.radius,
+                    }
+                end
+            else
+                targets[#targets + 1] = {
+                    kind = "boss",
+                    dist = Boss.distanceTo(state.boss, fromX, fromY),
+                    x = state.boss.x,
+                    y = state.boss.y,
+                    radius = state.boss.radius,
+                }
+            end
+        end
+    else
+        for index, item in ipairs(state.food.list) do
+            targets[#targets + 1] = {
+                kind = "food",
+                index = index,
+                dist = Utils.distance(fromX, fromY, item.x, item.y),
+                x = item.x,
+                y = item.y,
+                radius = item.radius,
+            }
+        end
+    end
+
+    table.sort(targets, function(a, b)
+        return a.dist < b.dist
+    end)
+
+    return targets
+end
+
+local function getFireballAimPoint(target, shotIndex, totalShots, impactRadius)
+    if totalShots <= 1 then
+        return target.x, target.y
+    end
+
+    local spreadRadius = math.min(
+        impactRadius * 0.3,
+        math.max(10, (target.radius or 0) * 0.45)
+    )
+    local angle = ((shotIndex - 1) / totalShots) * math.pi * 2
+    return target.x + math.cos(angle) * spreadRadius, target.y + math.sin(angle) * spreadRadius
+end
+
 local function triggerLightning(state, mapData)
     local target = findNearestHostile(state, state.player.x, state.player.y)
     if not target then
@@ -313,11 +372,14 @@ end
 
 local function triggerFireball(state, mapData)
     local projectiles = state.bonuses.fireballCount
-    for _ = 1, projectiles do
-        local target = findNearestHostile(state, state.player.x, state.player.y)
-        if not target then
-            return
-        end
+    local targets = collectFireballTargets(state, state.player.x, state.player.y)
+    if #targets == 0 then
+        return false
+    end
+
+    for shotIndex = 1, projectiles do
+        local target = targets[((shotIndex - 1) % #targets) + 1]
+        local targetX, targetY = getFireballAimPoint(target, shotIndex, projectiles, state.bonuses.fireballRadius)
 
         local pulseDamage = state.bonuses.fireballDamage
         local bossDamage = state.bonuses.fireballDamage
@@ -331,8 +393,8 @@ local function triggerFireball(state, mapData)
             state,
             state.player.x,
             state.player.y,
-            target.x,
-            target.y,
+            targetX,
+            targetY,
             state.bonuses.fireballRadius,
             pulseDamage,
             bossDamage,
