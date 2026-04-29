@@ -80,7 +80,7 @@ local function buildStarPoints(x, y, outerRadius, innerRadius)
     return points
 end
 
-local function drawDecoratedPanel(x, y, w, h, theme, alphaMul)
+local function drawDecoratedPanel(x, y, w, h, theme, alphaMul, options)
     setPaletteColor(theme.panelFill, alphaMul)
     love.graphics.rectangle("fill", x, y, w, h, 14, 14)
     setPaletteColor(theme.panelInner or theme.panelFill, 0.72 * (alphaMul or 1))
@@ -91,10 +91,12 @@ local function drawDecoratedPanel(x, y, w, h, theme, alphaMul)
     love.graphics.setLineWidth(2)
     love.graphics.rectangle("line", x, y, w, h, 14, 14)
 
-    local corner = 8
-    setPaletteColor(theme.accent or theme.panelLine, 0.9 * (alphaMul or 1))
-    love.graphics.polygon("fill", x + 14, y + 8, x + 14 + corner, y + 14, x + 14, y + 20, x + 14 - corner, y + 14)
-    love.graphics.polygon("fill", x + w - 14, y + 8, x + w - 14 + corner, y + 14, x + w - 14, y + 20, x + w - 14 - corner, y + 14)
+    if not (options and options.hideCorners) then
+        local corner = 8
+        setPaletteColor(theme.accent or theme.panelLine, 0.9 * (alphaMul or 1))
+        love.graphics.polygon("fill", x + 14, y + 8, x + 14 + corner, y + 14, x + 14, y + 20, x + 14 - corner, y + 14)
+        love.graphics.polygon("fill", x + w - 14, y + 8, x + w - 14 + corner, y + 14, x + w - 14, y + 20, x + w - 14 - corner, y + 14)
+    end
 end
 
 local function drawPanelRule(x, y, w, color, alphaMul)
@@ -340,8 +342,8 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui, assets)
         controlsX = math.max(pad, math.min(controlsX, sw - pad - controlsW))
     end
 
-    drawDecoratedPanel(resourceX, topY, resourceW, barH, theme)
-    drawDecoratedPanel(statusX, topY, statusW, barH, theme)
+    drawDecoratedPanel(resourceX, topY, resourceW, barH, theme, nil, { hideCorners = true })
+    drawDecoratedPanel(statusX, topY, statusW, barH, theme, nil, { hideCorners = true })
 
     local essenceIcon = assets and assets.icons and assets.icons.essence
     local essenceIconSize = C.UI_ICONS.essence.hudSize
