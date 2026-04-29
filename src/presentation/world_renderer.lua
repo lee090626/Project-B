@@ -410,6 +410,47 @@ local function drawBossSprite(state, assets)
     return renderX, renderY, pulse
 end
 
+local function drawPlayerSprite(state, assets, time)
+    local targetSize = state.player.radius * C.PLAYER_SPRITE.targetScale
+    local facingX = state.player.facingX or -1
+    local flip = facingX < 0 and 1 or -1
+    local animation = assets and assets.playerWalkAnimation
+
+    if animation and animation.image and animation.quads then
+        local frame = math.floor((time or 0) * animation.fps) % animation.frameCount + 1
+        local quad = animation.quads[frame]
+        if quad then
+            local scale = targetSize / math.max(animation.frameWidth, animation.frameHeight)
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.draw(
+                animation.image,
+                quad,
+                state.player.x,
+                state.player.y,
+                0,
+                scale * flip,
+                scale,
+                animation.frameWidth * 0.5,
+                animation.frameHeight * 0.5
+            )
+            return true
+        end
+    end
+
+    local sprite = assets and assets.playerSprite
+    if sprite then
+        local iw = sprite:getWidth()
+        local ih = sprite:getHeight()
+        local sx = targetSize / iw
+        local sy = targetSize / ih
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(sprite, state.player.x, state.player.y, 0, sx * flip, sy, iw * 0.5, ih * 0.5)
+        return true
+    end
+
+    return false
+end
+
 function WorldRenderer.draw(state, assets)
     local mapData = MapSystem.getCurrentMap(state.maps)
     local mapTheme = currentMapTheme(mapData.id)
@@ -580,16 +621,7 @@ function WorldRenderer.draw(state, assets)
         setPaletteColor(C.WORLD_THEME.auraLine, 0.75)
         love.graphics.circle("line", state.player.x, state.player.y, state.player.radius * (C.WORLD_THEME.playerAuraLineScale + pulse * 0.18))
 
-        if assets and assets.playerSprite then
-            local sprite = assets.playerSprite
-            local iw = sprite:getWidth()
-            local ih = sprite:getHeight()
-            local targetSize = state.player.radius * 3
-            local sx = targetSize / iw
-            local sy = targetSize / ih
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.draw(sprite, state.player.x, state.player.y, 0, sx, sy, iw * 0.5, ih * 0.5)
-        else
+        if not drawPlayerSprite(state, assets, state.totalPlayTime or 0) then
             love.graphics.setColor(0.9, 0.45, 0.3)
             love.graphics.circle("fill", state.player.x, state.player.y, state.player.radius)
             love.graphics.setColor(1, 0.9, 0.75)

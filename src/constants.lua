@@ -20,6 +20,18 @@ C.MAX_FOOD = 125
 C.FOOD_SPAWN_INTERVAL = 0.045
 C.PLAYER_CONTACT_DAMAGE = 18
 
+C.PLAYER_SPRITE = {
+    fallbackPath = "BabyDragon.png",
+    walkSheetPath = "assets/sprites/baby_dragon_walk_sheet.png",
+    walkFrameWidth = 272,
+    walkFrameHeight = 352,
+    walkColumns = 4,
+    walkRows = 2,
+    walkFrameCount = 8,
+    walkFps = 8,
+    targetScale = 3,
+}
+
 C.PASSIVE_BASES = CombatBalance.passiveBases
 
 C.BOSS_ARENA = CombatBalance.bossArena

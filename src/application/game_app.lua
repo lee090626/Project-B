@@ -1,3 +1,4 @@
+local C = require("src.constants")
 local Service = require("src.application.game_service")
 local Locale = require("src.locale")
 local Renderer = require("src.presentation.game_renderer")
@@ -46,6 +47,46 @@ local function loadOptionalImage(path)
     return nil
 end
 
+local function loadPlayerWalkAnimation()
+    local sheet = loadOptionalImage(C.PLAYER_SPRITE.walkSheetPath)
+    if not sheet then
+        return nil
+    end
+
+    local frameWidth = C.PLAYER_SPRITE.walkFrameWidth
+    local frameHeight = C.PLAYER_SPRITE.walkFrameHeight
+    local columns = C.PLAYER_SPRITE.walkColumns
+    local rows = C.PLAYER_SPRITE.walkRows
+    local expectedWidth = frameWidth * columns
+    local expectedHeight = frameHeight * rows
+    if sheet:getWidth() ~= expectedWidth or sheet:getHeight() ~= expectedHeight then
+        error(string.format(
+            "invalid player walk sheet size: expected %dx%d, got %dx%d",
+            expectedWidth,
+            expectedHeight,
+            sheet:getWidth(),
+            sheet:getHeight()
+        ))
+    end
+
+    local quads = {}
+    for frame = 1, C.PLAYER_SPRITE.walkFrameCount do
+        local index = frame - 1
+        local x = (index % columns) * frameWidth
+        local y = math.floor(index / columns) * frameHeight
+        quads[frame] = love.graphics.newQuad(x, y, frameWidth, frameHeight, sheet:getDimensions())
+    end
+
+    return {
+        image = sheet,
+        quads = quads,
+        frameWidth = frameWidth,
+        frameHeight = frameHeight,
+        frameCount = C.PLAYER_SPRITE.walkFrameCount,
+        fps = C.PLAYER_SPRITE.walkFps,
+    }
+end
+
 local function loadBackgroundAssets()
     local backgrounds = {}
 
@@ -71,7 +112,8 @@ function App:load()
     self.fonts.hud = loadUiFont(15)
     self.fonts.big = loadUiFont(30)
 
-    self.assets.playerSprite = loadOptionalImage("BabyDragon.png")
+    self.assets.playerSprite = loadOptionalImage(C.PLAYER_SPRITE.fallbackPath)
+    self.assets.playerWalkAnimation = loadPlayerWalkAnimation()
     self.assets.fireballSprite = loadOptionalImage("FireBall.png")
     self.assets.monsterSprites = {
         common = loadOptionalImage("MonsterCommon.png"),

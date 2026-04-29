@@ -11,6 +11,7 @@ function Player.new(savedPlayer)
         baseSpeed = 120,
         baseReach = 25,
         baseMagnet = 0,
+        facingX = -1,
     }
 
     if savedPlayer then
@@ -36,6 +37,9 @@ function Player.update(player, dt, mouseWorldX, mouseWorldY, bonuses)
 
     if dist > 0.1 then
         local move = math.min(dist, speed * dt)
+        if math.abs(dx) > 0.1 then
+            player.facingX = dx < 0 and -1 or 1
+        end
         player.x = player.x + (dx / dist) * move
         player.y = player.y + (dy / dist) * move
     end
