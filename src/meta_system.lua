@@ -1,4 +1,5 @@
 local C = require("src.constants")
+local BonusSchema = require("src.bonus_schema")
 
 local Meta = {}
 
@@ -296,45 +297,12 @@ function Meta.export(metaState)
 end
 
 function Meta.computeBonuses(metaState)
-    local bonuses = {
-        speed = 0,
-        reach = 0,
-        magnet = 0,
-        contactBite = 0,
-        rareBonus = 0,
-        eliteBonus = 0,
-        spawnRate = 0,
-        spawnCap = 0,
-        essenceMult = 1,
-        rareValue = 1,
-        eliteValue = 1,
-        lightningEnabled = 0,
-        lightningDamage = 0,
-        lightningChain = 0,
-        lightningIntervalCut = 0,
-        fireballEnabled = 0,
-        fireballDamage = 0,
-        fireballCount = 0,
-        fireballRadius = 0,
-        fireballIntervalCut = 0,
-        fireballSplit = 0,
-        eventBiteBonus = 0,
-        midBonusTime = 0,
-        finalBonusTime = 0,
-        bonusTimeCap = 0,
-        finalWindowMin = 0,
-    }
+    local bonuses = BonusSchema.newRaw()
 
     for _, def in ipairs(DEFINITIONS) do
         local level = metaState.levels[def.key] or 0
         if level > 0 then
-            for key, value in pairs(def.bonusPack or {}) do
-                if key == "essenceMult" or key == "rareValue" or key == "eliteValue" then
-                    bonuses[key] = bonuses[key] + value * level
-                else
-                    bonuses[key] = (bonuses[key] or 0) + value * level
-                end
-            end
+            BonusSchema.applyPack(bonuses, def.bonusPack, level)
         end
     end
 

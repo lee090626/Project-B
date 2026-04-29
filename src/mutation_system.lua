@@ -1,15 +1,10 @@
 local Nest = require("src.nest_system")
+local BonusSchema = require("src.bonus_schema")
 local MutationBalance = require("src.data.mutation_balance")
 
 local Mutation = {}
 
 local DEFINITIONS = MutationBalance.definitions
-
-local MULT_KEYS = {
-    essenceMult = true,
-    rareValue = true,
-    eliteValue = true,
-}
 
 local function findDefinition(key)
     for _, def in ipairs(DEFINITIONS) do
@@ -235,35 +230,13 @@ function Mutation.applyChoice(state, choiceIndex)
 end
 
 function Mutation.buildRunBonuses(runMutations)
-    local bonuses = {
-        speed = 0,
-        reach = 0,
-        magnet = 0,
-        contactBite = 0,
-        rareBonus = 0,
-        eliteBonus = 0,
-        spawnRate = 0,
-        spawnCap = 0,
-        essenceMult = 1,
-        rareValue = 1,
-        eliteValue = 1,
-        lightningDamage = 0,
-        lightningIntervalCut = 0,
-        fireballDamage = 0,
-        fireballRadius = 0,
-    }
+    local bonuses = BonusSchema.newRaw()
 
     for _, pick in ipairs(runMutations.picks) do
         local def = findDefinition(pick.key)
         local effects = def and getEffects(def, pick.rarity) or nil
         if effects then
-            for key, value in pairs(effects) do
-                if MULT_KEYS[key] then
-                    bonuses[key] = bonuses[key] + value
-                else
-                    bonuses[key] = (bonuses[key] or 0) + value
-                end
-            end
+            BonusSchema.applyPack(bonuses, effects)
         end
     end
 

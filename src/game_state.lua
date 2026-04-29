@@ -7,65 +7,13 @@ local Meta = require("src.meta_system")
 local Nest = require("src.nest_system")
 local Save = require("src.save_system")
 local Locale = require("src.locale")
+local BonusSchema = require("src.bonus_schema")
 local PassiveCombat = require("src.application.passive_combat")
 local Guide = require("src.application.guide_system")
 local Mutation = require("src.mutation_system")
 local RunEvent = require("src.run_event_system")
 
 local GameState = {}
-
-local BONUS_KEYS = {
-    "speed",
-    "reach",
-    "magnet",
-    "contactBite",
-    "rareBonus",
-    "eliteBonus",
-    "spawnRate",
-    "spawnCap",
-    "lightningEnabled",
-    "lightningDamage",
-    "lightningChain",
-    "lightningIntervalCut",
-    "fireballEnabled",
-    "fireballDamage",
-    "fireballCount",
-    "fireballRadius",
-    "fireballIntervalCut",
-    "fireballSplit",
-    "eventBiteBonus",
-    "midBonusTime",
-    "finalBonusTime",
-    "bonusTimeCap",
-    "finalWindowMin",
-}
-
-local MULT_KEYS = {
-    essenceMult = true,
-    rareValue = true,
-    eliteValue = true,
-}
-
-local function combineBonuses(metaBonuses, nestBonuses, runOnlyBonuses)
-    local out = {
-        essenceMult = 1,
-        rareValue = 1,
-        eliteValue = 1,
-    }
-
-    for _, key in ipairs(BONUS_KEYS) do
-        out[key] = (metaBonuses[key] or 0) + (nestBonuses[key] or 0) + (runOnlyBonuses[key] or 0)
-    end
-
-    for key in pairs(MULT_KEYS) do
-        out[key] = 1
-            + ((metaBonuses[key] or 1) - 1)
-            + ((nestBonuses[key] or 1) - 1)
-            + ((runOnlyBonuses[key] or 1) - 1)
-    end
-
-    return out
-end
 
 local function resetMetaTreeView(state)
     state.metaTreeView = {
@@ -219,8 +167,8 @@ function GameState.refreshDerivedState(state)
     state.metaBonuses = Meta.computeBonuses(state.meta)
     state.nestBonuses = Nest.computeBonuses(state.nest)
     state.runOnlyBonuses = Mutation.buildRunBonuses(state.runMutations)
-    state.bonuses = PassiveCombat.buildRunBonuses(
-        combineBonuses(state.metaBonuses, state.nestBonuses, state.runOnlyBonuses)
+    state.bonuses = BonusSchema.toRuntime(
+        BonusSchema.combineSources(state.metaBonuses, state.nestBonuses, state.runOnlyBonuses)
     )
     state.runDuration = C.RUN_TIME_LIMIT_SECONDS
 end

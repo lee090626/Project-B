@@ -7,49 +7,6 @@ local Mutation = require("src.mutation_system")
 
 local PassiveCombat = {}
 
-function PassiveCombat.buildRunBonuses(metaBonuses)
-    local out = {
-        speed = metaBonuses.speed or 0,
-        reach = metaBonuses.reach or 0,
-        essenceMult = metaBonuses.essenceMult or 1,
-        rareBonus = metaBonuses.rareBonus or 0,
-        eliteBonus = metaBonuses.eliteBonus or 0,
-        contactBite = metaBonuses.contactBite or 0,
-        magnet = metaBonuses.magnet or 0,
-        spawnRate = metaBonuses.spawnRate or 0,
-        spawnCap = metaBonuses.spawnCap or 0,
-        rareValue = metaBonuses.rareValue or 1,
-        eliteValue = metaBonuses.eliteValue or 1,
-        eventBiteBonus = metaBonuses.eventBiteBonus or 0,
-        midBonusTime = metaBonuses.midBonusTime or 0,
-        finalBonusTime = metaBonuses.finalBonusTime or 0,
-        bonusTimeCap = metaBonuses.bonusTimeCap or 0,
-        finalWindowMin = metaBonuses.finalWindowMin or 0,
-    }
-
-    out.lightningEnabled = (metaBonuses.lightningEnabled or 0) > 0
-    out.lightningDamage = C.PASSIVE_BASES.lightning.damage + (metaBonuses.lightningDamage or 0)
-    out.lightningChain = math.max(1, 1 + math.floor(metaBonuses.lightningChain or 0))
-    out.lightningChainRadius = C.PASSIVE_BASES.lightning.chainRadius + math.max(0, out.lightningChain - 1) * 70
-    out.lightningInterval = Utils.clamp(
-        C.PASSIVE_BASES.lightning.interval - (metaBonuses.lightningIntervalCut or 0),
-        0.24,
-        3.2
-    )
-
-    out.fireballEnabled = (metaBonuses.fireballEnabled or 0) > 0
-    out.fireballDamage = C.PASSIVE_BASES.fireball.damage + (metaBonuses.fireballDamage or 0)
-    out.fireballCount = math.max(1, 1 + math.floor(metaBonuses.fireballCount or 0) + math.floor(metaBonuses.fireballSplit or 0))
-    out.fireballRadius = C.PASSIVE_BASES.fireball.radius + (metaBonuses.fireballRadius or 0)
-    out.fireballInterval = Utils.clamp(
-        C.PASSIVE_BASES.fireball.interval - (metaBonuses.fireballIntervalCut or 0),
-        0.26,
-        3.4
-    )
-
-    return out
-end
-
 function PassiveCombat.resetState(state)
     state.passives = {
         lightningTimer = 0.35,
