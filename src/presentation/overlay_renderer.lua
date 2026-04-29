@@ -280,11 +280,11 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
     })
     mapText = ellipsize(fonts.hud, mapText, math.max(180, sw * 0.34))
 
-    local leftText = t(state, "hud.time_map", {
+    local statusText = t(state, "hud.time_map", {
         time = formatTime(state.runTimeLeft),
         map = mapText,
     })
-    local rightText = t(state, "hud.essence", {
+    local resourceText = t(state, "hud.essence", {
         essence = state.meta.essence,
         level = state.nestProgress and state.nestProgress.level or 0,
         current = state.nestProgress and state.nestProgress.currentLevelProgress or 0,
@@ -306,37 +306,45 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
         end
     end
 
-    local leftW = math.max(320, math.min(sw * 0.38, fonts.hud:getWidth(leftText) + 84))
-    local rightInfoW = math.max(270, math.min(sw * 0.28, math.max(fonts.hud:getWidth(rightText), fonts.hud:getWidth(instinctText)) + 86))
+    local statusW = math.max(320, math.min(sw * 0.38, fonts.hud:getWidth(statusText) + 84))
+    local resourceW = math.max(270, math.min(sw * 0.28, math.max(fonts.hud:getWidth(resourceText), fonts.hud:getWidth(instinctText)) + 86))
     local saveW = compact and 118 or 132
     local helpText = t(state, "hud.help")
     local helpW = fonts.hud:getWidth(helpText) + 40
-    local rightGroupW = rightInfoW + cfg.groupGap + saveW + cfg.groupGap + helpW
-    local leftX = pad
-    local rightX = sw - pad - rightGroupW
+    local controlsW = saveW + cfg.groupGap + helpW
+    local resourceX = pad
+    local statusX = sw - pad - statusW
+    local controlsMinX = resourceX + resourceW + cfg.groupGap
+    local controlsMaxX = statusX - controlsW - cfg.groupGap
+    local controlsX = (sw - controlsW) * 0.5
+    if controlsMinX <= controlsMaxX then
+        controlsX = math.max(controlsMinX, math.min(controlsX, controlsMaxX))
+    else
+        controlsX = math.max(pad, math.min(controlsX, sw - pad - controlsW))
+    end
 
-    drawDecoratedPanel(leftX, topY, leftW, barH, theme)
-    drawDecoratedPanel(rightX, topY, rightGroupW, barH, theme)
+    drawDecoratedPanel(resourceX, topY, resourceW, barH, theme)
+    drawDecoratedPanel(statusX, topY, statusW, barH, theme)
 
-    drawRuneBadge("time", leftX + 20, topY + 22, 12, theme.chipFill, theme.accent)
-    drawRuneBadge("map", leftX + 20, topY + 50, 12, theme.chipFill, theme.accentSoft)
+    drawRuneBadge("essence", resourceX + 18, topY + 18, 11, theme.chipFill, theme.accent)
+    drawRuneBadge("level", resourceX + 18, topY + 44, 11, theme.chipFill, theme.accentSoft)
     setPaletteColor(theme.text)
-    love.graphics.print(formatTime(state.runTimeLeft), leftX + 40, topY + 12)
+    love.graphics.print(resourceText, resourceX + 38, topY + 8)
     setPaletteColor(theme.dim)
-    love.graphics.print(mapText, leftX + 40, topY + 40)
-    setPaletteColor(theme.accentSoft)
-    love.graphics.print(string.format("%d/%d", unlockedMaps, #C.MAPS), leftX + leftW - 54, topY + 40)
-
-    drawRuneBadge("essence", rightX + 18, topY + 18, 11, theme.chipFill, theme.accent)
-    drawRuneBadge("level", rightX + 18, topY + 44, 11, theme.chipFill, theme.accentSoft)
-    setPaletteColor(theme.text)
-    love.graphics.print(rightText, rightX + 38, topY + 8)
-    setPaletteColor(theme.dim)
-    love.graphics.print(instinctText, rightX + 38, topY + 34)
+    love.graphics.print(instinctText, resourceX + 38, topY + 34)
     local pct = instinct.complete and 1 or (instinct.next > 0 and instinct.current / instinct.next or 0)
-    drawProgressBar(rightX + 38, topY + 54, rightInfoW - 52, 12, pct, theme, instinct.complete)
+    drawProgressBar(resourceX + 38, topY + 54, resourceW - 52, 12, pct, theme, instinct.complete)
 
-    ui.saveBtn.x = rightX + rightInfoW + cfg.groupGap
+    drawRuneBadge("time", statusX + 20, topY + 22, 12, theme.chipFill, theme.accent)
+    drawRuneBadge("map", statusX + 20, topY + 50, 12, theme.chipFill, theme.accentSoft)
+    setPaletteColor(theme.text)
+    love.graphics.print(formatTime(state.runTimeLeft), statusX + 40, topY + 12)
+    setPaletteColor(theme.dim)
+    love.graphics.print(mapText, statusX + 40, topY + 40)
+    setPaletteColor(theme.accentSoft)
+    love.graphics.print(string.format("%d/%d", unlockedMaps, #C.MAPS), statusX + statusW - 54, topY + 40)
+
+    ui.saveBtn.x = controlsX
     ui.saveBtn.y = topY + 10
     ui.saveBtn.h = 26
     ui.saveBtn.w = saveW
@@ -350,7 +358,7 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
     setPaletteColor(theme.buttonText)
     love.graphics.print(saveText, saveTextX, ui.saveBtn.y + 5)
 
-    local helpX = ui.saveBtn.x + ui.saveBtn.w + cfg.groupGap
+    local helpX = controlsX + saveW + cfg.groupGap
     setPaletteColor(theme.chipFill)
     love.graphics.rectangle("fill", helpX, topY + 10, helpW, 26, 8, 8)
     setPaletteColor(theme.chipLine)
