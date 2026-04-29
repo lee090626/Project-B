@@ -52,6 +52,17 @@ local function drawDiamond(x, y, radius)
     love.graphics.polygon("line", x, y - radius, x + radius, y, x, y + radius, x - radius, y)
 end
 
+local function buildStarPoints(x, y, outerRadius, innerRadius)
+    local points = {}
+    for i = 0, 9 do
+        local angle = -math.pi * 0.5 + i * math.pi * 0.2
+        local radius = (i % 2 == 0) and outerRadius or innerRadius
+        points[#points + 1] = x + math.cos(angle) * radius
+        points[#points + 1] = y + math.sin(angle) * radius
+    end
+    return points
+end
+
 local function drawDecoratedPanel(x, y, w, h, theme, alphaMul)
     setPaletteColor(theme.panelFill, alphaMul)
     love.graphics.rectangle("fill", x, y, w, h, 14, 14)
@@ -90,6 +101,13 @@ local function drawRuneBadge(kind, x, y, radius, fillColor, lineColor)
     elseif kind == "map" then
         drawDiamond(x, y, radius * 0.48)
         love.graphics.line(x, y - radius * 0.48, x, y + radius * 0.48)
+    elseif kind == "star" then
+        local fillPoints = buildStarPoints(x, y, radius * 0.42, radius * 0.2)
+        local linePoints = buildStarPoints(x, y, radius * 0.56, radius * 0.26)
+        setPaletteColor(fillColor)
+        love.graphics.polygon("fill", fillPoints)
+        setPaletteColor(lineColor)
+        love.graphics.polygon("line", linePoints)
     elseif kind == "essence" then
         love.graphics.circle("fill", x, y, radius * 0.34)
         love.graphics.arc("line", "open", x, y, radius * 0.6, -math.pi * 0.15, math.pi * 1.15)
@@ -327,8 +345,9 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
     local label = eventStripLabel(state, hud)
     local starText = t(state, "hud.stars_short", { stars = hud.starsEarned or 0 })
     local bonusText = t(state, "hud.bonus_time_short", { time = hud.bonusTimeEarned or 0 })
-    local chipText = string.format("%s   %s   %s", label, starText, bonusText)
-    local chipW = math.min(sw - 40, math.max(280, fonts.hud:getWidth(chipText) + 42))
+    local starBlockW = 18 + fonts.hud:getWidth(starText)
+    local chipContentW = fonts.hud:getWidth(label) + 18 + starBlockW + fonts.hud:getWidth(bonusText)
+    local chipW = math.min(sw - 40, math.max(320, chipContentW + 52))
     local chipX = (sw - chipW) * 0.5
     local chipY = topY + barH + 8
 
@@ -340,7 +359,13 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
         accent = theme.accent,
     })
     setPaletteColor(theme.text)
-    love.graphics.printf(chipText, chipX + 14, chipY + 7, chipW - 28, "center")
+    local contentX = chipX + (chipW - chipContentW) * 0.5
+    love.graphics.print(label, contentX, chipY + 7)
+    local starX = contentX + fonts.hud:getWidth(label) + 18
+    drawRuneBadge("star", starX + 8, chipY + 14, 7, theme.chipFill, theme.accent)
+    love.graphics.print(starText, starX + 18, chipY + 7)
+    local bonusX = starX + starBlockW + 18
+    love.graphics.print(bonusText, bonusX, chipY + 7)
 end
 
 function OverlayRenderer.drawBossBar(state, fonts)
@@ -926,8 +951,10 @@ function OverlayRenderer.drawRunEndResultOverlay(state, fonts)
     love.graphics.printf(t(state, "run_end.result.reason", { reason = runReasonRef(state.runEndedReason) }), x + 36, y + 94, w - 72, "left")
     love.graphics.printf(t(state, "run_end.result.grade", { grade = state.runGrade or "F" }), x + 36, y + 124, w - 72, "left")
     love.graphics.printf(t(state, "run_end.result.bonus_time", { time = state.runBonusTimeEarned or 0 }), x + 36, y + 154, w - 72, "left")
-    love.graphics.printf(t(state, "run_end.result.stars", { stars = state.runStarsEarned or 0 }), x + 36, y + 184, w - 72, "left")
-    love.graphics.printf(t(state, "run_end.result.total_stars", { stars = state.meta and state.meta.runStars or 0 }), x + 36, y + 214, w - 72, "left")
+    drawRuneBadge("star", x + 48, y + 194, 9, { 0.16, 0.12, 0.08, 0.96 }, { 1.0, 0.84, 0.38, 0.98 })
+    love.graphics.printf(t(state, "run_end.result.stars", { stars = state.runStarsEarned or 0 }), x + 66, y + 184, w - 102, "left")
+    drawRuneBadge("star", x + 48, y + 224, 9, { 0.16, 0.12, 0.08, 0.96 }, { 1.0, 0.84, 0.38, 0.98 })
+    love.graphics.printf(t(state, "run_end.result.total_stars", { stars = state.meta and state.meta.runStars or 0 }), x + 66, y + 214, w - 102, "left")
     love.graphics.printf(t(state, "run_end.result.current_essence", { essence = state.meta and state.meta.essence or 0 }), x + 36, y + 244, w - 72, "left")
     love.graphics.printf(t(state, "run_end.result.level", { level = state.nestProgress.level }), x + 36, y + 274, w - 72, "left")
     love.graphics.printf(nextUnlockText, x + 36, y + 304, w - 72, "left")
