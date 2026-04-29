@@ -5,7 +5,7 @@ local MutationBalance = require("src.data.mutation_balance")
 
 C.SAVE_FILE = "save.json"
 C.BACKUP_FILE = "save.bak"
-C.SAVE_VERSION = 8
+C.SAVE_VERSION = 9
 C.AUTOSAVE_INTERVAL = 30
 C.RUN_TIME_LIMIT_SECONDS = 15
 
