@@ -87,6 +87,21 @@ local function loadPlayerWalkAnimation()
     }
 end
 
+local function loadRunChoiceCardFrames()
+    local frames = {}
+
+    for rarity, path in pairs(C.RUN_CHOICE_UI.cardFramePaths) do
+        local image = loadOptionalImage(path)
+        if image
+            and image:getWidth() == C.RUN_CHOICE_UI.cardWidth
+            and image:getHeight() == C.RUN_CHOICE_UI.cardHeight then
+            frames[rarity] = image
+        end
+    end
+
+    return frames
+end
+
 local function loadBackgroundAssets()
     local backgrounds = {}
 
@@ -122,6 +137,7 @@ function App:load()
     }
     self.assets.bossSprite = loadOptionalImage("BossFinal.png")
     self.assets.bossWeakPointSprite = loadOptionalImage("BossWeakPoint.png")
+    self.assets.runChoiceCardFrames = loadRunChoiceCardFrames()
     self.assets.backgrounds = loadBackgroundAssets()
 
     self.state = Service.loadState()

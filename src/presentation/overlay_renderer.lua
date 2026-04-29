@@ -195,6 +195,32 @@ local function getChoicePalette(rarity)
     return C.RUN_CHOICE_THEME[rarity] or C.RUN_CHOICE_THEME.common
 end
 
+local function drawRunChoiceCardFrame(x, y, cfg, palette, assets, rarity)
+    local frame = assets and assets.runChoiceCardFrames and assets.runChoiceCardFrames[rarity]
+    if frame and frame:getWidth() == cfg.cardWidth and frame:getHeight() == cfg.cardHeight then
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(frame, x, y)
+        return
+    end
+
+    drawDecoratedPanel(x, y, cfg.cardWidth, cfg.cardHeight, {
+        panelFill = palette.fill,
+        panelInner = palette.inner,
+        panelLine = palette.line,
+        panelGlow = palette.line,
+        accent = palette.line,
+    })
+
+    setPaletteColor(palette.ribbon)
+    love.graphics.rectangle("fill", x + 16, y + 16, cfg.cardWidth - 32, 28, 8, 8)
+    setPaletteColor(palette.line)
+    love.graphics.rectangle("line", x + 16, y + 16, cfg.cardWidth - 32, 28, 8, 8)
+    setPaletteColor(palette.ribbon)
+    love.graphics.rectangle("fill", x + 18, y + cfg.cardHeight - 46, cfg.cardWidth - 36, 28, 10, 10)
+    setPaletteColor(palette.line)
+    love.graphics.rectangle("line", x + 18, y + cfg.cardHeight - 46, cfg.cardWidth - 36, 28, 10, 10)
+end
+
 local function getCategorySymbol(category)
     if category == "hunt" then
         return "hunt"
@@ -964,7 +990,7 @@ function OverlayRenderer.drawRunEndResultOverlay(state, fonts)
     love.graphics.printf(t(state, "run_end.result.continue"), x, y + h - 42, w, "center")
 end
 
-function OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
+function OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui, assets)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
     local cards = state.runMutations.activeChoices or {}
@@ -1001,18 +1027,8 @@ function OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
         ui.runChoice.cards[i] = { x = x, y = y, w = cfg.cardWidth, h = cfg.cardHeight }
 
         local palette = getChoicePalette(card.rarity)
-        drawDecoratedPanel(x, y, cfg.cardWidth, cfg.cardHeight, {
-            panelFill = palette.fill,
-            panelInner = palette.inner,
-            panelLine = palette.line,
-            panelGlow = palette.line,
-            accent = palette.line,
-        })
+        drawRunChoiceCardFrame(x, y, cfg, palette, assets, card.rarity)
 
-        setPaletteColor(palette.ribbon)
-        love.graphics.rectangle("fill", x + 16, y + 16, cfg.cardWidth - 32, 28, 8, 8)
-        setPaletteColor(palette.line)
-        love.graphics.rectangle("line", x + 16, y + 16, cfg.cardWidth - 32, 28, 8, 8)
         setPaletteColor(C.HUD_THEME.text)
         love.graphics.printf(t(state, "rarity." .. card.rarity), x + 16, y + 22, cfg.cardWidth - 32, "center")
 
@@ -1031,10 +1047,6 @@ function OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
         setPaletteColor(C.HUD_THEME.text)
         love.graphics.printf(t(state, card.descKey), x + 26, y + 160, cfg.cardWidth - 52, "center")
 
-        setPaletteColor(palette.ribbon)
-        love.graphics.rectangle("fill", x + 18, y + cfg.cardHeight - 46, cfg.cardWidth - 36, 28, 10, 10)
-        setPaletteColor(palette.line)
-        love.graphics.rectangle("line", x + 18, y + cfg.cardHeight - 46, cfg.cardWidth - 36, 28, 10, 10)
         setPaletteColor(C.HUD_THEME.text)
         love.graphics.printf(t(state, "run_choice.click"), x + 18, y + cfg.cardHeight - 40, cfg.cardWidth - 36, "center")
     end

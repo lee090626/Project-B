@@ -74,6 +74,11 @@ C.RUN_CHOICE_UI = {
     cardWidth = 272,
     cardHeight = 252,
     cardGap = 28,
+    cardFramePaths = {
+        common = "assets/ui/cards/run_choice_common.png",
+        rare = "assets/ui/cards/run_choice_rare.png",
+        mythic = "assets/ui/cards/run_choice_mythic.png",
+    },
 }
 
 C.RUN_END_TREE_UI = {

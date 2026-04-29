@@ -24,7 +24,7 @@ function Renderer.draw(state, fonts, ui, assets)
     OverlayRenderer.drawBossBar(state, fonts)
     OverlayRenderer.drawGameToasts(state, fonts)
     if state.mode == "run_choice" then
-        OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui)
+        OverlayRenderer.drawRunChoiceOverlay(state, fonts, ui, assets)
     end
     OverlayRenderer.drawGuidePanel(state, fonts, ui)
     OverlayRenderer.drawHelpPanel(state, fonts)
