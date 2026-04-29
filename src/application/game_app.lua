@@ -1,6 +1,7 @@
 local Service = require("src.application.game_service")
 local Locale = require("src.locale")
 local Renderer = require("src.presentation.game_renderer")
+local BackgroundAssetManifest = require("src.data.background_asset_manifest")
 
 local App = {}
 App.__index = App
@@ -45,6 +46,23 @@ local function loadOptionalImage(path)
     return nil
 end
 
+local function loadBackgroundAssets()
+    local backgrounds = {}
+
+    for mapId, manifest in pairs(BackgroundAssetManifest) do
+        backgrounds[mapId] = {
+            version = manifest.version or 1,
+            backdropFar = loadOptionalImage(manifest.backdropFar),
+            backdropMid = loadOptionalImage(manifest.backdropMid),
+            fieldBaseTile = loadOptionalImage(manifest.fieldBaseTile),
+            fieldDecalSet = loadOptionalImage(manifest.fieldDecalSet),
+            fieldFeature01 = loadOptionalImage(manifest.fieldFeature01),
+        }
+    end
+
+    return backgrounds
+end
+
 function App:load()
     love.window.setTitle(Locale.text(Locale.DEFAULT, "app.title"))
     love.window.setMode(1280, 720, { resizable = true, minwidth = 960, minheight = 540 })
@@ -62,6 +80,7 @@ function App:load()
     }
     self.assets.bossSprite = loadOptionalImage("BossFinal.png")
     self.assets.bossWeakPointSprite = loadOptionalImage("BossWeakPoint.png")
+    self.assets.backgrounds = loadBackgroundAssets()
 
     self.state = Service.loadState()
 end

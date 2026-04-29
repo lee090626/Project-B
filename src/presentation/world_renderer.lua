@@ -23,6 +23,8 @@ local cache = {
     backdropKey = nil,
     pattern = nil,
     patternKey = nil,
+    field = nil,
+    fieldKey = nil,
 }
 
 local function angleFromVector(dx, dy)
@@ -49,6 +51,11 @@ end
 local function setPaletteColor(color, alphaMul)
     local a = (color[4] or 1) * (alphaMul or 1)
     love.graphics.setColor(color[1], color[2], color[3], a)
+end
+
+local function hash01(a, b, c)
+    local v = math.sin(a * 12.9898 + b * 78.233 + (c or 0) * 37.719) * 43758.5453
+    return v - math.floor(v)
 end
 
 local function drawWorldBackdrop(sw, sh, mapTheme)
@@ -156,6 +163,155 @@ local function rebuildPatternCanvas(mapId, mapTheme)
     return canvas
 end
 
+local function getBackgroundAssetSet(assets, mapId)
+    return assets and assets.backgrounds and assets.backgrounds[mapId] or nil
+end
+
+local function drawScreenVignette(sw, sh)
+    setPaletteColor(C.WORLD_THEME.vignette)
+    love.graphics.rectangle("fill", 0, 0, sw, 70)
+    love.graphics.rectangle("fill", 0, sh - 90, sw, 90)
+    love.graphics.rectangle("fill", 0, 0, 80, sh)
+    love.graphics.rectangle("fill", sw - 80, 0, 80, sh)
+end
+
+local function drawImageCover(image, sw, sh)
+    local iw = image:getWidth()
+    local ih = image:getHeight()
+    if iw <= 0 or ih <= 0 then
+        return
+    end
+
+    local scale = math.max(sw / iw, sh / ih)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(image, (sw - iw * scale) * 0.5, (sh - ih * scale) * 0.5, 0, scale, scale)
+end
+
+local function drawImageRepeatedToScreen(image, sw, sh, shift)
+    local iw = image:getWidth()
+    local ih = image:getHeight()
+    if iw <= 0 or ih <= 0 then
+        return
+    end
+
+    local scale = sh / ih
+    local step = iw * scale
+    local x = -((shift or 0) % step)
+    while x < sw do
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(image, x, 0, 0, scale, scale)
+        x = x + step
+    end
+end
+
+local function drawTiledImage(image, width, height)
+    local iw = image:getWidth()
+    local ih = image:getHeight()
+    if iw <= 0 or ih <= 0 then
+        return false
+    end
+
+    love.graphics.setColor(1, 1, 1, 1)
+    for y = 0, height - 1, ih do
+        for x = 0, width - 1, iw do
+            love.graphics.draw(image, x, y)
+        end
+    end
+
+    return true
+end
+
+local function drawAssetDecals(mapId, image)
+    if not image then
+        return
+    end
+
+    local iw = image:getWidth()
+    local ih = image:getHeight()
+    love.graphics.setColor(1, 1, 1, 0.68)
+    for row = 0, 3 do
+        for col = 0, 5 do
+            local seed = mapId * 100 + row * 19 + col * 7
+            local x = 180 + col * 560 + (hash01(seed, 1, 0.2) - 0.5) * 140
+            local y = 180 + row * 430 + (hash01(seed, 2, 0.4) - 0.5) * 110
+            local scale = 0.42 + hash01(seed, 3, 0.6) * 0.2
+            local flip = hash01(seed, 4, 0.8) > 0.5 and -1 or 1
+            if x < C.WORLD_WIDTH - 80 and y < C.WORLD_HEIGHT - 80 then
+                love.graphics.draw(image, x, y, 0, scale * flip, scale, iw * 0.5, ih * 0.5)
+            end
+        end
+    end
+end
+
+local function drawAssetFeature(image)
+    if not image then
+        return
+    end
+
+    local iw = image:getWidth()
+    local ih = image:getHeight()
+    love.graphics.setColor(1, 1, 1, 0.78)
+    love.graphics.draw(image, C.WORLD_WIDTH * 0.5, C.WORLD_HEIGHT * 0.42, 0, 1, 1, iw * 0.5, ih * 0.5)
+end
+
+local function drawAssetBackdrop(state, sw, sh, assetSet)
+    if not assetSet or not assetSet.backdropFar then
+        return false
+    end
+
+    drawImageCover(assetSet.backdropFar, sw, sh)
+    if assetSet.backdropMid then
+        drawImageRepeatedToScreen(assetSet.backdropMid, sw, sh, state.camera.x * 0.12)
+    end
+    drawScreenVignette(sw, sh)
+    return true
+end
+
+local function drawAssetFieldLayer(mapId, assetSet)
+    if not assetSet or not assetSet.fieldBaseTile then
+        return false
+    end
+
+    if not drawTiledImage(assetSet.fieldBaseTile, C.WORLD_WIDTH, C.WORLD_HEIGHT) then
+        return false
+    end
+
+    setPaletteColor(C.WORLD_THEME.nestShadow)
+    love.graphics.circle("fill", C.WORLD_WIDTH * 0.5, C.WORLD_HEIGHT * 0.52, math.min(C.WORLD_WIDTH, C.WORLD_HEIGHT) * 0.32)
+    drawAssetDecals(mapId, assetSet.fieldDecalSet)
+    drawAssetFeature(assetSet.fieldFeature01)
+    return true
+end
+
+local function rebuildAssetFieldCanvas(mapId, assetSet)
+    if not assetSet or not assetSet.fieldBaseTile then
+        return nil
+    end
+
+    local key = string.format("%d:%d", assetSet.version or 0, mapId)
+    if cache.field and cache.fieldKey == key then
+        return cache.field
+    end
+
+    local ok, canvas = pcall(love.graphics.newCanvas, C.WORLD_WIDTH, C.WORLD_HEIGHT)
+    if not ok or not canvas then
+        cache.field = nil
+        cache.fieldKey = nil
+        return nil
+    end
+
+    love.graphics.push("all")
+    love.graphics.setCanvas(canvas)
+    love.graphics.clear(0, 0, 0, 0)
+    drawAssetFieldLayer(mapId, assetSet)
+    love.graphics.setCanvas()
+    love.graphics.pop()
+
+    cache.field = canvas
+    cache.fieldKey = key
+    return canvas
+end
+
 local function getViewport(state, sw, sh)
     local left = state.camera.x
     local top = state.camera.y
@@ -259,14 +415,18 @@ function WorldRenderer.draw(state, assets)
     local mapTheme = currentMapTheme(mapData.id)
     local sw = love.graphics.getWidth()
     local sh = love.graphics.getHeight()
-    local backdropCanvas = rebuildBackdropCanvas(sw, sh, mapData.id, mapTheme)
+    local backgroundAssets = getBackgroundAssetSet(assets, mapData.id)
+    local assetFieldCanvas = rebuildAssetFieldCanvas(mapData.id, backgroundAssets)
     local patternCanvas = rebuildPatternCanvas(mapData.id, mapTheme)
 
-    if backdropCanvas then
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.draw(backdropCanvas, 0, 0)
-    else
-        drawWorldBackdrop(sw, sh, mapTheme)
+    if not drawAssetBackdrop(state, sw, sh, backgroundAssets) then
+        local backdropCanvas = rebuildBackdropCanvas(sw, sh, mapData.id, mapTheme)
+        if backdropCanvas then
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.draw(backdropCanvas, 0, 0)
+        else
+            drawWorldBackdrop(sw, sh, mapTheme)
+        end
     end
 
     local left, top, right, bottom = getViewport(state, sw, sh)
@@ -276,7 +436,10 @@ function WorldRenderer.draw(state, assets)
     love.graphics.scale(state.camera.zoom)
     love.graphics.translate(-state.camera.x, -state.camera.y)
 
-    if patternCanvas then
+    if assetFieldCanvas then
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(assetFieldCanvas, 0, 0)
+    elseif patternCanvas then
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.draw(patternCanvas, 0, 0)
     else
