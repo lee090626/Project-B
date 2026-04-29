@@ -52,6 +52,23 @@ local function drawDiamond(x, y, radius)
     love.graphics.polygon("line", x, y - radius, x + radius, y, x, y + radius, x - radius, y)
 end
 
+local function drawIconAtSize(image, x, y, size)
+    if not image or not size or size <= 0 then
+        return false
+    end
+
+    local iw = image:getWidth()
+    local ih = image:getHeight()
+    if iw <= 0 or ih <= 0 then
+        return false
+    end
+
+    local scale = size / math.max(iw, ih)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(image, x, y, 0, scale, scale, iw * 0.5, ih * 0.5)
+    return true
+end
+
 local function buildStarPoints(x, y, outerRadius, innerRadius)
     local points = {}
     for i = 0, 9 do
@@ -254,7 +271,7 @@ local function eventStripLabel(state, hud)
     return t(state, "hud.event.opening")
 end
 
-function OverlayRenderer.drawGameTopBar(state, fonts, ui)
+function OverlayRenderer.drawGameTopBar(state, fonts, ui, assets)
     local sw = love.graphics.getWidth()
     local mapData = MapSystem.getCurrentMap(state.maps)
     local unlockedMaps = 0
@@ -326,7 +343,11 @@ function OverlayRenderer.drawGameTopBar(state, fonts, ui)
     drawDecoratedPanel(resourceX, topY, resourceW, barH, theme)
     drawDecoratedPanel(statusX, topY, statusW, barH, theme)
 
-    drawRuneBadge("essence", resourceX + 18, topY + 18, 11, theme.chipFill, theme.accent)
+    local essenceIcon = assets and assets.icons and assets.icons.essence
+    local essenceIconSize = C.UI_ICONS.essence.hudSize
+    if not drawIconAtSize(essenceIcon, resourceX + 18, topY + 18, essenceIconSize) then
+        drawRuneBadge("essence", resourceX + 18, topY + 18, 11, theme.chipFill, theme.accent)
+    end
     drawRuneBadge("level", resourceX + 18, topY + 44, 11, theme.chipFill, theme.accentSoft)
     setPaletteColor(theme.text)
     love.graphics.print(resourceText, resourceX + 38, topY + 8)

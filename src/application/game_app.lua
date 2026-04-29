@@ -119,6 +119,16 @@ local function loadBackgroundAssets()
     return backgrounds
 end
 
+local function loadUiIcons()
+    local icons = {}
+
+    for key, config in pairs(C.UI_ICONS) do
+        icons[key] = loadOptionalImage(config.path)
+    end
+
+    return icons
+end
+
 function App:load()
     love.window.setTitle(Locale.text(Locale.DEFAULT, "app.title"))
     love.window.setMode(1280, 720, { resizable = true, minwidth = 960, minheight = 540 })
@@ -138,6 +148,7 @@ function App:load()
     self.assets.bossSprite = loadOptionalImage("BossFinal.png")
     self.assets.bossWeakPointSprite = loadOptionalImage("BossWeakPoint.png")
     self.assets.runChoiceCardFrames = loadRunChoiceCardFrames()
+    self.assets.icons = loadUiIcons()
     self.assets.backgrounds = loadBackgroundAssets()
 
     self.state = Service.loadState()

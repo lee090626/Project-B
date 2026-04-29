@@ -20,7 +20,7 @@ function Renderer.draw(state, fonts, ui, assets)
     end
 
     WorldRenderer.draw(state, assets)
-    OverlayRenderer.drawGameTopBar(state, fonts, ui)
+    OverlayRenderer.drawGameTopBar(state, fonts, ui, assets)
     OverlayRenderer.drawBossBar(state, fonts)
     OverlayRenderer.drawGameToasts(state, fonts)
     if state.mode == "run_choice" then

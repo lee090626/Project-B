@@ -70,6 +70,16 @@ C.DRAGON_EVOLUTION_LEVELS = { 20, 50, 90 }
 C.MUTATION_LEVEL_THRESHOLDS = MutationBalance.thresholds
 C.MUTATION_RARITY_WEIGHTS = MutationBalance.rarityWeights
 
+C.UI_ICONS = {
+    essence = {
+        path = "assets/ui/icons/essence.png",
+        hudSize = 24,
+        chipSize = 32,
+        rewardSize = 48,
+        largeSize = 64,
+    },
+}
+
 C.RUN_CHOICE_UI = {
     cardWidth = 272,
     cardHeight = 252,
