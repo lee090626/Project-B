@@ -143,6 +143,29 @@ local ProgressionBalance = {
         { maxDepth = 4, multiplier = 1.85 },
         { maxDepth = math.huge, multiplier = 2.15 },
     },
+    nestUpgrades = {
+        {
+            key = "brooder",
+            basePointCost = 1,
+            maxLevel = 10,
+        },
+        {
+            key = "larder",
+            basePointCost = 1,
+            maxLevel = 10,
+        },
+        {
+            key = "roost",
+            basePointCost = 1,
+            maxLevel = 10,
+        },
+        {
+            key = "hatchery",
+            basePointCost = 2,
+            maxLevel = 10,
+        },
+    },
+    dragonEvolutionLevels = { 20, 50, 90 },
 }
 
 return ProgressionBalance

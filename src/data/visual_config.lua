@@ -1,0 +1,63 @@
+local VisualConfig = {
+    playerSprite = {
+        fallbackPath = "BabyDragon.png",
+        walkSheetPath = "assets/sprites/baby_dragon_walk_sheet.png",
+        walkFrameWidth = 272,
+        walkFrameHeight = 352,
+        walkColumns = 4,
+        walkRows = 2,
+        walkFrameCount = 8,
+        walkFps = 8,
+        targetScale = 3,
+    },
+    worldTheme = {
+        vignette = { 0.01, 0.02, 0.02, 0.18 },
+        nestShadow = { 0.11, 0.08, 0.05, 0.16 },
+        aura = { 0.36, 0.93, 0.7, 0.1 },
+        auraLine = { 0.88, 0.76, 0.44, 0.24 },
+        magnetFill = { 0.88, 0.74, 0.35, 0.06 },
+        magnetLine = { 0.93, 0.78, 0.42, 0.24 },
+        eatLine = { 0.38, 0.85, 0.66, 0.28 },
+        magnetFillCutoff = 240,
+        magnetOutlineWidth = 1.5,
+        playerAuraScale = 2.05,
+        playerAuraLineScale = 2.45,
+        fireballGlowScale = 0.12,
+        fireballImpactFillScale = 0.22,
+        eatPulseMinRadius = 18,
+        eatPulseRadiusScale = 1.5,
+        cullMargin = 64,
+        maps = {
+            [1] = {
+                sky = { 0.08, 0.13, 0.11 },
+                ground = { 0.16, 0.22, 0.16 },
+                glow = { 0.3, 0.41, 0.25, 0.2 },
+                grid = { 0.34, 0.44, 0.3, 0.11 },
+                sigil = { 0.54, 0.66, 0.46, 0.07 },
+            },
+            [2] = {
+                sky = { 0.07, 0.09, 0.14 },
+                ground = { 0.12, 0.16, 0.25 },
+                glow = { 0.18, 0.28, 0.46, 0.18 },
+                grid = { 0.42, 0.56, 0.72, 0.1 },
+                sigil = { 0.58, 0.8, 0.95, 0.08 },
+            },
+            [3] = {
+                sky = { 0.16, 0.07, 0.05 },
+                ground = { 0.3, 0.12, 0.08 },
+                glow = { 0.52, 0.22, 0.1, 0.18 },
+                grid = { 0.74, 0.34, 0.18, 0.1 },
+                sigil = { 0.97, 0.62, 0.24, 0.08 },
+            },
+            [4] = {
+                sky = { 0.07, 0.05, 0.09 },
+                ground = { 0.16, 0.09, 0.19 },
+                glow = { 0.3, 0.14, 0.33, 0.2 },
+                grid = { 0.55, 0.33, 0.66, 0.09 },
+                sigil = { 0.82, 0.53, 0.92, 0.07 },
+            },
+        },
+    },
+}
+
+return VisualConfig
