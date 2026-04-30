@@ -23,6 +23,7 @@ C.FOOD_SPAWN_INTERVAL = 0.045
 C.PLAYER_CONTACT_DAMAGE = 18
 
 C.PLAYER_SPRITE = VisualConfig.playerSprite
+C.WORLD_SPRITES = VisualConfig.worldSprites
 
 C.PASSIVE_BASES = CombatBalance.passiveBases
 

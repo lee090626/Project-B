@@ -1,14 +1,55 @@
 local VisualConfig = {
     playerSprite = {
-        fallbackPath = "BabyDragon.png",
-        walkSheetPath = "assets/sprites/baby_dragon_walk_sheet.png",
-        walkFrameWidth = 272,
-        walkFrameHeight = 352,
-        walkColumns = 4,
-        walkRows = 2,
-        walkFrameCount = 8,
-        walkFps = 8,
+        mode = "sheet",
+        path = "assets/sprites/baby_dragon_walk_sheet.png",
+        frameWidth = 272,
+        frameHeight = 352,
+        columns = 4,
+        rows = 2,
+        frameCount = 8,
+        fps = 8,
+        idleFrame = 1,
         targetScale = 3,
+    },
+    worldSprites = {
+        fireball = {
+            mode = "image",
+            path = "FireBall.png",
+            width = 256,
+            height = 256,
+        },
+        boss = {
+            mode = "image",
+            path = "BossFinal.png",
+            width = 256,
+            height = 256,
+        },
+        bossWeakPoint = {
+            mode = "image",
+            path = "BossWeakPoint.png",
+            width = 256,
+            height = 256,
+        },
+        monsters = {
+            common = {
+                mode = "image",
+                path = "MonsterCommon.png",
+                width = 256,
+                height = 256,
+            },
+            rare = {
+                mode = "image",
+                path = "MonsterRare.png",
+                width = 256,
+                height = 256,
+            },
+            elite = {
+                mode = "image",
+                path = "MonsterElite.png",
+                width = 256,
+                height = 256,
+            },
+        },
     },
     worldTheme = {
         vignette = { 0.01, 0.02, 0.02, 0.18 },

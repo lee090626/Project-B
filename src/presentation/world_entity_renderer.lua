@@ -85,14 +85,17 @@ local function drawBossSprite(state, assets)
     return renderX, renderY, pulse
 end
 
-local function drawPlayerSprite(state, assets, time)
+local function drawPlayerSprite(state, assets)
     local targetSize = state.player.radius * C.PLAYER_SPRITE.targetScale
     local facingX = state.player.facingX or -1
     local flip = facingX < 0 and 1 or -1
     local animation = assets and assets.playerWalkAnimation
 
     if animation and animation.image and animation.quads then
-        local frame = math.floor((time or 0) * animation.fps) % animation.frameCount + 1
+        local frame = animation.idleFrame or 1
+        if state.player.isMoving then
+            frame = math.floor((state.player.walkTimer or 0) * animation.fps) % animation.frameCount + 1
+        end
         local quad = animation.quads[frame]
         if quad then
             local scale = targetSize / math.max(animation.frameWidth, animation.frameHeight)
@@ -272,7 +275,7 @@ function WorldEntityRenderer.drawPlayer(state, assets, view)
         Utils.setPaletteColor(C.WORLD_THEME.auraLine, 0.75)
         love.graphics.circle("line", state.player.x, state.player.y, state.player.radius * (C.WORLD_THEME.playerAuraLineScale + pulse * 0.18))
 
-        if not drawPlayerSprite(state, assets, state.totalPlayTime or 0) then
+        if not drawPlayerSprite(state, assets) then
             love.graphics.setColor(0.9, 0.45, 0.3)
             love.graphics.circle("fill", state.player.x, state.player.y, state.player.radius)
             love.graphics.setColor(1, 0.9, 0.75)

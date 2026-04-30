@@ -12,6 +12,8 @@ function Player.new(savedPlayer)
         baseReach = 25,
         baseMagnet = 0,
         facingX = -1,
+        isMoving = false,
+        walkTimer = 0,
     }
 
     if savedPlayer then
@@ -34,6 +36,7 @@ function Player.update(player, dt, mouseWorldX, mouseWorldY, bonuses)
     local dx = mouseWorldX - player.x
     local dy = mouseWorldY - player.y
     local dist = math.sqrt(dx * dx + dy * dy)
+    local moved = false
 
     if dist > 0.1 then
         local move = math.min(dist, speed * dt)
@@ -42,6 +45,14 @@ function Player.update(player, dt, mouseWorldX, mouseWorldY, bonuses)
         end
         player.x = player.x + (dx / dist) * move
         player.y = player.y + (dy / dist) * move
+        moved = move > 0.001
+    end
+
+    player.isMoving = moved
+    if moved then
+        player.walkTimer = (player.walkTimer or 0) + dt
+    else
+        player.walkTimer = 0
     end
 
     player.x = Utils.clamp(player.x, 0, C.WORLD_WIDTH)
