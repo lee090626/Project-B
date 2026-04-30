@@ -1,19 +1,14 @@
 local C = require("src.constants")
-local Locale = require("src.locale")
 local MapSystem = require("src.map_system")
 local GameState = require("src.game_state")
 local Meta = require("src.meta_system")
+local Text = require("src.presentation.presentation_text")
 local Ui = require("src.presentation.ui_primitives")
 
 local RunEndRenderer = {}
-
-local function t(state, key, params)
-    return Locale.text(state.locale, key, params)
-end
-
-local function runReasonRef(reason)
-    return Locale.ref("run_reason." .. tostring(reason or "unknown"))
-end
+local t = Text.text
+local ref = Text.ref
+local runReasonRef = Text.runReasonRef
 
 local function statusText(state, reason)
     return t(state, "status." .. reason)
@@ -108,7 +103,7 @@ local function drawNestTab(state, fonts, ui, sw, sh)
         level = progress.level,
         points = progress.availablePoints,
         spent = progress.spentPoints,
-        evolution = Locale.ref(progress.evolutionKey),
+        evolution = ref(progress.evolutionKey),
     }), panelX, panelY + 18, panelW, "center")
     love.graphics.setColor(0.82, 0.9, 0.98)
     love.graphics.printf(t(state, "nest.progress", {
@@ -135,7 +130,7 @@ local function drawNestTab(state, fonts, ui, sw, sh)
         love.graphics.setColor(1, 1, 1)
         love.graphics.printf(
             t(state, "nest.level", {
-                name = Locale.ref(row.nameKey),
+                name = ref(row.nameKey),
                 level = row.level,
                 max = row.maxLevel,
             }),
@@ -324,7 +319,7 @@ function RunEndRenderer.drawRunEndTreeFullscreen(state, fonts, ui)
         love.graphics.printf(
             t(state, "run_end.tooltip.title", {
                 index = hovered.index,
-                name = Locale.ref(hovered.nameKey),
+                name = ref(hovered.nameKey),
                 level = hovered.level,
                 max = hovered.maxLevel,
             }),
@@ -364,7 +359,7 @@ function RunEndRenderer.drawRunEndResultOverlay(state, fonts)
     local nextUnlockText
     if nextUnlock then
         nextUnlockText = t(state, "run_end.result.next_map", {
-            map = Locale.ref(nextUnlock.nameKey),
+            map = ref(nextUnlock.nameKey),
             current = nextUnlock.current,
             required = nextUnlock.required,
         })
@@ -396,7 +391,7 @@ function RunEndRenderer.drawRunEndResultOverlay(state, fonts)
     love.graphics.printf(t(state, "run_end.result.current_essence", { essence = state.meta and state.meta.essence or 0 }), x + 36, y + 244, w - 72, "left")
     love.graphics.printf(t(state, "run_end.result.level", { level = state.nestProgress.level }), x + 36, y + 274, w - 72, "left")
     love.graphics.printf(nextUnlockText, x + 36, y + 304, w - 72, "left")
-    love.graphics.printf(t(state, "run_end.result.evolution", { evolution = Locale.ref(state.nestProgress.evolutionKey) }), x + 36, y + 334, w - 72, "left")
+    love.graphics.printf(t(state, "run_end.result.evolution", { evolution = ref(state.nestProgress.evolutionKey) }), x + 36, y + 334, w - 72, "left")
 
     love.graphics.setColor(0.84, 0.9, 1.0)
     love.graphics.printf(t(state, "run_end.result.continue"), x, y + h - 42, w, "center")

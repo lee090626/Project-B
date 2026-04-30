@@ -1,16 +1,11 @@
 local C = require("src.constants")
-local Locale = require("src.locale")
+local Text = require("src.presentation.presentation_text")
 local Ui = require("src.presentation.ui_primitives")
 
 local ModalRenderer = {}
-
-local function t(state, key, params)
-    return Locale.text(state.locale, key, params)
-end
-
-local function runReasonRef(reason)
-    return Locale.ref("run_reason." .. tostring(reason or "unknown"))
-end
+local t = Text.text
+local ref = Text.ref
+local runReasonRef = Text.runReasonRef
 
 function ModalRenderer.drawGuidePanel(state, fonts, ui)
     local active = state.guides and state.guides.active or nil
@@ -127,7 +122,7 @@ function ModalRenderer.drawHelpPanel(state, fonts)
 
     Ui.setPaletteColor(theme.dim)
     love.graphics.printf(
-        t(state, "help.language", { language = Locale.ref("language." .. state.locale) }),
+        t(state, "help.language", { language = ref("language." .. state.locale) }),
         x + 24,
         y + h - 78,
         w - 48,

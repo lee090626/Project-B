@@ -1,12 +1,9 @@
 local C = require("src.constants")
-local Locale = require("src.locale")
+local Text = require("src.presentation.presentation_text")
 local Ui = require("src.presentation.ui_primitives")
 
 local RunChoiceRenderer = {}
-
-local function t(state, key, params)
-    return Locale.text(state.locale, key, params)
-end
+local t = Text.text
 
 local function getChoicePalette(rarity)
     return C.RUN_CHOICE_THEME[rarity] or C.RUN_CHOICE_THEME.common

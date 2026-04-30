@@ -1,15 +1,13 @@
 local C = require("src.constants")
-local Locale = require("src.locale")
 local MapSystem = require("src.map_system")
 local Mutation = require("src.mutation_system")
 local RunEvent = require("src.run_event_system")
+local Text = require("src.presentation.presentation_text")
 local Ui = require("src.presentation.ui_primitives")
 
 local HudRenderer = {}
-
-local function t(state, key, params)
-    return Locale.text(state.locale, key, params)
-end
+local t = Text.text
+local ref = Text.ref
 
 local function formatTime(seconds)
     local total = math.max(0, math.floor(seconds))
@@ -76,7 +74,7 @@ function HudRenderer.drawGameTopBar(state, fonts, ui, assets)
     love.graphics.setFont(fonts.hud)
 
     local mapText = t(state, "hud.map", {
-        map = Locale.ref(mapData.nameKey),
+        map = ref(mapData.nameKey),
         unlocked = unlockedMaps,
         total = #C.MAPS,
     })
