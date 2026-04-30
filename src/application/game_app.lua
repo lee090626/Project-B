@@ -1,13 +1,10 @@
-local C = require("src.constants")
 local Service = require("src.application.game_service")
+local AssetLoader = require("src.application.asset_loader")
 local Locale = require("src.locale")
 local Renderer = require("src.presentation.game_renderer")
-local BackgroundAssetManifest = require("src.data.background_asset_manifest")
 
 local App = {}
 App.__index = App
-
-local UI_FONT_PATH = "fonts/NanumGothic-Regular.ttf"
 
 function App.new()
     return setmetatable({
@@ -31,126 +28,12 @@ local function hitRect(x, y, rect)
         and y <= rect.y + rect.h
 end
 
-local function loadUiFont(size)
-    local ok, font = pcall(love.graphics.newFont, UI_FONT_PATH, size)
-    if ok and font then
-        return font
-    end
-    return love.graphics.newFont(size)
-end
-
-local function loadOptionalImage(path)
-    local ok, image = pcall(love.graphics.newImage, path)
-    if ok and image then
-        return image
-    end
-    return nil
-end
-
-local function loadPlayerWalkAnimation()
-    local sheet = loadOptionalImage(C.PLAYER_SPRITE.walkSheetPath)
-    if not sheet then
-        return nil
-    end
-
-    local frameWidth = C.PLAYER_SPRITE.walkFrameWidth
-    local frameHeight = C.PLAYER_SPRITE.walkFrameHeight
-    local columns = C.PLAYER_SPRITE.walkColumns
-    local rows = C.PLAYER_SPRITE.walkRows
-    local expectedWidth = frameWidth * columns
-    local expectedHeight = frameHeight * rows
-    if sheet:getWidth() ~= expectedWidth or sheet:getHeight() ~= expectedHeight then
-        error(string.format(
-            "invalid player walk sheet size: expected %dx%d, got %dx%d",
-            expectedWidth,
-            expectedHeight,
-            sheet:getWidth(),
-            sheet:getHeight()
-        ))
-    end
-
-    local quads = {}
-    for frame = 1, C.PLAYER_SPRITE.walkFrameCount do
-        local index = frame - 1
-        local x = (index % columns) * frameWidth
-        local y = math.floor(index / columns) * frameHeight
-        quads[frame] = love.graphics.newQuad(x, y, frameWidth, frameHeight, sheet:getDimensions())
-    end
-
-    return {
-        image = sheet,
-        quads = quads,
-        frameWidth = frameWidth,
-        frameHeight = frameHeight,
-        frameCount = C.PLAYER_SPRITE.walkFrameCount,
-        fps = C.PLAYER_SPRITE.walkFps,
-    }
-end
-
-local function loadRunChoiceCardFrames()
-    local frames = {}
-
-    for rarity, path in pairs(C.RUN_CHOICE_UI.cardFramePaths) do
-        local image = loadOptionalImage(path)
-        if image
-            and image:getWidth() == C.RUN_CHOICE_UI.cardWidth
-            and image:getHeight() == C.RUN_CHOICE_UI.cardHeight then
-            frames[rarity] = image
-        end
-    end
-
-    return frames
-end
-
-local function loadBackgroundAssets()
-    local backgrounds = {}
-
-    for mapId, manifest in pairs(BackgroundAssetManifest) do
-        backgrounds[mapId] = {
-            version = manifest.version or 1,
-            backdropFar = loadOptionalImage(manifest.backdropFar),
-            backdropMid = loadOptionalImage(manifest.backdropMid),
-            fieldBaseTile = loadOptionalImage(manifest.fieldBaseTile),
-            fieldDecalSet = loadOptionalImage(manifest.fieldDecalSet),
-            fieldFeature01 = loadOptionalImage(manifest.fieldFeature01),
-        }
-    end
-
-    return backgrounds
-end
-
-local function loadUiIcons()
-    local icons = {}
-
-    for key, config in pairs(C.UI_ICONS) do
-        icons[key] = loadOptionalImage(config.path)
-    end
-
-    return icons
-end
-
 function App:load()
     love.window.setTitle(Locale.text(Locale.DEFAULT, "app.title"))
     love.window.setMode(1280, 720, { resizable = true, minwidth = 960, minheight = 540 })
     love.graphics.setDefaultFilter("nearest", "nearest")
 
-    self.fonts.hud = loadUiFont(15)
-    self.fonts.big = loadUiFont(30)
-
-    self.assets.playerSprite = loadOptionalImage(C.PLAYER_SPRITE.fallbackPath)
-    self.assets.playerWalkAnimation = loadPlayerWalkAnimation()
-    self.assets.fireballSprite = loadOptionalImage("FireBall.png")
-    self.assets.monsterSprites = {
-        common = loadOptionalImage("MonsterCommon.png"),
-        rare = loadOptionalImage("MonsterRare.png"),
-        elite = loadOptionalImage("MonsterElite.png"),
-    }
-    self.assets.bossSprite = loadOptionalImage("BossFinal.png")
-    self.assets.bossWeakPointSprite = loadOptionalImage("BossWeakPoint.png")
-    self.assets.runChoiceCardFrames = loadRunChoiceCardFrames()
-    self.assets.icons = loadUiIcons()
-    self.assets.backgrounds = loadBackgroundAssets()
-
+    self.fonts, self.assets = AssetLoader.loadAll()
     self.state = Service.loadState()
 end
 
