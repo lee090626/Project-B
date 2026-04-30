@@ -7,6 +7,13 @@ local RunEndMetaTreeRenderer = {}
 local t = Text.text
 local ref = Text.ref
 
+local STATUS_COLORS = {
+    BUY = { 0.45, 1.0, 0.55 },
+    LOCKED = { 1.0, 0.65, 0.65 },
+    NEED_ESSENCE = { 1.0, 0.85, 0.45 },
+    MAX = { 0.65, 1.0, 0.75 },
+}
+
 local function statusText(state, reason)
     return t(state, "status." .. reason)
 end
@@ -187,16 +194,6 @@ function RunEndMetaTreeRenderer.draw(state, fonts, _, sw, sh)
     if hovered then
         local costText = hovered.cost and tostring(hovered.cost) or t(state, "status.MAX")
         local status = statusText(state, hovered.reason)
-        local statusColor = { 1, 1, 1 }
-        if hovered.reason == "BUY" then
-            statusColor = { 0.45, 1.0, 0.55 }
-        elseif hovered.reason == "LOCKED" then
-            statusColor = { 1.0, 0.65, 0.65 }
-        elseif hovered.reason == "NEED_ESSENCE" then
-            statusColor = { 1.0, 0.85, 0.45 }
-        elseif hovered.reason == "MAX" then
-            statusColor = { 0.65, 1.0, 0.75 }
-        end
 
         love.graphics.setColor(0, 0, 0, 0.85)
         love.graphics.rectangle("fill", tooltipX, tooltipY, tooltipW, tooltipH, 8, 8)
@@ -214,7 +211,7 @@ function RunEndMetaTreeRenderer.draw(state, fonts, _, sw, sh)
             "left"
         )
         love.graphics.printf(t(state, hovered.descKey), tooltipX + 14, tooltipY + 36, tooltipW - 28, "left")
-        love.graphics.setColor(statusColor)
+        love.graphics.setColor(STATUS_COLORS[hovered.reason] or { 1, 1, 1 })
         love.graphics.printf(
             t(state, "run_end.tooltip.cost_status", {
                 cost = costText,
