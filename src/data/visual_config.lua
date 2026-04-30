@@ -1,7 +1,7 @@
 local VisualConfig = {
     playerSprite = {
         mode = "sheet",
-        path = "assets/sprites/baby_dragon_walk_sheet.png",
+        path = "assets/sprites/player_walk_sheet_v2.png",
         frameWidth = 272,
         frameHeight = 352,
         columns = 4,
@@ -14,38 +14,38 @@ local VisualConfig = {
     worldSprites = {
         fireball = {
             mode = "image",
-            path = "FireBall.png",
+            path = "assets/sprites/fireball_v2.png",
             width = 256,
             height = 256,
         },
         boss = {
             mode = "image",
-            path = "BossFinal.png",
+            path = "assets/sprites/boss_final_v2.png",
             width = 256,
             height = 256,
         },
         bossWeakPoint = {
             mode = "image",
-            path = "BossWeakPoint.png",
+            path = "assets/sprites/boss_weak_point_v2.png",
             width = 256,
             height = 256,
         },
         monsters = {
             common = {
                 mode = "image",
-                path = "MonsterCommon.png",
+                path = "assets/sprites/monster_common_v2.png",
                 width = 256,
                 height = 256,
             },
             rare = {
                 mode = "image",
-                path = "MonsterRare.png",
+                path = "assets/sprites/monster_rare_v2.png",
                 width = 256,
                 height = 256,
             },
             elite = {
                 mode = "image",
-                path = "MonsterElite.png",
+                path = "assets/sprites/monster_elite_v2.png",
                 width = 256,
                 height = 256,
             },
