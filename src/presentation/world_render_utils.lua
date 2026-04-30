@@ -30,18 +30,18 @@ function WorldRenderUtils.getViewport(state, sw, sh)
     return left, top, right, bottom
 end
 
-function WorldRenderUtils.isCircleVisible(x, y, radius, left, top, right, bottom, margin)
-    local pad = radius + (margin or 0)
-    return x + pad >= left and x - pad <= right and y + pad >= top and y - pad <= bottom
+function WorldRenderUtils.isCircleInView(x, y, radius, view)
+    local pad = radius + (view.margin or 0)
+    return x + pad >= view.left and x - pad <= view.right and y + pad >= view.top and y - pad <= view.bottom
 end
 
-function WorldRenderUtils.isSegmentVisible(x1, y1, x2, y2, left, top, right, bottom, margin)
-    local pad = margin or 0
+function WorldRenderUtils.isSegmentInView(x1, y1, x2, y2, view)
+    local pad = view.margin or 0
     local minX = math.min(x1, x2) - pad
     local maxX = math.max(x1, x2) + pad
     local minY = math.min(y1, y2) - pad
     local maxY = math.max(y1, y2) + pad
-    return maxX >= left and minX <= right and maxY >= top and minY <= bottom
+    return maxX >= view.left and minX <= view.right and maxY >= view.top and minY <= view.bottom
 end
 
 function WorldRenderUtils.drawSpriteCentered(sprite, x, y, targetSize, rotation, tint)

@@ -3,14 +3,6 @@ local Utils = require("src.presentation.world_render_utils")
 
 local WorldFxRenderer = {}
 
-local function isCircleVisible(x, y, radius, view)
-    return Utils.isCircleVisible(x, y, radius, view.left, view.top, view.right, view.bottom, view.margin)
-end
-
-local function isSegmentVisible(x1, y1, x2, y2, view)
-    return Utils.isSegmentVisible(x1, y1, x2, y2, view.left, view.top, view.right, view.bottom, view.margin)
-end
-
 function WorldFxRenderer.drawPassives(state, assets, view, playerVisible)
     if state.passives then
         if state.passives.eatFxTimer and state.passives.eatFxTimer > 0
@@ -30,7 +22,7 @@ function WorldFxRenderer.drawPassives(state, assets, view, playerVisible)
             love.graphics.setColor(0.8, 0.95, 1.0, a)
             love.graphics.setLineWidth(4)
             for _, segment in ipairs(fx.segments or {}) do
-                if isSegmentVisible(segment.fromX, segment.fromY, segment.toX, segment.toY, view) then
+                if Utils.isSegmentInView(segment.fromX, segment.fromY, segment.toX, segment.toY, view) then
                     love.graphics.line(segment.fromX, segment.fromY, segment.toX, segment.toY)
                     love.graphics.circle("fill", segment.toX, segment.toY, 4)
                 end
@@ -39,13 +31,13 @@ function WorldFxRenderer.drawPassives(state, assets, view, playerVisible)
 
         if state.passives.fireballProjectiles then
             for _, projectile in ipairs(state.passives.fireballProjectiles) do
-                local projectileVisible = isCircleVisible(
+                local projectileVisible = Utils.isCircleInView(
                     projectile.x,
                     projectile.y,
                     math.max(12, projectile.radius * 0.75),
                     view
                 )
-                local trailVisible = isSegmentVisible(
+                local trailVisible = Utils.isSegmentInView(
                     projectile.prevX,
                     projectile.prevY,
                     projectile.x,
@@ -82,7 +74,7 @@ function WorldFxRenderer.drawPassives(state, assets, view, playerVisible)
 
         if state.passives.fireballImpacts then
             for _, impact in ipairs(state.passives.fireballImpacts) do
-                if isCircleVisible(impact.x, impact.y, impact.radius, view) then
+                if Utils.isCircleInView(impact.x, impact.y, impact.radius, view) then
                     local a = math.max(0, impact.timer / C.PASSIVE_BASES.fireball.impactFxDuration)
                     love.graphics.setColor(1.0, 0.52, 0.18, 0.1 * a)
                     love.graphics.circle("fill", impact.x, impact.y, impact.radius * C.WORLD_THEME.fireballImpactFillScale)

@@ -18,10 +18,6 @@ local MONSTER_BOB = {
 
 local MONSTER_RARE_SWAY = math.rad(4)
 
-local function isCircleVisible(x, y, radius, view)
-    return Utils.isCircleVisible(x, y, radius, view.left, view.top, view.right, view.bottom, view.margin)
-end
-
 local function drawMonsterSprite(item, assets, time)
     local tier = item.tier or "common"
     local sprite = assets and assets.monsterSprites and assets.monsterSprites[tier]
@@ -130,12 +126,21 @@ local function drawPlayerSprite(state, assets, time)
     return false
 end
 
+local function drawHpBar(centerX, topY, width, pct, fillColor, bgAlpha)
+    pct = math.max(0, pct or 0)
+    local x = centerX - width * 0.5
+    love.graphics.setColor(0, 0, 0, bgAlpha)
+    love.graphics.rectangle("fill", x, topY, width, 4)
+    love.graphics.setColor(fillColor)
+    love.graphics.rectangle("fill", x + 1, topY + 1, math.max(0, (width - 2) * pct), 2)
+end
+
 function WorldEntityRenderer.drawBossArena(state, view)
     if state.mode == "boss_arena" and state.boss.active then
         local arenaX = (state.player.x + state.boss.x) * 0.5
         local arenaY = (state.player.y + state.boss.y) * 0.5
         local arenaRadius = C.BOSS_ARENA.weakPointOrbitRadius + 200
-        if isCircleVisible(arenaX, arenaY, arenaRadius, view) then
+        if Utils.isCircleInView(arenaX, arenaY, arenaRadius, view) then
             love.graphics.setColor(0.32, 0.09, 0.06, 0.18)
             love.graphics.circle("fill", arenaX, arenaY, arenaRadius)
             love.graphics.setColor(0.96, 0.52, 0.22, 0.65)
@@ -147,7 +152,7 @@ end
 
 function WorldEntityRenderer.drawFood(state, assets, view)
     for _, item in ipairs(state.food.list) do
-        if isCircleVisible(item.x, item.y, item.radius + 10, view) then
+        if Utils.isCircleInView(item.x, item.y, item.radius + 10, view) then
             local renderX, renderY = drawMonsterSprite(item, assets, state.totalPlayTime or 0)
             local drawX = renderX or item.x
             local drawY = renderY or item.y
@@ -169,14 +174,14 @@ function WorldEntityRenderer.drawFood(state, assets, view)
                 love.graphics.circle("fill", drawX, drawY, item.radius + 4)
             end
 
-            local hpPct = item.maxHp > 0 and math.max(0, item.hp / item.maxHp) or 0
-            local barW = item.radius * 2.1
-            local barX = drawX - barW * 0.5
-            local barY = drawY - item.radius - 8
-            love.graphics.setColor(0, 0, 0, 0.7)
-            love.graphics.rectangle("fill", barX, barY, barW, 4)
-            love.graphics.setColor(0.55, 1.0, 0.62)
-            love.graphics.rectangle("fill", barX + 1, barY + 1, math.max(0, (barW - 2) * hpPct), 2)
+            drawHpBar(
+                drawX,
+                drawY - item.radius - 8,
+                item.radius * 2.1,
+                item.maxHp > 0 and item.hp / item.maxHp or 0,
+                { 0.55, 1.0, 0.62 },
+                0.7
+            )
         end
     end
 end
@@ -184,7 +189,7 @@ end
 function WorldEntityRenderer.drawBossWeakPoints(state, assets, view)
     if state.boss.active and state.boss.weakPoints then
         for _, point in ipairs(state.boss.weakPoints) do
-            if isCircleVisible(point.x, point.y, point.radius + 8, view) then
+            if Utils.isCircleInView(point.x, point.y, point.radius + 8, view) then
                 local renderX, renderY = drawBossWeakPointSprite(point, assets, state.totalPlayTime or 0)
                 local drawX = renderX or point.x
                 local drawY = renderY or point.y
@@ -198,14 +203,14 @@ function WorldEntityRenderer.drawBossWeakPoints(state, assets, view)
                 love.graphics.setLineWidth(2)
                 love.graphics.circle("line", drawX, drawY, point.radius + 2)
 
-                local hpPct = point.maxHp > 0 and math.max(0, point.hp / point.maxHp) or 0
-                local barW = point.radius * 2.0
-                local barX = drawX - barW * 0.5
-                local barY = drawY - point.radius - 10
-                love.graphics.setColor(0, 0, 0, 0.72)
-                love.graphics.rectangle("fill", barX, barY, barW, 4)
-                love.graphics.setColor(1.0, 0.86, 0.44)
-                love.graphics.rectangle("fill", barX + 1, barY + 1, math.max(0, (barW - 2) * hpPct), 2)
+                drawHpBar(
+                    drawX,
+                    drawY - point.radius - 10,
+                    point.radius * 2.0,
+                    point.maxHp > 0 and point.hp / point.maxHp or 0,
+                    { 1.0, 0.86, 0.44 },
+                    0.72
+                )
             end
         end
     end
@@ -213,7 +218,7 @@ end
 
 function WorldEntityRenderer.drawBoss(state, assets, view)
     if (state.boss.active or state.boss.defeated)
-        and isCircleVisible(state.boss.x, state.boss.y, state.boss.radius + 6, view) then
+        and Utils.isCircleInView(state.boss.x, state.boss.y, state.boss.radius + 6, view) then
         local renderX, renderY, pulse = drawBossSprite(state, assets)
         local drawX = renderX or state.boss.x
         local drawY = renderY or state.boss.y
@@ -249,7 +254,7 @@ function WorldEntityRenderer.drawPlayer(state, assets, view)
     local eatRadius = Player.getEatRadius(state.player, state.bonuses)
     local magnetRadius = state.player.magnetRadius or Player.getMagnetRadius(state.player, state.bonuses)
     local pulse = 0.84 + math.sin((state.totalPlayTime or 0) * 2.8) * 0.16
-    local playerVisible = isCircleVisible(
+    local playerVisible = Utils.isCircleInView(
         state.player.x,
         state.player.y,
         math.max(magnetRadius, eatRadius, state.player.radius * C.WORLD_THEME.playerAuraLineScale),
