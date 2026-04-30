@@ -170,25 +170,4 @@ function Save.write(data)
     return true, nil
 end
 
-function Save.snapshot(state)
-    return {
-        version = C.SAVE_VERSION,
-        locale = state.locale,
-        totalPlayTime = state.totalPlayTime,
-        mode = state.mode,
-        runTimeLeft = state.runTimeLeft,
-        runDuration = state.runDuration,
-        runEnded = state.runEnded,
-        runEndedReason = state.runEndedReason,
-        endingReached = state.endingReached,
-        player = state.modules.playerExport(state.player),
-        food = state.modules.foodExport(state.food),
-        maps = state.modules.mapExport(state.maps),
-        boss = state.modules.bossExport(state.boss),
-        meta = state.modules.metaExport(state.meta),
-        nest = state.modules.nestExport(state.nest),
-        uxGuides = state.modules.guideExport(state.guides),
-    }
-end
-
 return Save
