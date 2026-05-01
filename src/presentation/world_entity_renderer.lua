@@ -5,9 +5,9 @@ local Utils = require("src.presentation.world_render_utils")
 local WorldEntityRenderer = {}
 
 local MONSTER_SPRITE_SCALE = {
-    common = 0.95,
-    rare = 1.05,
-    elite = 1.15,
+    common = 1.95,
+    rare = 2.05,
+    elite = 2.15,
 }
 
 local MONSTER_BOB = {
