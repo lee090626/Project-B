@@ -20,11 +20,6 @@ local function getProfile(state)
     return mapData and mapData.eventProfile or nil
 end
 
-local function getBonusRewards(state)
-    local mapData = C.MAPS[state.maps.currentMapId]
-    return mapData and mapData.bonusTimeRewards or C.RUN_EVENTS.fallbackBonusTimeRewards
-end
-
 local function getStarThresholds(state)
     local mapData = C.MAPS[state.maps.currentMapId]
     return mapData and mapData.starThresholds or C.RUN_EVENTS.fallbackStarThresholds
@@ -71,7 +66,6 @@ local function spawnTarget(state, kind, spec)
         essence = spec.essence,
         speed = spec.speed,
         moveStyle = spec.moveStyle,
-        labelKey = spec.labelKey,
         eventKind = kind,
         eventId = eventState.nextTargetId,
     })
@@ -94,7 +88,6 @@ function RunEvent.newRunState(mapData)
         activeTargetKind = nil,
         activeTargetId = nil,
         nextTargetId = 0,
-        bonusTimeEarned = 0,
         clearTimeLeft = nil,
         finalized = false,
     }
@@ -123,37 +116,6 @@ function RunEvent.clearActiveTarget(state)
     eventState.activeTargetId = nil
 end
 
-function RunEvent.awardBonusTime(state, sourceKey)
-    local eventState = state.runEvent
-    if not eventState then
-        return 0
-    end
-
-    local rewards = getBonusRewards(state)
-    local base = rewards[sourceKey] or 0
-    if base <= 0 then
-        return 0
-    end
-
-    if sourceKey == "mid" then
-        base = base + (state.bonuses.midBonusTime or 0)
-    elseif sourceKey == "final" then
-        base = base + (state.bonuses.finalBonusTime or 0)
-    end
-
-    local cap = C.RUN_EVENTS.bonusTimeCap + (state.bonuses.bonusTimeCap or 0)
-    local remaining = math.max(0, cap - (eventState.bonusTimeEarned or 0))
-    local granted = math.min(base, remaining)
-    if granted <= 0 then
-        return 0
-    end
-
-    state.runTimeLeft = state.runTimeLeft + granted
-    eventState.bonusTimeEarned = (eventState.bonusTimeEarned or 0) + granted
-    state.runBonusTimeEarned = eventState.bonusTimeEarned
-    return granted
-end
-
 function RunEvent.resolveEventTargetKill(state, item)
     local eventState = state.runEvent
     if not eventState or not item or not item.eventTarget then
@@ -169,7 +131,6 @@ function RunEvent.resolveEventTargetKill(state, item)
 
     if kind == "mid" and not eventState.midCompleted then
         eventState.midCompleted = true
-        RunEvent.awardBonusTime(state, "mid")
         Mutation.gainEssenceAndCheckLevel(state, item.essence * C.RUN_EVENTS.midEssenceMultiplier)
         Mutation.grantChoices(state, C.RUN_EVENTS.midChoiceReward)
         setMessage(state, "message.mid_event_cleared")
@@ -179,7 +140,6 @@ function RunEvent.resolveEventTargetKill(state, item)
     if kind == "final" and not eventState.finalCompleted then
         eventState.clearTimeLeft = state.runTimeLeft
         eventState.finalCompleted = true
-        RunEvent.awardBonusTime(state, "final")
         Mutation.gainEssenceAndCheckLevel(state, item.essence * C.RUN_EVENTS.finalEssenceMultiplier)
         setMessage(state, "message.final_event_cleared")
         return true
@@ -210,36 +170,8 @@ function RunEvent.tick(state, dt)
             RunEvent.clearActiveTarget(state)
         end
         eventState.finalTriggered = true
-        if state.runTimeLeft < (state.bonuses.finalWindowMin or 0) then
-            state.runTimeLeft = state.bonuses.finalWindowMin
-        end
         RunEvent.spawnEventTarget(state, "final")
     end
-end
-
-function RunEvent.getHudState(state)
-    local eventState = state.runEvent
-    if not eventState then
-        return nil
-    end
-
-    local activeLabelKey
-    if eventState.activeTargetKind and eventState.activeTargetId then
-        for _, item in ipairs(state.food.list or {}) do
-            if item.eventTarget and item.eventId == eventState.activeTargetId then
-                activeLabelKey = item.eventLabelKey
-                break
-            end
-        end
-    end
-
-    return {
-        activeKind = eventState.activeTargetKind,
-        activeLabelKey = activeLabelKey,
-        bonusTimeEarned = eventState.bonusTimeEarned or 0,
-        midCompleted = eventState.midCompleted,
-        finalCompleted = eventState.finalCompleted,
-    }
 end
 
 function RunEvent.finalize(state)
@@ -255,7 +187,6 @@ function RunEvent.finalize(state)
 
     eventState.finalized = true
     state.runStarsEarned = stars
-    state.runBonusTimeEarned = eventState.bonusTimeEarned or 0
     state.runMapStarsBest, state.runStarsImproved = Meta.setMapStars(state.meta, mapId, stars)
     return stars
 end

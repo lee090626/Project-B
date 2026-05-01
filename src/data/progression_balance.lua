@@ -30,7 +30,6 @@ local ProgressionBalance = {
             spawn = { common = 0.78, rare = 0.2, elite = 0.02 },
             starUnlockRequires = 0,
             starThresholds = { twoStarTime = 3, threeStarTime = 6 },
-            bonusTimeRewards = { mid = 2, final = 3 },
             eventProfile = {
                 midTime = 4,
                 finalTime = 10,
@@ -41,7 +40,6 @@ local ProgressionBalance = {
                     speed = 54,
                     essence = 10,
                     moveStyle = "evade",
-                    labelKey = "event.mid.pack",
                 },
                 finalTarget = {
                     tier = "elite",
@@ -50,7 +48,6 @@ local ProgressionBalance = {
                     speed = 60,
                     essence = 22,
                     moveStyle = "surge",
-                    labelKey = "event.final.alpha",
                 },
             },
         },
@@ -71,7 +68,6 @@ local ProgressionBalance = {
             spawn = { common = 0.68, rare = 0.26, elite = 0.06 },
             starUnlockRequires = 2,
             starThresholds = { twoStarTime = 3, threeStarTime = 6 },
-            bonusTimeRewards = { mid = 2, final = 3 },
             eventProfile = {
                 midTime = 4,
                 finalTime = 10,
@@ -82,7 +78,6 @@ local ProgressionBalance = {
                     speed = 72,
                     essence = 12,
                     moveStyle = "evade",
-                    labelKey = "event.mid.runner",
                 },
                 finalTarget = {
                     tier = "elite",
@@ -91,7 +86,6 @@ local ProgressionBalance = {
                     speed = 78,
                     essence = 26,
                     moveStyle = "evade",
-                    labelKey = "event.final.sprinter",
                 },
             },
         },
@@ -112,7 +106,6 @@ local ProgressionBalance = {
             spawn = { common = 0.56, rare = 0.32, elite = 0.12 },
             starUnlockRequires = 5,
             starThresholds = { twoStarTime = 3, threeStarTime = 6 },
-            bonusTimeRewards = { mid = 2, final = 3 },
             eventProfile = {
                 midTime = 4,
                 finalTime = 10,
@@ -123,7 +116,6 @@ local ProgressionBalance = {
                     speed = 66,
                     essence = 16,
                     moveStyle = "surge",
-                    labelKey = "event.mid.breaker",
                 },
                 finalTarget = {
                     tier = "elite",
@@ -132,7 +124,6 @@ local ProgressionBalance = {
                     speed = 72,
                     essence = 30,
                     moveStyle = "orbit",
-                    labelKey = "event.final.bastion",
                 },
             },
         },
@@ -153,7 +144,6 @@ local ProgressionBalance = {
             spawn = { common = 0.46, rare = 0.36, elite = 0.18 },
             starUnlockRequires = 8,
             starThresholds = { twoStarTime = 3, threeStarTime = 6 },
-            bonusTimeRewards = { mid = 2, final = 3 },
             eventProfile = {
                 midTime = 4,
                 finalTime = 10,
@@ -164,7 +154,6 @@ local ProgressionBalance = {
                     speed = 74,
                     essence = 18,
                     moveStyle = "orbit",
-                    labelKey = "event.mid.omen",
                 },
                 finalTarget = {
                     tier = "elite",
@@ -173,20 +162,17 @@ local ProgressionBalance = {
                     speed = 84,
                     essence = 36,
                     moveStyle = "surge",
-                    labelKey = "event.final.tyrant",
                 },
             },
         },
     },
     runEvents = {
-        fallbackBonusTimeRewards = { mid = 2, final = 3 },
         fallbackMidTime = 4,
         fallbackFinalTime = 10,
         fallbackTargetRadius = 18,
         spawnDistanceMin = 180,
         spawnDistanceRange = 120,
         spawnEdgePadding = 40,
-        bonusTimeCap = 8,
         midEssenceMultiplier = 2,
         finalEssenceMultiplier = 3,
         midChoiceReward = 1,

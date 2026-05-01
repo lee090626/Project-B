@@ -55,7 +55,6 @@ local function buildItem(args)
         eventTarget = args.eventTarget == true,
         eventKind = args.eventKind,
         eventId = args.eventId,
-        eventLabelKey = args.eventLabelKey,
         moveStyle = args.moveStyle,
     }
 end
@@ -147,7 +146,6 @@ function Food.spawnEventTarget(food, spec)
         eventTarget = true,
         eventKind = spec.eventKind,
         eventId = spec.eventId,
-        eventLabelKey = spec.labelKey,
         moveStyle = spec.moveStyle,
     }
 

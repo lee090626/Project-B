@@ -23,10 +23,6 @@ local ADDITIVE_KEYS = {
     "fireballIntervalCut",
     "fireballSplit",
     "eventBiteBonus",
-    "midBonusTime",
-    "finalBonusTime",
-    "bonusTimeCap",
-    "finalWindowMin",
 }
 
 local FACTOR_KEYS = {
@@ -135,10 +131,6 @@ function BonusSchema.toRuntime(raw)
         rareValue = source.rareValue or 1,
         eliteValue = source.eliteValue or 1,
         eventBiteBonus = source.eventBiteBonus or 0,
-        midBonusTime = source.midBonusTime or 0,
-        finalBonusTime = source.finalBonusTime or 0,
-        bonusTimeCap = source.bonusTimeCap or 0,
-        finalWindowMin = source.finalWindowMin or 0,
     }
 
     out.lightningEnabled = (source.lightningEnabled or 0) > 0

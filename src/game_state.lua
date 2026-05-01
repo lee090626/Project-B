@@ -39,7 +39,6 @@ local function resetRunState(state)
     state.boss = Boss.new(nil)
     state.runMutations = Mutation.newRunState()
     state.runEssenceTotal = 0
-    state.runBonusTimeEarned = 0
     state.runStarsEarned = 0
     state.runMapStarsBest = 0
     state.runStarsImproved = false

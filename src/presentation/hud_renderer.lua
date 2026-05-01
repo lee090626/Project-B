@@ -1,7 +1,6 @@
 local C = require("src.constants")
 local MapSystem = require("src.map_system")
 local Mutation = require("src.mutation_system")
-local RunEvent = require("src.run_event_system")
 local Text = require("src.presentation.presentation_text")
 local Ui = require("src.presentation.ui_primitives")
 
@@ -32,26 +31,6 @@ local function getToastTheme(key, isStatus)
         return theme.warning
     end
     return theme.accent
-end
-
-local function eventStripLabel(state, hud)
-    local eventState = state.runEvent or {}
-    if hud.activeLabelKey then
-        return t(state, hud.activeLabelKey)
-    end
-    if eventState.finalCompleted then
-        return t(state, "hud.event.done")
-    end
-    if eventState.finalTriggered then
-        return t(state, "hud.event.final")
-    end
-    if eventState.midCompleted then
-        return t(state, "hud.event.final_prep")
-    end
-    if eventState.midTriggered then
-        return t(state, "hud.event.mid")
-    end
-    return t(state, "hud.event.opening")
 end
 
 function HudRenderer.drawGameTopBar(state, fonts, ui, assets)
@@ -170,43 +149,6 @@ function HudRenderer.drawGameTopBar(state, fonts, ui, assets)
     Ui.drawRuneBadge("help", helpX + 14, topY + 23, 7, theme.chipFill, theme.chipLine)
     Ui.setPaletteColor(theme.text)
     love.graphics.print(helpText, helpX + 28, topY + 15)
-
-    if state.mode ~= "game" or state.runEnded or state.boss.active then
-        return
-    end
-
-    local hud = RunEvent.getHudState(state)
-    if not hud then
-        return
-    end
-
-    local label = eventStripLabel(state, hud)
-    local targetText = t(state, "hud.targets_short", {
-        mid = hud.midCompleted and "OK" or "--",
-        final = hud.finalCompleted and "OK" or "--",
-    })
-    local bonusText = t(state, "hud.bonus_time_short", { time = hud.bonusTimeEarned or 0 })
-    local targetBlockW = 18 + fonts.hud:getWidth(targetText)
-    local chipContentW = fonts.hud:getWidth(label) + 18 + targetBlockW + fonts.hud:getWidth(bonusText)
-    local chipW = math.min(sw - 40, math.max(320, chipContentW + 52))
-    local chipX = (sw - chipW) * 0.5
-    local chipY = topY + barH + 8
-
-    Ui.drawDecoratedPanel(chipX, chipY, chipW, 28, {
-        panelFill = { 0.07, 0.08, 0.09, 0.93 },
-        panelInner = { 0.11, 0.13, 0.14, 0.88 },
-        panelLine = theme.accentSoft,
-        panelGlow = theme.accentSoft,
-        accent = theme.accent,
-    })
-    Ui.setPaletteColor(theme.text)
-    local contentX = chipX + (chipW - chipContentW) * 0.5
-    love.graphics.print(label, contentX, chipY + 7)
-    local targetX = contentX + fonts.hud:getWidth(label) + 18
-    Ui.drawRuneBadge("hunt", targetX + 8, chipY + 14, 7, theme.chipFill, theme.accent)
-    love.graphics.print(targetText, targetX + 18, chipY + 7)
-    local bonusX = targetX + targetBlockW + 18
-    love.graphics.print(bonusText, bonusX, chipY + 7)
 end
 
 function HudRenderer.drawBossBar(state, fonts)

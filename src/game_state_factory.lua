@@ -58,7 +58,6 @@ function Factory.new(loadResult, loadErr)
         guides = Guide.new(saved.uxGuides),
         runMutations = Mutation.newRunState(),
         runEssenceTotal = 0,
-        runBonusTimeEarned = 0,
         runStarsEarned = 0,
         runMapStarsBest = 0,
         runStarsImproved = false,

@@ -61,11 +61,11 @@ local function addBranch(prefix, category, nodes)
     return out
 end
 
-refs.core = addBranch("core", "time", {
-    { key = "mid_clock", icon = "MID", deps = { "origin" }, maxLevel = 1, baseCost = 6, scale = 1.0, bonusPack = { midBonusTime = 1 }, x = 0.0, y = -0.18 },
-    { key = "final_clock", icon = "FIN", deps = { 1 }, maxLevel = 1, baseCost = 8, scale = 1.0, bonusPack = { finalBonusTime = 1 }, x = 0.0, y = -0.36 },
-    { key = "overtime", icon = "OT", deps = { 2 }, maxLevel = 2, baseCost = 10, scale = 1.22, bonusPack = { bonusTimeCap = 1 }, x = 0.0, y = -0.54 },
-    { key = "last_window", icon = "WND", deps = { 3 }, maxLevel = 2, baseCost = 12, scale = 1.24, bonusPack = { finalWindowMin = 1 }, x = 0.0, y = -0.72 },
+refs.core = addBranch("core", "hunt", {
+    { key = "mid_clock", icon = "MID", deps = { "origin" }, maxLevel = 1, baseCost = 6, scale = 1.0, bonusPack = { eventBiteBonus = 6 }, x = 0.0, y = -0.18 },
+    { key = "final_clock", icon = "FIN", deps = { 1 }, maxLevel = 1, baseCost = 8, scale = 1.0, bonusPack = { eventBiteBonus = 8 }, x = 0.0, y = -0.36 },
+    { key = "overtime", icon = "SPD", deps = { 2 }, maxLevel = 2, baseCost = 10, scale = 1.22, bonusPack = { speed = 5 }, x = 0.0, y = -0.54 },
+    { key = "last_window", icon = "CLW", deps = { 3 }, maxLevel = 2, baseCost = 12, scale = 1.24, bonusPack = { contactBite = 6 }, x = 0.0, y = -0.72 },
     { key = "flow", icon = "SPD", deps = { 4 }, maxLevel = 3, baseCost = 14, scale = 1.26, bonusPack = { speed = 8 }, x = -0.14, y = -0.9 },
     { key = "focus", icon = "BTE", deps = { 4 }, maxLevel = 3, baseCost = 14, scale = 1.26, bonusPack = { eventBiteBonus = 10 }, x = 0.14, y = -0.9 },
     { key = "hoard", icon = "ESS", deps = { 5, 6 }, maxLevel = 3, baseCost = 18, scale = 1.28, bonusPack = { essenceMult = 0.08 }, x = 0.0, y = -1.08 },
@@ -76,7 +76,7 @@ refs.core = addBranch("core", "time", {
         maxLevel = 1,
         baseCost = 28,
         scale = 1.0,
-        bonusPack = { midBonusTime = 1, finalBonusTime = 1, bonusTimeCap = 1, eventBiteBonus = 14 },
+        bonusPack = { speed = 8, eventBiteBonus = 20 },
         x = 0.0,
         y = -1.26,
     },
