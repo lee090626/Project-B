@@ -10,7 +10,7 @@ local PresentationConfig = {
     },
     runChoiceUi = {
         cardWidth = 272,
-        cardHeight = 252,
+        cardHeight = 360,
         cardGap = 28,
         cardFramePaths = {
             common = "assets/ui/cards/run_choice_common.png",

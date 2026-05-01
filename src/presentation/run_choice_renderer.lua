@@ -86,24 +86,29 @@ function RunChoiceRenderer.drawRunChoiceOverlay(state, fonts, ui, assets)
 
         local palette = getChoicePalette(card.rarity)
         drawRunChoiceCardFrame(x, y, cfg, palette, assets, card.rarity)
+        local heightExtra = math.max(0, cfg.cardHeight - 252)
+        local nameY = y + 58 + heightExtra * 0.14
+        local categoryY = y + 88 + heightExtra * 0.31
+        local badgeY = y + 132 + heightExtra * 0.44
+        local descY = y + 160 + heightExtra * 0.68
 
         Ui.setPaletteColor(C.HUD_THEME.text)
         love.graphics.printf(t(state, "rarity." .. card.rarity), x + 16, y + 22, cfg.cardWidth - 32, "center")
 
         Ui.setPaletteColor(C.HUD_THEME.dim)
-        love.graphics.printf(t(state, card.nameKey), x + 18, y + 58, cfg.cardWidth - 36, "center")
+        love.graphics.printf(t(state, card.nameKey), x + 18, nameY, cfg.cardWidth - 36, "center")
 
         Ui.setPaletteColor(C.HUD_THEME.chipFill)
-        love.graphics.rectangle("fill", x + 22, y + 88, 90, 24, 8, 8)
+        love.graphics.rectangle("fill", x + 22, categoryY, 90, 24, 8, 8)
         Ui.setPaletteColor(palette.line)
-        love.graphics.rectangle("line", x + 22, y + 88, 90, 24, 8, 8)
+        love.graphics.rectangle("line", x + 22, categoryY, 90, 24, 8, 8)
         Ui.setPaletteColor(C.HUD_THEME.text)
-        love.graphics.printf(t(state, "category." .. card.category), x + 22, y + 93, 90, "center")
+        love.graphics.printf(t(state, "category." .. card.category), x + 22, categoryY + 5, 90, "center")
 
-        Ui.drawRuneBadge(getCategorySymbol(card.category), x + cfg.cardWidth * 0.5, y + 132, 20, palette.inner, palette.line)
+        Ui.drawRuneBadge(getCategorySymbol(card.category), x + cfg.cardWidth * 0.5, badgeY, 20, palette.inner, palette.line)
 
         Ui.setPaletteColor(C.HUD_THEME.text)
-        love.graphics.printf(t(state, card.descKey), x + 26, y + 160, cfg.cardWidth - 52, "center")
+        love.graphics.printf(t(state, card.descKey), x + 26, descY, cfg.cardWidth - 52, "center")
 
         Ui.setPaletteColor(C.HUD_THEME.text)
         love.graphics.printf(t(state, "run_choice.click"), x + 18, y + cfg.cardHeight - 40, cfg.cardWidth - 36, "center")
