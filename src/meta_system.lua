@@ -50,16 +50,8 @@ local function isVisible(metaState, def)
     return depsSatisfied(metaState, def)
 end
 
-function Meta.getDefinitions()
-    return DEFINITIONS
-end
-
 function Meta.getTreeLayout()
     return LAYOUT
-end
-
-function Meta.getRequiredCapstoneKeys()
-    return CAPSTONE_KEYS
 end
 
 function Meta.new(saved)

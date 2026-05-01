@@ -131,10 +131,6 @@ function Boss.distanceTo(boss, x, y)
     return Utils.distance(x, y, boss.x, boss.y)
 end
 
-function Boss.isShielded(boss)
-    return boss.active and boss.shielded
-end
-
 function Boss.getNearestWeakPoint(state, x, y)
     local boss = state.boss
     if not boss.active or not boss.shielded then

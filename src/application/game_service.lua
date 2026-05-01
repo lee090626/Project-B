@@ -72,22 +72,6 @@ function Service.dismissGuide(state)
     return Commands.dismissGuide(state)
 end
 
-function Service.metaUpgradeIndexAtScreen(state, sx, sy)
-    return MetaTreeController.nodeAtScreen(state, sx, sy)
-end
-
-function Service.metaTreeScreenToWorld(state, sx, sy)
-    return MetaTreeController.screenToWorld(state, sx, sy)
-end
-
-function Service.metaTreeNodeAtScreen(state, sx, sy)
-    return MetaTreeController.nodeAtScreen(state, sx, sy)
-end
-
-function Service.panMetaTree(state, dx, dy)
-    MetaTreeController.pan(state, dx, dy)
-end
-
 function Service.zoomMetaTree(state, wheelY)
     MetaTreeController.zoom(state, wheelY)
 end

@@ -101,15 +101,6 @@ function Nest.export(nest)
     }
 end
 
-function Nest.getEssenceThreshold(level)
-    local cappedLevel = math.max(0, math.floor(level or 0))
-    local total = 0
-    for currentLevel = 1, cappedLevel do
-        total = total + getLevelCost(currentLevel)
-    end
-    return total
-end
-
 local function getSpentPoints(nest)
     local spent = 0
     for _, key in ipairs(ORDER) do

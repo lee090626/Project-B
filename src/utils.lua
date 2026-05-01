@@ -20,16 +20,4 @@ function Utils.distance(ax, ay, bx, by)
     return math.sqrt(dx * dx + dy * dy)
 end
 
-function Utils.shallowCopy(tbl)
-    local out = {}
-    for k, v in pairs(tbl) do
-        out[k] = v
-    end
-    return out
-end
-
-function Utils.round(v)
-    return math.floor(v + 0.5)
-end
-
 return Utils
