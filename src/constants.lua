@@ -49,6 +49,7 @@ C.MUTATION_RARITY_WEIGHTS = MutationBalance.rarityWeights
 C.UI_ICONS = PresentationConfig.uiIcons
 C.RUN_CHOICE_UI = PresentationConfig.runChoiceUi
 C.RUN_END_TREE_UI = PresentationConfig.runEndTreeUi
+C.RUN_END_RESULT_UI = PresentationConfig.runEndResultUi
 C.RUN_HUD_UI = PresentationConfig.runHudUi
 C.GUIDE_UI = PresentationConfig.guideUi
 C.HUD_THEME = PresentationConfig.hudTheme
