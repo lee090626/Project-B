@@ -154,6 +154,26 @@ local function loadMonsterSprites()
     return sprites
 end
 
+local function loadMapMonsterSprites()
+    local sprites = {}
+
+    for mapId, mapSpec in pairs(C.WORLD_SPRITES.monstersByMap or {}) do
+        local set = { events = {} }
+        for tier, spec in pairs(requireField(mapSpec, "tiers", "monsterSpritesByMap." .. mapId)) do
+            set[tier] = loadSpriteImage(spec, "monsterSpritesByMap." .. mapId .. "." .. tier)
+        end
+        for eventKind, spec in pairs(mapSpec.events or {}) do
+            set.events[eventKind] = loadSpriteImage(
+                spec,
+                "monsterSpritesByMap." .. mapId .. ".events." .. eventKind
+            )
+        end
+        sprites[mapId] = set
+    end
+
+    return sprites
+end
+
 local function loadRunChoiceCardFrames()
     local frames = {}
 
@@ -192,6 +212,7 @@ function AssetLoader.loadAll()
         bossSprite = loadSpriteImage(C.WORLD_SPRITES.boss, "bossSprite"),
         bossWeakPointSprite = loadSpriteImage(C.WORLD_SPRITES.bossWeakPoint, "bossWeakPointSprite"),
         monsterSprites = loadMonsterSprites(),
+        monsterSpritesByMap = loadMapMonsterSprites(),
     }
     assets.runChoiceCardFrames, assets.icons = loadRunChoiceCardFrames(), loadImageMap(C.UI_ICONS)
     assets.backgrounds = loadBackgroundAssets()

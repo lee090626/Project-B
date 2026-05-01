@@ -50,6 +50,44 @@ local VisualConfig = {
                 height = 256,
             },
         },
+        monstersByMap = {
+            [1] = {
+                tiers = {
+                    common = {
+                        mode = "image",
+                        path = "assets/sprites/monsters/grassland/leaf_goblin.png",
+                        width = 256,
+                        height = 256,
+                    },
+                    rare = {
+                        mode = "image",
+                        path = "assets/sprites/monsters/grassland/grassrunner_lizard.png",
+                        width = 256,
+                        height = 256,
+                    },
+                    elite = {
+                        mode = "image",
+                        path = "assets/sprites/monsters/grassland/rootback_turtle.png",
+                        width = 256,
+                        height = 256,
+                    },
+                },
+                events = {
+                    mid = {
+                        mode = "image",
+                        path = "assets/sprites/monsters/grassland/hornleaf_goblin.png",
+                        width = 256,
+                        height = 256,
+                    },
+                    final = {
+                        mode = "image",
+                        path = "assets/sprites/monsters/grassland/bristletusk.png",
+                        width = 256,
+                        height = 256,
+                    },
+                },
+            },
+        },
     },
     worldTheme = {
         vignette = { 0.01, 0.02, 0.02, 0.18 },

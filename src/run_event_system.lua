@@ -41,6 +41,7 @@ local function spawnTarget(state, kind, spec)
         x = x,
         y = y,
         tier = spec.tier,
+        mapId = state.maps.currentMapId,
         radius = spec.radius,
         hp = spec.hp,
         essence = spec.essence,

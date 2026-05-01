@@ -18,9 +18,28 @@ local MONSTER_BOB = {
 
 local MONSTER_RARE_SWAY = math.rad(4)
 
-local function drawMonsterSprite(item, assets, time)
+local function monsterSpriteFor(item, assets, mapId)
     local tier = item.tier or "common"
-    local sprite = assets and assets.monsterSprites and assets.monsterSprites[tier]
+    local mapSprites = assets
+        and assets.monsterSpritesByMap
+        and assets.monsterSpritesByMap[item.mapId or mapId]
+
+    if item.eventTarget and mapSprites and mapSprites.events then
+        local eventSprite = mapSprites.events[item.eventKind]
+        if eventSprite then
+            return eventSprite, tier
+        end
+    end
+    if mapSprites and mapSprites[tier] then
+        return mapSprites[tier], tier
+    end
+    return assets and assets.monsterSprites and assets.monsterSprites[tier], tier
+end
+
+local function drawMonsterSprite(item, assets, time, mapId)
+    local tier = item.tier or "common"
+    local sprite
+    sprite, tier = monsterSpriteFor(item, assets, mapId)
     if not sprite then
         return nil
     end
@@ -28,7 +47,7 @@ local function drawMonsterSprite(item, assets, time)
     local phase = time * 2.1 + item.x * 0.01 + item.y * 0.008
     local renderX = item.x
     local renderY = item.y + math.sin(phase) * (MONSTER_BOB[tier] or 2)
-    local rotation = tier == "rare" and math.sin(phase * 0.85) * MONSTER_RARE_SWAY or 0
+    local rotation = tier == "rare" and not item.eventTarget and math.sin(phase * 0.85) * MONSTER_RARE_SWAY or 0
     if tier == "elite" then
         local glowAlpha = 0.12 + (math.sin(phase * 1.35) * 0.5 + 0.5) * 0.08
         love.graphics.setColor(item.color[1], item.color[2], item.color[3], glowAlpha)
@@ -156,7 +175,12 @@ end
 function WorldEntityRenderer.drawFood(state, assets, view)
     for _, item in ipairs(state.food.list) do
         if Utils.isCircleInView(item.x, item.y, item.radius + 10, view) then
-            local renderX, renderY = drawMonsterSprite(item, assets, state.totalPlayTime or 0)
+            local renderX, renderY = drawMonsterSprite(
+                item,
+                assets,
+                state.totalPlayTime or 0,
+                state.maps and state.maps.currentMapId
+            )
             local drawX = renderX or item.x
             local drawY = renderY or item.y
             local flash = 0.2 + (item.hitFlash or 0) * 0.4
