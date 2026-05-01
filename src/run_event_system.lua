@@ -21,20 +21,21 @@ end
 
 local function getBonusRewards(state)
     local mapData = C.MAPS[state.maps.currentMapId]
-    return mapData and mapData.bonusTimeRewards or { mid = 2, final = 3 }
+    return mapData and mapData.bonusTimeRewards or C.RUN_EVENTS.fallbackBonusTimeRewards
 end
 
 local function spawnPositionNearPlayer(state, radius)
     local player = state.player
     local angle = love.math.random() * math.pi * 2
-    local distance = 180 + love.math.random() * 120
-    local x = clamp(player.x + math.cos(angle) * distance, 40 + radius, C.WORLD_WIDTH - 40 - radius)
-    local y = clamp(player.y + math.sin(angle) * distance, 40 + radius, C.WORLD_HEIGHT - 40 - radius)
+    local distance = C.RUN_EVENTS.spawnDistanceMin + love.math.random() * C.RUN_EVENTS.spawnDistanceRange
+    local edge = C.RUN_EVENTS.spawnEdgePadding
+    local x = clamp(player.x + math.cos(angle) * distance, edge + radius, C.WORLD_WIDTH - edge - radius)
+    local y = clamp(player.y + math.sin(angle) * distance, edge + radius, C.WORLD_HEIGHT - edge - radius)
     return x, y
 end
 
 local function spawnTarget(state, kind, spec)
-    local x, y = spawnPositionNearPlayer(state, spec.radius or 18)
+    local x, y = spawnPositionNearPlayer(state, spec.radius or C.RUN_EVENTS.fallbackTargetRadius)
     local eventState = state.runEvent
     eventState.nextTargetId = (eventState.nextTargetId or 0) + 1
     local target = Food.spawnEventTarget(state.food, {
@@ -61,8 +62,8 @@ function RunEvent.newRunState(mapData)
     local profile = mapData and mapData.eventProfile or {}
     return {
         elapsed = 0,
-        midTime = profile.midTime or 4,
-        finalTime = profile.finalTime or 10,
+        midTime = profile.midTime or C.RUN_EVENTS.fallbackMidTime,
+        finalTime = profile.finalTime or C.RUN_EVENTS.fallbackFinalTime,
         midTriggered = false,
         finalTriggered = false,
         midCompleted = false,
@@ -118,7 +119,7 @@ function RunEvent.awardBonusTime(state, sourceKey)
         base = base + (state.bonuses.finalBonusTime or 0)
     end
 
-    local cap = 8 + (state.bonuses.bonusTimeCap or 0)
+    local cap = C.RUN_EVENTS.bonusTimeCap + (state.bonuses.bonusTimeCap or 0)
     local remaining = math.max(0, cap - (eventState.bonusTimeEarned or 0))
     local granted = math.min(base, remaining)
     if granted <= 0 then
@@ -148,8 +149,8 @@ function RunEvent.resolveEventTargetKill(state, item)
         eventState.midCompleted = true
         eventState.starsEarned = eventState.starsEarned + 1
         RunEvent.awardBonusTime(state, "mid")
-        Mutation.gainEssenceAndCheckLevel(state, item.essence * 2)
-        Mutation.grantChoices(state, 1)
+        Mutation.gainEssenceAndCheckLevel(state, item.essence * C.RUN_EVENTS.midEssenceMultiplier)
+        Mutation.grantChoices(state, C.RUN_EVENTS.midChoiceReward)
         setMessage(state, "message.mid_event_cleared")
         return true
     end
@@ -158,7 +159,7 @@ function RunEvent.resolveEventTargetKill(state, item)
         eventState.finalCompleted = true
         eventState.starsEarned = eventState.starsEarned + 1
         RunEvent.awardBonusTime(state, "final")
-        Mutation.gainEssenceAndCheckLevel(state, item.essence * 3)
+        Mutation.gainEssenceAndCheckLevel(state, item.essence * C.RUN_EVENTS.finalEssenceMultiplier)
         setMessage(state, "message.final_event_cleared")
         return true
     end
@@ -231,7 +232,7 @@ function RunEvent.finalize(state)
 
     local grade = "F"
     if eventState.midCompleted and eventState.finalCompleted then
-        if state.runTimeLeft >= 3 then
+        if state.runTimeLeft >= C.RUN_EVENTS.sGradeRemainingTime then
             grade = "S"
         else
             grade = "A"

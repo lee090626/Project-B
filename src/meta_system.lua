@@ -144,6 +144,7 @@ function Meta.getUpgradeInfo(metaState)
             descKey = def.descKey,
             category = def.category,
             icon = def.icon,
+            bonusPack = def.bonusPack,
             deps = def.deps,
             level = level,
             maxLevel = def.maxLevel,

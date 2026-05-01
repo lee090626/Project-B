@@ -4,6 +4,7 @@ local CombatBalance = require("src.data.combat_balance")
 local MutationBalance = require("src.data.mutation_balance")
 local PresentationConfig = require("src.data.presentation_config")
 local VisualConfig = require("src.data.visual_config")
+local WorldPatterns = require("src.data.world_pattern_config")
 
 C.SAVE_FILE = "save.json"
 C.BACKUP_FILE = "save.bak"
@@ -15,12 +16,14 @@ C.WORLD_WIDTH = 3200
 C.WORLD_HEIGHT = 1800
 
 C.MAPS = ProgressionBalance.maps
+C.RUN_EVENTS = ProgressionBalance.runEvents
 
 C.FOOD_BY_TIER = CombatBalance.foodByTier
 
 C.MAX_FOOD = 125
 C.FOOD_SPAWN_INTERVAL = 0.045
 C.PLAYER_CONTACT_DAMAGE = 18
+C.PLAYER_BASE = CombatBalance.player
 
 C.PLAYER_SPRITE = VisualConfig.playerSprite
 C.WORLD_SPRITES = VisualConfig.worldSprites
@@ -52,5 +55,30 @@ C.HELP_THEME = PresentationConfig.helpTheme
 C.GUIDE_THEME = PresentationConfig.guideTheme
 C.RUN_CHOICE_THEME = PresentationConfig.runChoiceTheme
 C.WORLD_THEME = VisualConfig.worldTheme
+
+local function validateMapVisualData()
+    for _, mapData in ipairs(C.MAPS) do
+        if not mapData.assetSlug or mapData.assetSlug == "" then
+            error(("missing assetSlug for map %s"):format(tostring(mapData.id)))
+        end
+        if not mapData.theme then
+            error(("missing theme for map %s"):format(tostring(mapData.id)))
+        end
+        if not mapData.theme.pattern or mapData.theme.pattern == "" then
+            error(("missing theme pattern for map %s"):format(tostring(mapData.id)))
+        end
+        if not WorldPatterns.isValid(mapData.theme.pattern) then
+            error(("unknown theme pattern for map %s: %s"):format(
+                tostring(mapData.id),
+                tostring(mapData.theme.pattern)
+            ))
+        end
+        if C.WORLD_THEME.maps[mapData.id] ~= mapData.theme then
+            error(("missing world theme for map %s"):format(tostring(mapData.id)))
+        end
+    end
+end
+
+validateMapVisualData()
 
 return C

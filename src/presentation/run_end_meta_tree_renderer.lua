@@ -1,4 +1,5 @@
 local C = require("src.constants")
+local BonusText = require("src.bonus_text")
 local GameState = require("src.game_state")
 local Meta = require("src.meta_system")
 local Text = require("src.presentation.presentation_text")
@@ -194,6 +195,12 @@ function RunEndMetaTreeRenderer.draw(state, fonts, _, sw, sh)
     if hovered then
         local costText = hovered.cost and tostring(hovered.cost) or t(state, "status.MAX")
         local status = statusText(state, hovered.reason)
+        local effectText = BonusText.describe(state.locale, hovered.bonusPack, {
+            perLevel = hovered.maxLevel > 1,
+        })
+        if effectText == "" then
+            effectText = t(state, hovered.descKey)
+        end
 
         love.graphics.setColor(0, 0, 0, 0.85)
         love.graphics.rectangle("fill", tooltipX, tooltipY, tooltipW, tooltipH, 8, 8)
@@ -210,7 +217,7 @@ function RunEndMetaTreeRenderer.draw(state, fonts, _, sw, sh)
             tooltipW - 28,
             "left"
         )
-        love.graphics.printf(t(state, hovered.descKey), tooltipX + 14, tooltipY + 36, tooltipW - 28, "left")
+        love.graphics.printf(effectText, tooltipX + 14, tooltipY + 36, tooltipW - 28, "left")
         love.graphics.setColor(STATUS_COLORS[hovered.reason] or { 1, 1, 1 })
         love.graphics.printf(
             t(state, "run_end.tooltip.cost_status", {

@@ -32,7 +32,7 @@ function WorldFxRenderer.drawPassives(state, assets, view, playerVisible)
     if state.passives then
         if state.passives.eatFxTimer and state.passives.eatFxTimer > 0
             and playerVisible then
-            local a = state.passives.eatFxTimer / 0.18
+            local a = state.passives.eatFxTimer / C.PASSIVE_BASES.eat.fxDuration
             local radius = (state.passives.eatFxRadius or C.WORLD_THEME.eatPulseMinRadius) * (1.18 - a * 0.2)
             love.graphics.setColor(1.0, 0.82, 0.34, 0.12 * a)
             love.graphics.circle("fill", state.player.x, state.player.y, radius)
@@ -43,7 +43,7 @@ function WorldFxRenderer.drawPassives(state, assets, view, playerVisible)
 
         if state.passives.lightningFx then
             local fx = state.passives.lightningFx
-            local a = math.max(0, fx.timer / 0.18)
+            local a = math.max(0, fx.timer / C.PASSIVE_BASES.lightning.fxDuration)
             love.graphics.setColor(0.8, 0.95, 1.0, a)
             love.graphics.setLineWidth(4)
             for _, segment in ipairs(fx.segments or {}) do
@@ -59,7 +59,10 @@ function WorldFxRenderer.drawPassives(state, assets, view, playerVisible)
                 local projectileVisible = Utils.isCircleInView(
                     projectile.x,
                     projectile.y,
-                    math.max(12, projectile.radius * 0.75),
+                    math.max(
+                        C.PASSIVE_BASES.fireball.minCullRadius,
+                        projectile.radius * C.PASSIVE_BASES.fireball.cullScale
+                    ),
                     view
                 )
                 local trailVisible = Utils.isSegmentInView(
@@ -79,13 +82,24 @@ function WorldFxRenderer.drawPassives(state, assets, view, playerVisible)
                 if projectileVisible then
                     if assets and assets.fireballSprite then
                         local sprite = assets.fireballSprite
-                        local diameter = math.max(40, projectile.radius * 1.35)
+                        local diameter = math.max(
+                            C.PASSIVE_BASES.fireball.minVisualDiameter,
+                            projectile.radius * C.PASSIVE_BASES.fireball.visualScale
+                        )
                         local angle = Utils.angleFromVector(projectile.vx, projectile.vy)
                         love.graphics.setColor(1, 1, 1)
                         drawFireballSprite(sprite, projectile, diameter, angle)
                     else
                         love.graphics.setColor(1.0, 0.42, 0.16)
-                        love.graphics.circle("fill", projectile.x, projectile.y, math.max(7, projectile.radius * 0.16))
+                        love.graphics.circle(
+                            "fill",
+                            projectile.x,
+                            projectile.y,
+                            math.max(
+                                C.PASSIVE_BASES.fireball.minFallbackCoreRadius,
+                                projectile.radius * C.PASSIVE_BASES.fireball.fallbackCoreScale
+                            )
+                        )
                     end
 
                     love.graphics.setColor(1.0, 0.86, 0.5, 0.12)

@@ -144,11 +144,12 @@ function BonusSchema.toRuntime(raw)
     out.lightningEnabled = (source.lightningEnabled or 0) > 0
     out.lightningDamage = C.PASSIVE_BASES.lightning.damage + (source.lightningDamage or 0)
     out.lightningChain = math.max(1, 1 + math.floor(source.lightningChain or 0))
-    out.lightningChainRadius = C.PASSIVE_BASES.lightning.chainRadius + math.max(0, out.lightningChain - 1) * 70
+    out.lightningChainRadius = C.PASSIVE_BASES.lightning.chainRadius
+        + math.max(0, out.lightningChain - 1) * C.PASSIVE_BASES.lightning.chainRadiusPerExtra
     out.lightningInterval = Utils.clamp(
         C.PASSIVE_BASES.lightning.interval - (source.lightningIntervalCut or 0),
-        0.24,
-        3.2
+        C.PASSIVE_BASES.lightning.minInterval,
+        C.PASSIVE_BASES.lightning.maxInterval
     )
 
     out.fireballEnabled = (source.fireballEnabled or 0) > 0
@@ -157,8 +158,8 @@ function BonusSchema.toRuntime(raw)
     out.fireballRadius = C.PASSIVE_BASES.fireball.radius + (source.fireballRadius or 0)
     out.fireballInterval = Utils.clamp(
         C.PASSIVE_BASES.fireball.interval - (source.fireballIntervalCut or 0),
-        0.26,
-        3.4
+        C.PASSIVE_BASES.fireball.minInterval,
+        C.PASSIVE_BASES.fireball.maxInterval
     )
 
     return out

@@ -1,148 +1,71 @@
-local VisualConfig = {
-    playerSprite = {
-        mode = "sheet",
-        path = "assets/sprites/player_walk_sheet_v2.png",
-        frameWidth = 272,
-        frameHeight = 352,
-        columns = 4,
-        rows = 2,
-        frameCount = 8,
-        fps = 8,
-        idleFrame = 1,
-        targetScale = 3,
-    },
-    worldSprites = {
-        fireball = {
-            mode = "sheet",
-            path = "assets/sprites/fireball_sprite_sheet.png",
-            frameWidth = 256,
-            frameHeight = 144,
-            columns = 6,
-            rows = 1,
-            frameCount = 6,
-            fps = 12,
-            originX = 202,
-            originY = 72,
-        },
-        boss = {
-            mode = "image",
-            path = "assets/sprites/boss_final_v2.png",
-            width = 256,
-            height = 256,
-        },
-        bossWeakPoint = {
-            mode = "image",
-            path = "assets/sprites/boss_weak_point_v2.png",
-            width = 256,
-            height = 256,
-        },
-        monsters = {
-            common = {
-                mode = "image",
-                path = "assets/sprites/monster_common_v2.png",
-                width = 256,
-                height = 256,
-            },
-            rare = {
-                mode = "image",
-                path = "assets/sprites/monster_rare_v2.png",
-                width = 256,
-                height = 256,
-            },
-            elite = {
-                mode = "image",
-                path = "assets/sprites/monster_elite_v2.png",
-                width = 256,
-                height = 256,
-            },
-        },
-        monstersByMap = {
-            [1] = {
-                tiers = {
-                    common = {
-                        mode = "image",
-                        path = "assets/sprites/monsters/grassland/leaf_goblin.png",
-                        width = 256,
-                        height = 256,
-                    },
-                    rare = {
-                        mode = "image",
-                        path = "assets/sprites/monsters/grassland/grassrunner_lizard.png",
-                        width = 256,
-                        height = 256,
-                    },
-                    elite = {
-                        mode = "image",
-                        path = "assets/sprites/monsters/grassland/rootback_turtle.png",
-                        width = 256,
-                        height = 256,
-                    },
-                },
-                events = {
-                    mid = {
-                        mode = "image",
-                        path = "assets/sprites/monsters/grassland/hornleaf_goblin.png",
-                        width = 256,
-                        height = 256,
-                    },
-                    final = {
-                        mode = "image",
-                        path = "assets/sprites/monsters/grassland/bristletusk.png",
-                        width = 256,
-                        height = 256,
-                    },
-                },
-            },
-        },
-    },
-    worldTheme = {
-        vignette = { 0.01, 0.02, 0.02, 0.18 },
-        nestShadow = { 0.11, 0.08, 0.05, 0.16 },
-        aura = { 0.36, 0.93, 0.7, 0.1 },
-        auraLine = { 0.88, 0.76, 0.44, 0.24 },
-        magnetFill = { 0.88, 0.74, 0.35, 0.06 },
-        magnetLine = { 0.93, 0.78, 0.42, 0.24 },
-        eatLine = { 0.38, 0.85, 0.66, 0.28 },
-        magnetFillCutoff = 240,
-        magnetOutlineWidth = 1.5,
-        playerAuraScale = 2.05,
-        playerAuraLineScale = 2.45,
-        fireballGlowScale = 0.12,
-        fireballImpactFillScale = 0.22,
-        eatPulseMinRadius = 18,
-        eatPulseRadiusScale = 1.5,
-        cullMargin = 64,
-        maps = {
-            [1] = {
-                sky = { 0.08, 0.13, 0.11 },
-                ground = { 0.16, 0.22, 0.16 },
-                glow = { 0.3, 0.41, 0.25, 0.2 },
-                grid = { 0.34, 0.44, 0.3, 0.11 },
-                sigil = { 0.54, 0.66, 0.46, 0.07 },
-            },
-            [2] = {
-                sky = { 0.07, 0.09, 0.14 },
-                ground = { 0.12, 0.16, 0.25 },
-                glow = { 0.18, 0.28, 0.46, 0.18 },
-                grid = { 0.42, 0.56, 0.72, 0.1 },
-                sigil = { 0.58, 0.8, 0.95, 0.08 },
-            },
-            [3] = {
-                sky = { 0.16, 0.07, 0.05 },
-                ground = { 0.3, 0.12, 0.08 },
-                glow = { 0.52, 0.22, 0.1, 0.18 },
-                grid = { 0.74, 0.34, 0.18, 0.1 },
-                sigil = { 0.97, 0.62, 0.24, 0.08 },
-            },
-            [4] = {
-                sky = { 0.07, 0.05, 0.09 },
-                ground = { 0.16, 0.09, 0.19 },
-                glow = { 0.3, 0.14, 0.33, 0.2 },
-                grid = { 0.55, 0.33, 0.66, 0.09 },
-                sigil = { 0.82, 0.53, 0.92, 0.07 },
-            },
-        },
-    },
-}
+local ProgressionBalance = require("src.data.progression_balance")
+local SpriteManifest = require("src.data.sprite_manifest")
+local WorldVisualConfig = require("src.data.world_visual_config")
 
-return VisualConfig
+local MAP_MONSTER_SPRITE_ROOT = "assets/sprites/monsters"
+local MAP_MONSTER_SPRITE_SIZE = 256
+
+local function mapMonsterSpritePath(mapData, fileName)
+    return MAP_MONSTER_SPRITE_ROOT .. "/" .. mapData.assetSlug .. "/" .. fileName
+end
+
+local function mapMonsterSpriteSpec(mapData, fileName)
+    return {
+        mode = "image",
+        path = mapMonsterSpritePath(mapData, fileName),
+        width = MAP_MONSTER_SPRITE_SIZE,
+        height = MAP_MONSTER_SPRITE_SIZE,
+    }
+end
+
+local function buildMapMonsterSpriteGroup(mapData, files)
+    local group = {}
+    for key, fileName in pairs(files or {}) do
+        group[key] = mapMonsterSpriteSpec(mapData, fileName)
+    end
+    return group
+end
+
+local function buildMapThemes()
+    local themes = {}
+    for _, mapData in ipairs(ProgressionBalance.maps) do
+        themes[mapData.id] = mapData.theme
+    end
+    return themes
+end
+
+local function buildWorldSprites()
+    local sprites = {
+        fireball = SpriteManifest.world.fireball,
+        boss = SpriteManifest.world.boss,
+        bossWeakPoint = SpriteManifest.world.bossWeakPoint,
+        monsters = SpriteManifest.world.monsters,
+        monstersByMap = {},
+    }
+
+    for _, mapData in ipairs(ProgressionBalance.maps) do
+        if mapData.monsterSpriteFiles then
+            sprites.monstersByMap[mapData.id] = {
+                tiers = buildMapMonsterSpriteGroup(mapData, mapData.monsterSpriteFiles.tiers),
+                events = buildMapMonsterSpriteGroup(mapData, mapData.monsterSpriteFiles.events),
+            }
+        end
+    end
+
+    return sprites
+end
+
+local function buildWorldTheme()
+    local theme = {}
+    for key, value in pairs(WorldVisualConfig) do
+        theme[key] = value
+    end
+    theme.maps = buildMapThemes()
+    return theme
+end
+
+return {
+    playerSprite = SpriteManifest.player,
+    worldSprites = buildWorldSprites(),
+    worldTheme = buildWorldTheme(),
+}

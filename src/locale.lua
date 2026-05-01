@@ -41,16 +41,12 @@ local function pair(path, enValue, koValue)
     setPath(DATA.ko, path, koValue)
 end
 
-local function meta(key, enName, enDesc, koName, koDesc)
+local function meta(key, enName, koName)
     pair("meta." .. key .. ".name", enName, koName)
-    pair("meta." .. key .. ".desc", enDesc, koDesc)
 end
 
-local function mutation(key, enName, koName, enDescs, koDescs)
+local function mutation(key, enName, koName)
     pair("mutation." .. key .. ".name", enName, koName)
-    pair("mutation." .. key .. ".desc.common", enDescs.common, koDescs.common)
-    pair("mutation." .. key .. ".desc.rare", enDescs.rare, koDescs.rare)
-    pair("mutation." .. key .. ".desc.mythic", enDescs.mythic, koDescs.mythic)
 end
 
 function Locale.isSupported(code)
@@ -272,177 +268,95 @@ pair("rarity.common", "Common", "일반")
 pair("rarity.rare", "Rare", "희귀")
 pair("rarity.mythic", "Mythic", "신화")
 
-mutation("hunt_bite", "Razor Bite", "칼날 물기", {
-    common = "Contact bite +8",
-    rare = "Contact bite +14",
-    mythic = "Contact bite +22",
-}, {
-    common = "접촉 물기 +8",
-    rare = "접촉 물기 +14",
-    mythic = "접촉 물기 +22",
-})
-mutation("hunt_pursuit", "Pursuit Muscle", "추적 근육", {
-    common = "Move speed +10",
-    rare = "Move speed +16",
-    mythic = "Move speed +24",
-}, {
-    common = "이동 속도 +10",
-    rare = "이동 속도 +16",
-    mythic = "이동 속도 +24",
-})
-mutation("hunt_jaw", "Latch Jaw", "걸쇠 턱", {
-    common = "Reach +1.0",
-    rare = "Reach +1.6",
-    mythic = "Reach +2.4",
-}, {
-    common = "섭식 반경 +1.0",
-    rare = "섭식 반경 +1.6",
-    mythic = "섭식 반경 +2.4",
-})
-mutation("stomach_feast", "Feast Stomach", "포식 위장", {
-    common = "Essence gain +6%",
-    rare = "Essence gain +12%",
-    mythic = "Essence gain +18%",
-}, {
-    common = "에센스 획득 +6%",
-    rare = "에센스 획득 +12%",
-    mythic = "에센스 획득 +18%",
-})
-mutation("stomach_gem", "Gem Tongue", "보석 혀", {
-    common = "Rare value +12%",
-    rare = "Rare value +20%",
-    mythic = "Rare value +30%",
-}, {
-    common = "희귀 가치 +12%",
-    rare = "희귀 가치 +20%",
-    mythic = "희귀 가치 +30%",
-})
-mutation("stomach_crown", "Royal Appetite", "왕실 식욕", {
-    common = "Elite value +15%",
-    rare = "Elite value +24%",
-    mythic = "Elite value +36%",
-}, {
-    common = "엘리트 가치 +15%",
-    rare = "엘리트 가치 +24%",
-    mythic = "엘리트 가치 +36%",
-})
-mutation("sense_pull", "Far Scent", "먼 향기", {
-    common = "Magnet +10",
-    rare = "Magnet +18",
-    mythic = "Magnet +28",
-}, {
-    common = "자석 +10",
-    rare = "자석 +18",
-    mythic = "자석 +28",
-})
-mutation("sense_sprint", "Spring Tendon", "도약 힘줄", {
-    common = "Move speed +12",
-    rare = "Move speed +20",
-    mythic = "Move speed +30",
-}, {
-    common = "이동 속도 +12",
-    rare = "이동 속도 +20",
-    mythic = "이동 속도 +30",
-})
-mutation("sense_jaw", "Long Tongue", "긴 혀", {
-    common = "Reach +0.8",
-    rare = "Reach +1.3",
-    mythic = "Reach +2.0",
-}, {
-    common = "섭식 반경 +0.8",
-    rare = "섭식 반경 +1.3",
-    mythic = "섭식 반경 +2.0",
-})
-mutation("spawn_bloom", "Brood Heat", "부화 열기", {
-    common = "Spawn speed +8%",
-    rare = "Spawn speed +14%",
-    mythic = "Spawn speed +22%",
-}, {
-    common = "스폰 속도 +8%",
-    rare = "스폰 속도 +14%",
-    mythic = "스폰 속도 +22%",
-})
-mutation("spawn_pack", "Crowded Tracks", "과밀 흔적", {
-    common = "Spawn cap +4",
-    rare = "Spawn cap +7",
-    mythic = "Spawn cap +11",
-}, {
-    common = "스폰 수용량 +4",
-    rare = "스폰 수용량 +7",
-    mythic = "스폰 수용량 +11",
-})
-mutation("spawn_lure", "Lure Gland", "유인 샘", {
-    common = "Rare and elite spawn up",
-    rare = "Rare and elite spawn up",
-    mythic = "Rare and elite spawn up",
-}, {
-    common = "희귀와 엘리트 스폰 증가",
-    rare = "희귀와 엘리트 스폰 증가",
-    mythic = "희귀와 엘리트 스폰 증가",
-})
-mutation("instinct_storm", "Storm Mouth", "폭풍 입", {
-    common = "Lightning damage and speed up",
-    rare = "Lightning damage and speed up",
-    mythic = "Lightning damage and speed up",
-}, {
-    common = "번개 피해와 속도 증가",
-    rare = "번개 피해와 속도 증가",
-    mythic = "번개 피해와 속도 증가",
-})
-mutation("instinct_ember", "Ember Sac", "잉걸 주머니", {
-    common = "Fireball damage and radius up",
-    rare = "Fireball damage and radius up",
-    mythic = "Fireball damage and radius up",
-}, {
-    common = "화염구 피해와 반경 증가",
-    rare = "화염구 피해와 반경 증가",
-    mythic = "화염구 피해와 반경 증가",
-})
-meta("origin_heart", "Origin Heart", "Unlocks the primal dragon lattice", "기원의 심장", "원초 용 격자를 엽니다")
+pair("bonus.period.per_level", " per level", " 레벨당")
+pair("bonus.lightningEnabled", "Unlock lightning", "번개 해금")
+pair("bonus.fireballEnabled", "Unlock fireballs", "화염구 해금")
+pair("bonus.speed", "Move speed +{value}", "이동 속도 +{value}")
+pair("bonus.reach", "Reach +{value}", "섭식 반경 +{value}")
+pair("bonus.magnet", "Magnet +{value}", "자석 +{value}")
+pair("bonus.contactBite", "Contact bite +{value}", "접촉 물기 +{value}")
+pair("bonus.eventBiteBonus", "Event target bite +{value}", "이벤트 목표 물기 +{value}")
+pair("bonus.essenceMult", "Essence gain +{value}%", "에센스 획득 +{value}%")
+pair("bonus.rareBonus", "Rare spawn +{value}%", "희귀 스폰 +{value}%")
+pair("bonus.eliteBonus", "Elite spawn +{value}%", "엘리트 스폰 +{value}%")
+pair("bonus.rareValue", "Rare value +{value}%", "희귀 가치 +{value}%")
+pair("bonus.eliteValue", "Elite value +{value}%", "엘리트 가치 +{value}%")
+pair("bonus.spawnRate", "Spawn speed +{value}%", "스폰 속도 +{value}%")
+pair("bonus.spawnCap", "Spawn cap +{value}", "스폰 수용량 +{value}")
+pair("bonus.midBonusTime", "Mid event bonus time +{value}s", "중간 이벤트 보너스 시간 +{value}초")
+pair("bonus.finalBonusTime", "Final event bonus time +{value}s", "피니시 보너스 시간 +{value}초")
+pair("bonus.bonusTimeCap", "Bonus time cap +{value}s", "보너스 시간 상한 +{value}초")
+pair("bonus.finalWindowMin", "Final window minimum +{value}s", "피니시 최소 시간 +{value}초")
+pair("bonus.lightningDamage", "Lightning damage +{value}", "번개 피해 +{value}")
+pair("bonus.lightningChain", "Lightning chain +{value}", "번개 연쇄 +{value}")
+pair("bonus.lightningIntervalCut", "Lightning cooldown -{value}s", "번개 재사용 대기 -{value}초")
+pair("bonus.fireballDamage", "Fireball damage +{value}", "화염구 피해 +{value}")
+pair("bonus.fireballRadius", "Explosion radius +{value}", "폭발 반경 +{value}")
+pair("bonus.fireballCount", "Projectile count +{value}", "투사체 수 +{value}")
+pair("bonus.fireballSplit", "Projectile split +{value}", "투사체 분열 +{value}")
+pair("bonus.fireballIntervalCut", "Fireball cooldown -{value}s", "화염구 재사용 대기 -{value}초")
 
-meta("core_mid_clock", "Mid Hunt Clock", "Mid event bonus time +1 sec", "중간 사냥 시계", "중간 이벤트 보너스 시간 +1초")
-meta("core_final_clock", "Final Hunt Clock", "Final event bonus time +1 sec", "피니시 시계", "피니시 보너스 시간 +1초")
-meta("core_overtime", "Overtime Chamber", "Bonus time cap +1 sec per level", "연장 격실", "보너스 시간 상한 레벨당 +1초")
-meta("core_last_window", "Last Window", "Final window minimum time +1 sec per level", "막판 창", "피니시 최소 시간 레벨당 +1초")
-meta("core_flow", "Flow Spine", "Move speed +8 per level", "흐름 척추", "이동 속도 레벨당 +8")
-meta("core_focus", "Focus Maw", "Event target bite +10 per level", "집중 턱", "이벤트 목표 물기 레벨당 +10")
-meta("core_hoard", "Hoard Heart", "Essence gain +8% per level", "비축 심장", "에센스 획득 레벨당 +8%")
-meta("core_apex", "Chrono Crown", "Bonus time up and event bite +14", "시간 왕관", "보너스 시간 강화 및 이벤트 물기 +14")
+mutation("hunt_bite", "Razor Bite", "칼날 물기")
+mutation("hunt_pursuit", "Pursuit Muscle", "추적 근육")
+mutation("hunt_jaw", "Latch Jaw", "걸쇠 턱")
+mutation("stomach_feast", "Feast Stomach", "포식 위장")
+mutation("stomach_gem", "Gem Tongue", "보석 혀")
+mutation("stomach_crown", "Royal Appetite", "왕실 식욕")
+mutation("sense_pull", "Far Scent", "먼 향기")
+mutation("sense_sprint", "Spring Tendon", "도약 힘줄")
+mutation("sense_jaw", "Long Tongue", "긴 혀")
+mutation("spawn_bloom", "Brood Heat", "부화 열기")
+mutation("spawn_pack", "Crowded Tracks", "과밀 흔적")
+mutation("spawn_lure", "Lure Gland", "유인 샘")
+mutation("instinct_storm", "Storm Mouth", "폭풍 입")
+mutation("instinct_ember", "Ember Sac", "잉걸 주머니")
 
-meta("hunt_stride", "Predator Stride", "Move speed +12 per level", "포식자 보폭", "이동 속도 레벨당 +12")
-meta("hunt_maw", "Long Maw", "Feeding reach +1.8 per level", "긴 턱", "섭식 반경 레벨당 +1.8")
-meta("hunt_bite", "Crush Bite", "Contact bite +8 per level", "분쇄 물기", "접촉 물기 레벨당 +8")
-meta("hunt_pursuit", "Pursuit Muscle", "Move speed +16 per level", "추적 근육", "이동 속도 레벨당 +16")
-meta("hunt_hook", "Hook Jaw", "Feeding reach +2.2 per level", "갈고리 턱", "섭식 반경 레벨당 +2.2")
-meta("hunt_maul", "Maul Crest", "Contact bite +12 per level", "난도 볏", "접촉 물기 레벨당 +12")
-meta("hunt_lock", "Lock Fang", "Event target bite +18 per level", "고정 송곳니", "이벤트 목표 물기 레벨당 +18")
-meta("hunt_apex", "Apex Predator", "Contact bite +18 and event bite +24", "정점 포식자", "접촉 물기 +18 및 이벤트 물기 +24")
+meta("origin_heart", "Origin Heart", "기원의 심장")
+pair("meta.origin_heart.desc", "Unlocks the primal dragon lattice", "원초 용 격자를 엽니다")
 
-meta("economy_greed", "Greed Gland", "Essence gain +8% per level", "탐욕 샘", "에센스 획득 레벨당 +8%")
-meta("economy_scent", "Rare Scent", "Rare spawn chance +1.5% per level", "희귀 향", "희귀 스폰 확률 레벨당 +1.5%")
-meta("economy_crown", "Elite Crown", "Elite spawn chance +0.8% per level", "엘리트 왕관", "엘리트 스폰 확률 레벨당 +0.8%")
-meta("economy_pull", "Vacuum Pull", "Magnet radius +16 per level", "진공 끌림", "자석 반경 레벨당 +16")
-meta("economy_trail", "Trail Heat", "Spawn speed +10% per level", "흔적 열기", "스폰 속도 레벨당 +10%")
-meta("economy_brood", "Brood Chamber", "Max field prey +8 per level", "부화 격실", "필드 최대 먹이 레벨당 +8")
-meta("economy_gold", "Golden Feast", "Rare and elite value up", "황금 만찬", "희귀 및 엘리트 가치 증가")
-meta("economy_apex", "Royal Nest", "Essence gain +14% and field growth up", "왕실 둥지", "에센스 획득 +14% 및 필드 성장 강화")
+meta("core_mid_clock", "Mid Hunt Clock", "중간 사냥 시계")
+meta("core_final_clock", "Final Hunt Clock", "피니시 시계")
+meta("core_overtime", "Overtime Chamber", "연장 격실")
+meta("core_last_window", "Last Window", "막판 창")
+meta("core_flow", "Flow Spine", "흐름 척추")
+meta("core_focus", "Focus Maw", "집중 턱")
+meta("core_hoard", "Hoard Heart", "비축 심장")
+meta("core_apex", "Chrono Crown", "시간 왕관")
 
-meta("lightning_root", "Storm Sigil", "Unlock periodic lightning strikes", "폭풍 문양", "주기적 번개 타격 해금")
-meta("lightning_shock", "Shock Fang", "Lightning damage +10 per level", "충격 송곳니", "번개 피해 레벨당 +10")
-meta("lightning_link", "Link Coil", "Lightning chain count +1 per level", "연쇄 고리", "번개 연쇄 수 레벨당 +1")
-meta("lightning_pulse", "Pulse Clock", "Lightning cooldown -0.12 sec per level", "맥동 시계", "번개 재사용 대기 레벨당 -0.12초")
-meta("lightning_storm", "Storm Core", "Lightning damage +14 per level", "폭풍 핵", "번개 피해 레벨당 +14")
-meta("lightning_arc", "Arc Jaw", "Lightning chain +1 and damage +8", "전류 턱", "번개 연쇄 +1 및 피해 +8")
-meta("lightning_relay", "Relay Spine", "Lightning cooldown -0.14 sec per level", "중계 척추", "번개 재사용 대기 레벨당 -0.14초")
-meta("lightning_apex", "Tempest Crown", "Lightning damage +18 and chain +1", "폭풍 왕관", "번개 피해 +18 및 연쇄 +1")
+meta("hunt_stride", "Predator Stride", "포식자 보폭")
+meta("hunt_maw", "Long Maw", "긴 턱")
+meta("hunt_bite", "Crush Bite", "분쇄 물기")
+meta("hunt_pursuit", "Pursuit Muscle", "추적 근육")
+meta("hunt_hook", "Hook Jaw", "갈고리 턱")
+meta("hunt_maul", "Maul Crest", "난도 볏")
+meta("hunt_lock", "Lock Fang", "고정 송곳니")
+meta("hunt_apex", "Apex Predator", "정점 포식자")
 
-meta("fireball_root", "Flame Sigil", "Unlock periodic fireballs", "화염 문양", "주기적 화염구 해금")
-meta("fireball_blast", "Blast Gullet", "Fireball damage +9 per level", "폭발 식도", "화염구 피해 레벨당 +9")
-meta("fireball_core", "Molten Core", "Explosion radius +12 per level", "용해 핵", "폭발 반경 레벨당 +12")
-meta("fireball_count", "Twin Ember", "Projectile count +1 per level", "쌍둥이 잉걸", "투사체 수 레벨당 +1")
-meta("fireball_cinder", "Cinder Clock", "Fireball cooldown -0.12 sec per level", "잿불 시계", "화염구 재사용 대기 레벨당 -0.12초")
-meta("fireball_salvo", "Salvo Jaw", "Fireball damage +14 and split +1", "연사 턱", "화염구 피해 +14 및 분열 +1")
-meta("fireball_furnace", "Furnace Lung", "Radius +18 and cooldown up", "화로 폐", "반경 +18 및 재사용 대기 강화")
-meta("fireball_apex", "Inferno Crown", "Damage +18 count +1 radius +20", "지옥불 왕관", "피해 +18 투사체 +1 반경 +20")
+meta("economy_greed", "Greed Gland", "탐욕 샘")
+meta("economy_scent", "Rare Scent", "희귀 향")
+meta("economy_crown", "Elite Crown", "엘리트 왕관")
+meta("economy_pull", "Vacuum Pull", "진공 끌림")
+meta("economy_trail", "Trail Heat", "흔적 열기")
+meta("economy_brood", "Brood Chamber", "부화 격실")
+meta("economy_gold", "Golden Feast", "황금 만찬")
+meta("economy_apex", "Royal Nest", "왕실 둥지")
+
+meta("lightning_root", "Storm Sigil", "폭풍 문양")
+meta("lightning_shock", "Shock Fang", "충격 송곳니")
+meta("lightning_link", "Link Coil", "연쇄 고리")
+meta("lightning_pulse", "Pulse Clock", "맥동 시계")
+meta("lightning_storm", "Storm Core", "폭풍 핵")
+meta("lightning_arc", "Arc Jaw", "전류 턱")
+meta("lightning_relay", "Relay Spine", "중계 척추")
+meta("lightning_apex", "Tempest Crown", "폭풍 왕관")
+
+meta("fireball_root", "Flame Sigil", "화염 문양")
+meta("fireball_blast", "Blast Gullet", "폭발 식도")
+meta("fireball_core", "Molten Core", "용해 핵")
+meta("fireball_count", "Twin Ember", "쌍둥이 잉걸")
+meta("fireball_cinder", "Cinder Clock", "잿불 시계")
+meta("fireball_salvo", "Salvo Jaw", "연사 턱")
+meta("fireball_furnace", "Furnace Lung", "화로 폐")
+meta("fireball_apex", "Inferno Crown", "지옥불 왕관")
 
 return Locale

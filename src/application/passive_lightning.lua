@@ -1,5 +1,6 @@
 local Food = require("src.food_system")
 local Boss = require("src.boss_system")
+local C = require("src.constants")
 
 local PassiveLightning = {}
 
@@ -10,7 +11,7 @@ local function pushFx(state, segments)
     end
     state.passives.lightningFx = {
         segments = segments,
-        timer = 0.18,
+        timer = C.PASSIVE_BASES.lightning.fxDuration,
     }
 end
 
@@ -71,7 +72,13 @@ function PassiveLightning.trigger(state, mapData, grantEssence)
                 toY = target.y,
             },
         })
-        Boss.applyDamage(state, math.max(1, state.bonuses.lightningDamage * 0.18))
+        Boss.applyDamage(
+            state,
+            math.max(
+                C.PASSIVE_BASES.lightning.minBossDamage,
+                state.bonuses.lightningDamage * C.PASSIVE_BASES.lightning.bossDamageMultiplier
+            )
+        )
         return false
     elseif target.kind == "weak_point" then
         pushFx(state, {
@@ -82,7 +89,14 @@ function PassiveLightning.trigger(state, mapData, grantEssence)
                 toY = target.y,
             },
         })
-        Boss.applyWeakPointDamage(state, target.index, math.max(1, state.bonuses.lightningDamage * 0.18))
+        Boss.applyWeakPointDamage(
+            state,
+            target.index,
+            math.max(
+                C.PASSIVE_BASES.lightning.minBossDamage,
+                state.bonuses.lightningDamage * C.PASSIVE_BASES.lightning.bossDamageMultiplier
+            )
+        )
         return false
     end
 

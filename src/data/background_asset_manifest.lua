@@ -1,34 +1,30 @@
-return {
-    [1] = {
-        version = 1,
-        backdropFar = "assets/backgrounds/grassland/backdrop_far.png",
-        backdropMid = "assets/backgrounds/grassland/backdrop_mid.png",
-        fieldBaseTile = "assets/backgrounds/grassland/field_base_tile.png",
-        fieldDecalSet = "assets/backgrounds/grassland/field_decal_set.png",
-        fieldFeature01 = "assets/backgrounds/grassland/field_feature_01.png",
-    },
-    [2] = {
-        version = 1,
-        backdropFar = "assets/backgrounds/crystal_cave/backdrop_far.png",
-        backdropMid = "assets/backgrounds/crystal_cave/backdrop_mid.png",
-        fieldBaseTile = "assets/backgrounds/crystal_cave/field_base_tile.png",
-        fieldDecalSet = "assets/backgrounds/crystal_cave/field_decal_set.png",
-        fieldFeature01 = "assets/backgrounds/crystal_cave/field_feature_01.png",
-    },
-    [3] = {
-        version = 1,
-        backdropFar = "assets/backgrounds/lava_ridge/backdrop_far.png",
-        backdropMid = "assets/backgrounds/lava_ridge/backdrop_mid.png",
-        fieldBaseTile = "assets/backgrounds/lava_ridge/field_base_tile.png",
-        fieldDecalSet = "assets/backgrounds/lava_ridge/field_decal_set.png",
-        fieldFeature01 = "assets/backgrounds/lava_ridge/field_feature_01.png",
-    },
-    [4] = {
-        version = 1,
-        backdropFar = "assets/backgrounds/abyss_nursery/backdrop_far.png",
-        backdropMid = "assets/backgrounds/abyss_nursery/backdrop_mid.png",
-        fieldBaseTile = "assets/backgrounds/abyss_nursery/field_base_tile.png",
-        fieldDecalSet = "assets/backgrounds/abyss_nursery/field_decal_set.png",
-        fieldFeature01 = "assets/backgrounds/abyss_nursery/field_feature_01.png",
-    },
+local ProgressionBalance = require("src.data.progression_balance")
+
+local ASSET_FIELDS = {
+    backdropFar = "backdrop_far.png",
+    backdropMid = "backdrop_mid.png",
+    fieldBaseTile = "field_base_tile.png",
+    fieldDecalSet = "field_decal_set.png",
+    fieldFeature01 = "field_feature_01.png",
 }
+
+local function pathFor(slug, fileName)
+    return "assets/backgrounds/" .. slug .. "/" .. fileName
+end
+
+local manifest = {}
+
+for _, mapData in ipairs(ProgressionBalance.maps) do
+    local slug = mapData.assetSlug
+    if not slug or slug == "" then
+        error(("missing assetSlug for map %s"):format(tostring(mapData.id)))
+    end
+
+    local entry = { version = mapData.assetVersion or 1 }
+    for field, fileName in pairs(ASSET_FIELDS) do
+        entry[field] = pathFor(slug, fileName)
+    end
+    manifest[mapData.id] = entry
+end
+
+return manifest

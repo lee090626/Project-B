@@ -1,4 +1,5 @@
 local C = require("src.constants")
+local BonusText = require("src.bonus_text")
 local Text = require("src.presentation.presentation_text")
 local Ui = require("src.presentation.ui_primitives")
 
@@ -108,7 +109,13 @@ function RunChoiceRenderer.drawRunChoiceOverlay(state, fonts, ui, assets)
         Ui.drawRuneBadge(getCategorySymbol(card.category), x + cfg.cardWidth * 0.5, badgeY, 20, palette.inner, palette.line)
 
         Ui.setPaletteColor(C.HUD_THEME.text)
-        love.graphics.printf(t(state, card.descKey), x + 26, descY, cfg.cardWidth - 52, "center")
+        love.graphics.printf(
+            BonusText.describe(state.locale, card.effects),
+            x + 26,
+            descY,
+            cfg.cardWidth - 52,
+            "center"
+        )
 
         Ui.setPaletteColor(C.HUD_THEME.text)
         love.graphics.printf(t(state, "run_choice.click"), x + 18, y + cfg.cardHeight - 40, cfg.cardWidth - 36, "center")

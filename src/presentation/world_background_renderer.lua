@@ -1,4 +1,5 @@
 local C = require("src.constants")
+local WorldPatterns = require("src.data.world_pattern_config")
 local Utils = require("src.presentation.world_render_utils")
 
 local WorldBackgroundRenderer = {}
@@ -13,7 +14,11 @@ local cache = {
 }
 
 local function currentMapTheme(mapId)
-    return C.WORLD_THEME.maps[mapId] or C.WORLD_THEME.maps[4]
+    local theme = C.WORLD_THEME.maps[mapId]
+    if not theme then
+        error(("missing world theme for map %s"):format(tostring(mapId)))
+    end
+    return theme
 end
 
 local function hash01(a, b, c)
@@ -35,7 +40,7 @@ local function drawWorldBackdrop(sw, sh, mapTheme)
     love.graphics.rectangle("fill", sw - 80, 0, 80, sh)
 end
 
-local function drawMapPattern(mapId, mapTheme)
+local function drawMapPattern(mapTheme)
     love.graphics.setLineWidth(1)
     Utils.setPaletteColor(mapTheme.grid)
     for x = 0, C.WORLD_WIDTH, 80 do
@@ -46,13 +51,13 @@ local function drawMapPattern(mapId, mapTheme)
     end
 
     Utils.setPaletteColor(mapTheme.sigil)
-    if mapId == 1 then
+    if mapTheme.pattern == WorldPatterns.RINGS then
         for x = 40, C.WORLD_WIDTH, 240 do
             for y = 40, C.WORLD_HEIGHT, 240 do
                 love.graphics.circle("line", x, y, 18)
             end
         end
-    elseif mapId == 2 then
+    elseif mapTheme.pattern == WorldPatterns.DIAMONDS then
         for x = 80, C.WORLD_WIDTH, 220 do
             for y = 80, C.WORLD_HEIGHT, 220 do
                 love.graphics.line(x - 14, y, x, y - 14)
@@ -61,16 +66,18 @@ local function drawMapPattern(mapId, mapTheme)
                 love.graphics.line(x, y + 14, x - 14, y)
             end
         end
-    elseif mapId == 3 then
+    elseif mapTheme.pattern == WorldPatterns.FAULTS then
         for x = 0, C.WORLD_WIDTH, 180 do
             love.graphics.line(x, C.WORLD_HEIGHT * 0.55, x + 90, C.WORLD_HEIGHT)
         end
-    else
+    elseif mapTheme.pattern == WorldPatterns.ARCS then
         for x = 120, C.WORLD_WIDTH, 260 do
             for y = 120, C.WORLD_HEIGHT, 260 do
                 love.graphics.arc("line", "open", x, y, 22, -math.pi * 0.3, math.pi * 1.1)
             end
         end
+    else
+        error(("unknown world pattern: %s"):format(tostring(mapTheme.pattern)))
     end
 end
 
@@ -117,7 +124,7 @@ local function rebuildPatternCanvas(mapId, mapTheme)
     love.graphics.clear(0, 0, 0, 0)
     Utils.setPaletteColor(C.WORLD_THEME.nestShadow)
     love.graphics.circle("fill", C.WORLD_WIDTH * 0.5, C.WORLD_HEIGHT * 0.52, math.min(C.WORLD_WIDTH, C.WORLD_HEIGHT) * 0.32)
-    drawMapPattern(mapId, mapTheme)
+    drawMapPattern(mapTheme)
     love.graphics.setCanvas()
     love.graphics.pop()
 
@@ -308,7 +315,7 @@ function WorldBackgroundRenderer.drawField(mapId, context)
     else
         Utils.setPaletteColor(C.WORLD_THEME.nestShadow)
         love.graphics.circle("fill", C.WORLD_WIDTH * 0.5, C.WORLD_HEIGHT * 0.52, math.min(C.WORLD_WIDTH, C.WORLD_HEIGHT) * 0.32)
-        drawMapPattern(mapId, context.mapTheme)
+        drawMapPattern(context.mapTheme)
     end
 end
 

@@ -190,12 +190,13 @@ function Mutation.rollChoices(state)
 
         local def = available[love.math.random(#available)]
         local rarity = rollRarity(state)
+        local effects = getEffects(def, rarity)
         activeChoices[#activeChoices + 1] = {
             key = def.key,
             nameKey = "mutation." .. def.key .. ".name",
             category = def.category,
             rarity = rarity,
-            descKey = "mutation." .. def.key .. ".desc." .. rarity,
+            effects = effects,
         }
         blocked[def.key] = true
     end

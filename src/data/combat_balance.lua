@@ -1,4 +1,10 @@
 local CombatBalance = {
+    player = {
+        radius = 18,
+        baseSpeed = 120,
+        baseReach = 25,
+        baseMagnet = 0,
+    },
     foodByTier = {
         common = {
             radius = 10,
@@ -23,17 +29,44 @@ local CombatBalance = {
         },
     },
     passiveBases = {
+        eat = {
+            fxDuration = 0.18,
+        },
         lightning = {
+            initialDelay = 0.35,
             interval = 1.7,
+            minInterval = 0.24,
+            maxInterval = 3.2,
             damage = 18,
             chainRadius = 300,
+            chainRadiusPerExtra = 70,
+            fxDuration = 0.18,
+            bossDamageMultiplier = 0.18,
+            minBossDamage = 1,
         },
         fireball = {
+            initialDelay = 0.6,
             interval = 2.0,
+            minInterval = 0.26,
+            maxInterval = 3.4,
             damage = 14,
             radius = 60,
             projectileSpeed = 380,
             impactFxDuration = 0.2,
+            visualScale = 1.35,
+            minVisualDiameter = 40,
+            cullScale = 0.75,
+            minCullRadius = 12,
+            fallbackCoreScale = 0.16,
+            minFallbackCoreRadius = 7,
+            spreadRadiusScale = 0.3,
+            spreadTargetRadiusScale = 0.45,
+            spreadMinRadius = 10,
+            bossDamageMultiplier = 0.35,
+            bossPulseDamageMultiplier = 0.6,
+            minFoodHits = 3,
+            minBossHits = 2,
+            hitCountPerProjectileBonus = 1,
         },
     },
     bossArena = {

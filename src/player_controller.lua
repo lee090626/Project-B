@@ -4,13 +4,14 @@ local C = require("src.constants")
 local Player = {}
 
 function Player.new(savedPlayer)
+    local base = C.PLAYER_BASE
     local p = {
         x = C.WORLD_WIDTH * 0.5,
         y = C.WORLD_HEIGHT * 0.5,
-        radius = 18,
-        baseSpeed = 120,
-        baseReach = 25,
-        baseMagnet = 0,
+        radius = base.radius,
+        baseSpeed = base.baseSpeed,
+        baseReach = base.baseReach,
+        baseMagnet = base.baseMagnet,
         facingX = -1,
         isMoving = false,
         walkTimer = 0,

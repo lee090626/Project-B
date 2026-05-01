@@ -1,7 +1,29 @@
+local WorldPatterns = require("src.data.world_pattern_config")
+
 local ProgressionBalance = {
     maps = {
         {
             id = 1,
+            assetSlug = "grassland",
+            theme = {
+                pattern = WorldPatterns.RINGS,
+                sky = { 0.08, 0.13, 0.11 },
+                ground = { 0.16, 0.22, 0.16 },
+                glow = { 0.3, 0.41, 0.25, 0.2 },
+                grid = { 0.34, 0.44, 0.3, 0.11 },
+                sigil = { 0.54, 0.66, 0.46, 0.07 },
+            },
+            monsterSpriteFiles = {
+                tiers = {
+                    common = "leaf_goblin.png",
+                    rare = "grassrunner_lizard.png",
+                    elite = "rootback_turtle.png",
+                },
+                events = {
+                    mid = "hornleaf_goblin.png",
+                    final = "bristletusk.png",
+                },
+            },
             nameKey = "map.1.name",
             reward = 1.0,
             hpScale = 1.0,
@@ -33,6 +55,15 @@ local ProgressionBalance = {
         },
         {
             id = 2,
+            assetSlug = "crystal_cave",
+            theme = {
+                pattern = WorldPatterns.DIAMONDS,
+                sky = { 0.07, 0.09, 0.14 },
+                ground = { 0.12, 0.16, 0.25 },
+                glow = { 0.18, 0.28, 0.46, 0.18 },
+                grid = { 0.42, 0.56, 0.72, 0.1 },
+                sigil = { 0.58, 0.8, 0.95, 0.08 },
+            },
             nameKey = "map.2.name",
             reward = 1.25,
             hpScale = 1.25,
@@ -64,6 +95,15 @@ local ProgressionBalance = {
         },
         {
             id = 3,
+            assetSlug = "lava_ridge",
+            theme = {
+                pattern = WorldPatterns.FAULTS,
+                sky = { 0.16, 0.07, 0.05 },
+                ground = { 0.3, 0.12, 0.08 },
+                glow = { 0.52, 0.22, 0.1, 0.18 },
+                grid = { 0.74, 0.34, 0.18, 0.1 },
+                sigil = { 0.97, 0.62, 0.24, 0.08 },
+            },
             nameKey = "map.3.name",
             reward = 1.55,
             hpScale = 1.55,
@@ -95,6 +135,15 @@ local ProgressionBalance = {
         },
         {
             id = 4,
+            assetSlug = "abyss_nursery",
+            theme = {
+                pattern = WorldPatterns.ARCS,
+                sky = { 0.07, 0.05, 0.09 },
+                ground = { 0.16, 0.09, 0.19 },
+                glow = { 0.3, 0.14, 0.33, 0.2 },
+                grid = { 0.55, 0.33, 0.66, 0.09 },
+                sigil = { 0.82, 0.53, 0.92, 0.07 },
+            },
             nameKey = "map.4.name",
             reward = 1.95,
             hpScale = 2.0,
@@ -124,6 +173,20 @@ local ProgressionBalance = {
                 },
             },
         },
+    },
+    runEvents = {
+        fallbackBonusTimeRewards = { mid = 2, final = 3 },
+        fallbackMidTime = 4,
+        fallbackFinalTime = 10,
+        fallbackTargetRadius = 18,
+        spawnDistanceMin = 180,
+        spawnDistanceRange = 120,
+        spawnEdgePadding = 40,
+        bonusTimeCap = 8,
+        midEssenceMultiplier = 2,
+        finalEssenceMultiplier = 3,
+        midChoiceReward = 1,
+        sGradeRemainingTime = 3,
     },
     nestLevelCostBands = {
         { fromLevel = 1, toLevel = 20, multiplier = 1 },

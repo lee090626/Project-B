@@ -8,8 +8,8 @@ local PassiveCombat = {}
 
 function PassiveCombat.resetState(state)
     state.passives = {
-        lightningTimer = 0.35,
-        fireballTimer = 0.6,
+        lightningTimer = C.PASSIVE_BASES.lightning.initialDelay,
+        fireballTimer = C.PASSIVE_BASES.fireball.initialDelay,
         lightningFx = nil,
         fireballProjectiles = {},
         fireballImpacts = {},
@@ -23,9 +23,12 @@ function PassiveCombat.triggerEatFx(state, amount)
     if not passives or amount <= 0 then
         return
     end
-    passives.eatFxTimer = 0.18
+    passives.eatFxTimer = C.PASSIVE_BASES.eat.fxDuration
     passives.eatFxRadius = C.WORLD_THEME.eatPulseMinRadius
-        + math.min(30, amount * C.WORLD_THEME.eatPulseRadiusScale)
+        + math.min(
+            C.WORLD_THEME.eatPulseRadiusCap,
+            amount * C.WORLD_THEME.eatPulseRadiusScale
+        )
 end
 
 local function addEssence(state, rawAmount)

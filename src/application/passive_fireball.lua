@@ -95,8 +95,11 @@ local function getAimPoint(target, shotIndex, totalShots, impactRadius)
     end
 
     local spreadRadius = math.min(
-        impactRadius * 0.3,
-        math.max(10, (target.radius or 0) * 0.45)
+        impactRadius * C.PASSIVE_BASES.fireball.spreadRadiusScale,
+        math.max(
+            C.PASSIVE_BASES.fireball.spreadMinRadius,
+            (target.radius or 0) * C.PASSIVE_BASES.fireball.spreadTargetRadiusScale
+        )
     )
     local angle = ((shotIndex - 1) / totalShots) * math.pi * 2
     return target.x + math.cos(angle) * spreadRadius, target.y + math.sin(angle) * spreadRadius
@@ -178,13 +181,16 @@ function PassiveFireball.trigger(state)
         local targetX, targetY = getAimPoint(target, shotIndex, projectiles, state.bonuses.fireballRadius)
 
         local pulseDamage = state.bonuses.fireballDamage
-        local bossDamage = state.bonuses.fireballDamage * 0.35
-        local maxHits = math.max(3, projectiles + 1)
+        local bossDamage = state.bonuses.fireballDamage * C.PASSIVE_BASES.fireball.bossDamageMultiplier
+        local maxHits = math.max(
+            C.PASSIVE_BASES.fireball.minFoodHits,
+            projectiles + C.PASSIVE_BASES.fireball.hitCountPerProjectileBonus
+        )
         if target.kind == "boss" then
-            pulseDamage = pulseDamage * 0.6
-            maxHits = math.max(2, projectiles)
+            pulseDamage = pulseDamage * C.PASSIVE_BASES.fireball.bossPulseDamageMultiplier
+            maxHits = math.max(C.PASSIVE_BASES.fireball.minBossHits, projectiles)
         elseif target.kind == "weak_point" then
-            bossDamage = state.bonuses.fireballDamage * 0.35
+            bossDamage = state.bonuses.fireballDamage * C.PASSIVE_BASES.fireball.bossDamageMultiplier
         end
 
         spawnProjectile(
