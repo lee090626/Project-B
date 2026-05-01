@@ -13,10 +13,16 @@ local VisualConfig = {
     },
     worldSprites = {
         fireball = {
-            mode = "image",
-            path = "assets/sprites/fireball_v2.png",
-            width = 256,
-            height = 256,
+            mode = "sheet",
+            path = "assets/sprites/fireball_sprite_sheet.png",
+            frameWidth = 256,
+            frameHeight = 144,
+            columns = 6,
+            rows = 1,
+            frameCount = 6,
+            fps = 12,
+            originX = 202,
+            originY = 72,
         },
         boss = {
             mode = "image",

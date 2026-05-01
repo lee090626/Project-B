@@ -3,6 +3,31 @@ local Utils = require("src.presentation.world_render_utils")
 
 local WorldFxRenderer = {}
 
+local function drawFireballSprite(sprite, projectile, diameter, angle)
+    if type(sprite) == "table" and sprite.image and sprite.quads then
+        local time = love.timer and love.timer.getTime and love.timer.getTime() or 0
+        local frame = (math.floor(time * sprite.fps) % sprite.frameCount) + 1
+        local scale = diameter / math.max(sprite.frameWidth, sprite.frameHeight)
+        love.graphics.draw(
+            sprite.image,
+            sprite.quads[frame],
+            projectile.x,
+            projectile.y,
+            angle,
+            scale,
+            scale,
+            sprite.originX,
+            sprite.originY
+        )
+        return
+    end
+
+    local iw = sprite:getWidth()
+    local ih = sprite:getHeight()
+    local scale = diameter / math.max(iw, ih)
+    love.graphics.draw(sprite, projectile.x, projectile.y, angle, scale, scale, iw * 0.5, ih * 0.5)
+end
+
 function WorldFxRenderer.drawPassives(state, assets, view, playerVisible)
     if state.passives then
         if state.passives.eatFxTimer and state.passives.eatFxTimer > 0
@@ -54,13 +79,10 @@ function WorldFxRenderer.drawPassives(state, assets, view, playerVisible)
                 if projectileVisible then
                     if assets and assets.fireballSprite then
                         local sprite = assets.fireballSprite
-                        local iw = sprite:getWidth()
-                        local ih = sprite:getHeight()
                         local diameter = math.max(40, projectile.radius * 1.35)
-                        local scale = diameter / math.max(iw, ih)
                         local angle = Utils.angleFromVector(projectile.vx, projectile.vy)
                         love.graphics.setColor(1, 1, 1)
-                        love.graphics.draw(sprite, projectile.x, projectile.y, angle, scale, scale, iw * 0.5, ih * 0.5)
+                        drawFireballSprite(sprite, projectile, diameter, angle)
                     else
                         love.graphics.setColor(1.0, 0.42, 0.16)
                         love.graphics.circle("fill", projectile.x, projectile.y, math.max(7, projectile.radius * 0.16))

@@ -96,12 +96,20 @@ local function loadSpriteSheet(spec, label)
     local frameCount = requirePositiveInteger(spec, "frameCount", label)
     local fps = requirePositiveNumber(spec, "fps", label)
     local idleFrame = spec.idleFrame or 1
+    local originX = spec.originX or frameWidth * 0.5
+    local originY = spec.originY or frameHeight * 0.5
 
     if frameCount > columns * rows then
         invalidSpriteConfig(label, "frameCount exceeds sheet cell count")
     end
     if type(idleFrame) ~= "number" or idleFrame % 1 ~= 0 or idleFrame < 1 or idleFrame > frameCount then
         invalidSpriteConfig(label, "idleFrame must be inside frameCount")
+    end
+    if type(originX) ~= "number" or originX < 0 or originX > frameWidth then
+        invalidSpriteConfig(label, "originX must be inside frameWidth")
+    end
+    if type(originY) ~= "number" or originY < 0 or originY > frameHeight then
+        invalidSpriteConfig(label, "originY must be inside frameHeight")
     end
 
     local expectedWidth = frameWidth * columns
@@ -133,7 +141,19 @@ local function loadSpriteSheet(spec, label)
         frameCount = frameCount,
         fps = fps,
         idleFrame = idleFrame,
+        originX = originX,
+        originY = originY,
     }
+end
+
+local function loadSpriteAsset(spec, label)
+    if spec.mode == "image" then
+        return loadSpriteImage(spec, label)
+    end
+    if spec.mode == "sheet" then
+        return loadSpriteSheet(spec, label)
+    end
+    invalidSpriteConfig(label, "mode must be image or sheet")
 end
 
 local function loadPlayerSprite()
@@ -208,7 +228,7 @@ function AssetLoader.loadAll()
     local assets = {
         playerSprite = playerSprite,
         playerWalkAnimation = playerWalkAnimation,
-        fireballSprite = loadSpriteImage(C.WORLD_SPRITES.fireball, "fireballSprite"),
+        fireballSprite = loadSpriteAsset(C.WORLD_SPRITES.fireball, "fireballSprite"),
         bossSprite = loadSpriteImage(C.WORLD_SPRITES.boss, "bossSprite"),
         bossWeakPointSprite = loadSpriteImage(C.WORLD_SPRITES.bossWeakPoint, "bossWeakPointSprite"),
         monsterSprites = loadMonsterSprites(),
