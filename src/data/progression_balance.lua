@@ -29,6 +29,7 @@ local ProgressionBalance = {
             hpScale = 1.0,
             spawn = { common = 0.78, rare = 0.2, elite = 0.02 },
             starUnlockRequires = 0,
+            starThresholds = { twoStarTime = 3, threeStarTime = 6 },
             bonusTimeRewards = { mid = 2, final = 3 },
             eventProfile = {
                 midTime = 4,
@@ -68,7 +69,8 @@ local ProgressionBalance = {
             reward = 1.25,
             hpScale = 1.25,
             spawn = { common = 0.68, rare = 0.26, elite = 0.06 },
-            starUnlockRequires = 4,
+            starUnlockRequires = 2,
+            starThresholds = { twoStarTime = 3, threeStarTime = 6 },
             bonusTimeRewards = { mid = 2, final = 3 },
             eventProfile = {
                 midTime = 4,
@@ -108,7 +110,8 @@ local ProgressionBalance = {
             reward = 1.55,
             hpScale = 1.55,
             spawn = { common = 0.56, rare = 0.32, elite = 0.12 },
-            starUnlockRequires = 10,
+            starUnlockRequires = 5,
+            starThresholds = { twoStarTime = 3, threeStarTime = 6 },
             bonusTimeRewards = { mid = 2, final = 3 },
             eventProfile = {
                 midTime = 4,
@@ -148,7 +151,8 @@ local ProgressionBalance = {
             reward = 1.95,
             hpScale = 2.0,
             spawn = { common = 0.46, rare = 0.36, elite = 0.18 },
-            starUnlockRequires = 18,
+            starUnlockRequires = 8,
+            starThresholds = { twoStarTime = 3, threeStarTime = 6 },
             bonusTimeRewards = { mid = 2, final = 3 },
             eventProfile = {
                 midTime = 4,
@@ -186,7 +190,15 @@ local ProgressionBalance = {
         midEssenceMultiplier = 2,
         finalEssenceMultiplier = 3,
         midChoiceReward = 1,
-        sGradeRemainingTime = 3,
+        fallbackStarThresholds = { twoStarTime = 3, threeStarTime = 6 },
+    },
+    starBonuses = {
+        maxStars = 12,
+        bonusPack = {
+            speed = 2,
+            eventBiteBonus = 2,
+            essenceMult = 0.01,
+        },
     },
     nestLevelCostBands = {
         { fromLevel = 1, toLevel = 20, multiplier = 1 },

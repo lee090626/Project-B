@@ -41,8 +41,9 @@ local function resetRunState(state)
     state.runEssenceTotal = 0
     state.runBonusTimeEarned = 0
     state.runStarsEarned = 0
+    state.runMapStarsBest = 0
+    state.runStarsImproved = false
     state.runMapsUnlocked = false
-    state.runGrade = "F"
     GameState.refreshDerivedState(state)
     GameState.normalizeProgression(state)
     state.runEvent = RunEvent.newRunState(MapSystem.getCurrentMap(state.maps))
@@ -94,16 +95,17 @@ end
 function GameState.refreshDerivedState(state)
     state.nestProgress = Nest.getProgress(state.nest)
     state.metaBonuses = Meta.computeBonuses(state.meta)
+    state.starBonuses = Meta.computeStarBonuses(state.meta)
     state.nestBonuses = Nest.computeBonuses(state.nest)
     state.runOnlyBonuses = Mutation.buildRunBonuses(state.runMutations)
     state.bonuses = BonusSchema.toRuntime(
-        BonusSchema.combineSources(state.metaBonuses, state.nestBonuses, state.runOnlyBonuses)
+        BonusSchema.combineSources(state.metaBonuses, state.starBonuses, state.nestBonuses, state.runOnlyBonuses)
     )
     state.runDuration = C.RUN_TIME_LIMIT_SECONDS
 end
 
 function GameState.normalizeProgression(state)
-    MapSystem.syncUnlocks(state.maps, state.meta.runStars or 0)
+    MapSystem.syncUnlocks(state.maps, Meta.getTotalStars(state.meta))
 end
 
 function GameState.startNewRun(state)
@@ -124,7 +126,8 @@ function GameState.endRun(state, reason)
     StateFactory.resetMetaTreeView(state)
     PassiveCombat.resetState(state)
     RunEvent.finalize(state)
-    state.runMapsUnlocked = MapSystem.updateUnlocks(state.maps, state.meta.runStars or 0)
+    GameState.refreshDerivedState(state)
+    state.runMapsUnlocked = MapSystem.updateUnlocks(state.maps, Meta.getTotalStars(state.meta))
 
     state.meta.totalRuns = state.meta.totalRuns + 1
     if state.runMapsUnlocked then

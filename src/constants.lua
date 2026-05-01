@@ -8,15 +8,16 @@ local WorldPatterns = require("src.data.world_pattern_config")
 
 C.SAVE_FILE = "save.json"
 C.BACKUP_FILE = "save.bak"
-C.SAVE_VERSION = 9
+C.SAVE_VERSION = 10
 C.AUTOSAVE_INTERVAL = 30
-C.RUN_TIME_LIMIT_SECONDS = 15
+C.RUN_TIME_LIMIT_SECONDS = 25
 
 C.WORLD_WIDTH = 3200
 C.WORLD_HEIGHT = 1800
 
 C.MAPS = ProgressionBalance.maps
 C.RUN_EVENTS = ProgressionBalance.runEvents
+C.STAR_BONUSES = ProgressionBalance.starBonuses
 
 C.FOOD_BY_TIER = CombatBalance.foodByTier
 
@@ -75,6 +76,17 @@ local function validateMapVisualData()
         end
         if C.WORLD_THEME.maps[mapData.id] ~= mapData.theme then
             error(("missing world theme for map %s"):format(tostring(mapData.id)))
+        end
+
+        local thresholds = mapData.starThresholds or C.RUN_EVENTS.fallbackStarThresholds
+        if not thresholds then
+            error(("missing star thresholds for map %s"):format(tostring(mapData.id)))
+        end
+        if type(thresholds.twoStarTime) ~= "number" or type(thresholds.threeStarTime) ~= "number" then
+            error(("invalid star thresholds for map %s"):format(tostring(mapData.id)))
+        end
+        if thresholds.twoStarTime < 0 or thresholds.threeStarTime < thresholds.twoStarTime then
+            error(("invalid star threshold order for map %s"):format(tostring(mapData.id)))
         end
     end
 end

@@ -2,18 +2,19 @@ local C = require("src.constants")
 local Serialize = require("src.serialize")
 
 local Save = {}
+local STARS_PER_MAP = 3
 
 local LEGACY_MAP_STAR_REQUIREMENTS = {
     [1] = 0,
-    [2] = 4,
-    [3] = 10,
-    [4] = 18,
+    [2] = 2,
+    [3] = 5,
+    [4] = 8,
 }
 
 local LEGACY_META_UNLOCK_THRESHOLDS = {
-    { minNodes = 82, stars = 18 },
-    { minNodes = 46, stars = 10 },
-    { minNodes = 18, stars = 4 },
+    { minNodes = 82, stars = 8 },
+    { minNodes = 46, stars = 5 },
+    { minNodes = 18, stars = 2 },
 }
 
 local NEW_TREE_CAPSTONE_KEYS = {
@@ -23,6 +24,8 @@ local NEW_TREE_CAPSTONE_KEYS = {
     "lightning_apex",
     "fireball_apex",
 }
+
+local inferStarsFromMeta
 
 local function inferStarsFromSavedMaps(savedMaps)
     if type(savedMaps) ~= "table" or type(savedMaps.unlocked) ~= "table" then
@@ -36,6 +39,62 @@ local function inferStarsFromSavedMaps(savedMaps)
         end
     end
     return stars
+end
+
+local function normalizeStarValue(value)
+    return math.max(0, math.min(STARS_PER_MAP, math.floor(tonumber(value) or 0)))
+end
+
+local function distributeMapStars(total)
+    local mapStars = {}
+    local remaining = math.min(#C.MAPS * STARS_PER_MAP, math.max(0, math.floor(tonumber(total) or 0)))
+    for _, mapData in ipairs(C.MAPS) do
+        local stars = math.min(STARS_PER_MAP, remaining)
+        mapStars[mapData.id] = stars
+        remaining = remaining - stars
+    end
+    return mapStars
+end
+
+local function normalizeMapStars(savedMapStars)
+    local mapStars = distributeMapStars(0)
+    if type(savedMapStars) ~= "table" then
+        return mapStars
+    end
+
+    for key, value in pairs(savedMapStars) do
+        local mapId = tonumber(key) or key
+        if mapStars[mapId] ~= nil then
+            mapStars[mapId] = normalizeStarValue(value)
+        end
+    end
+    return mapStars
+end
+
+local function sumMapStars(mapStars)
+    local total = 0
+    for _, mapData in ipairs(C.MAPS) do
+        total = total + normalizeStarValue(mapStars and mapStars[mapData.id] or 0)
+    end
+    return total
+end
+
+local function migrateMapStars(data)
+    data.meta = data.meta or {}
+    local savedStars = math.max(0, math.floor(tonumber(data.meta.runStars) or 0))
+    local inferredStars = math.max(
+        inferStarsFromSavedMaps(data.maps),
+        inferStarsFromMeta(data.meta)
+    )
+    local requiredStars = math.max(savedStars, inferredStars)
+    local mapStars = normalizeMapStars(data.meta.mapStars)
+
+    if sumMapStars(mapStars) < requiredStars then
+        mapStars = distributeMapStars(requiredStars)
+    end
+
+    data.meta.mapStars = mapStars
+    data.meta.runStars = sumMapStars(mapStars)
 end
 
 local function countUnlockedMetaNodes(savedMeta)
@@ -78,7 +137,7 @@ local function hasAllNewCapstones(savedMeta)
     return true
 end
 
-local function inferStarsFromMeta(savedMeta)
+inferStarsFromMeta = function(savedMeta)
     if looksLikeLegacyMeta(savedMeta) then
         local unlockedNodes = countUnlockedMetaNodes(savedMeta)
         for _, rule in ipairs(LEGACY_META_UNLOCK_THRESHOLDS) do
@@ -110,13 +169,16 @@ local function migrate(data)
     end
     if version < 9 then
         data.meta = data.meta or {}
-        local savedStars = math.max(0, math.floor(tonumber(data.meta.runStars) or 0))
-        local inferredStars = math.max(
+        data.meta.runStars = math.max(
+            math.max(0, math.floor(tonumber(data.meta.runStars) or 0)),
             inferStarsFromSavedMaps(data.maps),
             inferStarsFromMeta(data.meta)
         )
-        data.meta.runStars = math.max(savedStars, inferredStars)
         data.version = 9
+    end
+    if version < 10 or type(data.meta) ~= "table" or type(data.meta.mapStars) ~= "table" then
+        migrateMapStars(data)
+        data.version = 10
     end
 
     return data

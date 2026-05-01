@@ -60,8 +60,9 @@ function Factory.new(loadResult, loadErr)
         runEssenceTotal = 0,
         runBonusTimeEarned = 0,
         runStarsEarned = 0,
+        runMapStarsBest = 0,
+        runStarsImproved = false,
         runMapsUnlocked = false,
-        runGrade = "F",
         runEndTab = "meta",
     }
 

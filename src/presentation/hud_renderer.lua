@@ -181,10 +181,13 @@ function HudRenderer.drawGameTopBar(state, fonts, ui, assets)
     end
 
     local label = eventStripLabel(state, hud)
-    local starText = t(state, "hud.stars_short", { stars = hud.starsEarned or 0 })
+    local targetText = t(state, "hud.targets_short", {
+        mid = hud.midCompleted and "OK" or "--",
+        final = hud.finalCompleted and "OK" or "--",
+    })
     local bonusText = t(state, "hud.bonus_time_short", { time = hud.bonusTimeEarned or 0 })
-    local starBlockW = 18 + fonts.hud:getWidth(starText)
-    local chipContentW = fonts.hud:getWidth(label) + 18 + starBlockW + fonts.hud:getWidth(bonusText)
+    local targetBlockW = 18 + fonts.hud:getWidth(targetText)
+    local chipContentW = fonts.hud:getWidth(label) + 18 + targetBlockW + fonts.hud:getWidth(bonusText)
     local chipW = math.min(sw - 40, math.max(320, chipContentW + 52))
     local chipX = (sw - chipW) * 0.5
     local chipY = topY + barH + 8
@@ -199,10 +202,10 @@ function HudRenderer.drawGameTopBar(state, fonts, ui, assets)
     Ui.setPaletteColor(theme.text)
     local contentX = chipX + (chipW - chipContentW) * 0.5
     love.graphics.print(label, contentX, chipY + 7)
-    local starX = contentX + fonts.hud:getWidth(label) + 18
-    Ui.drawRuneBadge("star", starX + 8, chipY + 14, 7, theme.chipFill, theme.accent)
-    love.graphics.print(starText, starX + 18, chipY + 7)
-    local bonusX = starX + starBlockW + 18
+    local targetX = contentX + fonts.hud:getWidth(label) + 18
+    Ui.drawRuneBadge("hunt", targetX + 8, chipY + 14, 7, theme.chipFill, theme.accent)
+    love.graphics.print(targetText, targetX + 18, chipY + 7)
+    local bonusX = targetX + targetBlockW + 18
     love.graphics.print(bonusText, bonusX, chipY + 7)
 end
 

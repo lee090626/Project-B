@@ -7,6 +7,59 @@ local Meta = {}
 local DEFINITIONS = MetaTree.definitions
 local LAYOUT = MetaTree.layout
 local CAPSTONE_KEYS = MetaTree.capstoneKeys
+local STARS_PER_MAP = 3
+
+local function normalizeStarValue(value)
+    return math.max(0, math.min(STARS_PER_MAP, math.floor(tonumber(value) or 0)))
+end
+
+local function makeDefaultMapStars()
+    local mapStars = {}
+    for _, mapData in ipairs(C.MAPS) do
+        mapStars[mapData.id] = 0
+    end
+    return mapStars
+end
+
+local function distributeStars(total)
+    local mapStars = makeDefaultMapStars()
+    local remaining = math.max(0, math.floor(tonumber(total) or 0))
+    for _, mapData in ipairs(C.MAPS) do
+        local stars = math.min(STARS_PER_MAP, remaining)
+        mapStars[mapData.id] = stars
+        remaining = remaining - stars
+    end
+    return mapStars
+end
+
+local function normalizeMapStars(savedMapStars, fallbackTotal)
+    if type(savedMapStars) ~= "table" then
+        return distributeStars(fallbackTotal or 0)
+    end
+
+    local mapStars = makeDefaultMapStars()
+    for key, value in pairs(savedMapStars) do
+        local mapId = tonumber(key) or key
+        if mapStars[mapId] ~= nil then
+            mapStars[mapId] = normalizeStarValue(value)
+        end
+    end
+    return mapStars
+end
+
+local function totalMapStars(mapStars)
+    local total = 0
+    for _, mapData in ipairs(C.MAPS) do
+        total = total + normalizeStarValue(mapStars and mapStars[mapData.id] or 0)
+    end
+    return total
+end
+
+local function maxConfiguredStars()
+    local defaultMax = #C.MAPS * STARS_PER_MAP
+    local configured = C.STAR_BONUSES and C.STAR_BONUSES.maxStars
+    return math.max(0, math.floor(tonumber(configured) or defaultMax))
+end
 
 local function depthMultiplierFor(def)
     local depth = def.treeDepth or 0
@@ -64,21 +117,75 @@ function Meta.new(saved)
         end
     end
 
+    local mapStars = normalizeMapStars(
+        saved and saved.mapStars or nil,
+        saved and saved.runStars or 0
+    )
+
     return {
         essence = saved and math.max(0, math.floor(saved.essence or 0)) or 0,
         totalRuns = saved and math.max(0, math.floor(saved.totalRuns or 0)) or 0,
-        runStars = saved and math.max(0, math.floor(saved.runStars or 0)) or 0,
+        mapStars = mapStars,
+        runStars = totalMapStars(mapStars),
         levels = levels,
     }
 end
 
 function Meta.export(metaState)
+    metaState.mapStars = normalizeMapStars(metaState.mapStars, metaState.runStars or 0)
+    local totalStars = totalMapStars(metaState.mapStars)
+    metaState.runStars = totalStars
     return {
         essence = metaState.essence,
         totalRuns = metaState.totalRuns,
-        runStars = metaState.runStars or 0,
+        mapStars = metaState.mapStars,
+        runStars = totalStars,
         levels = metaState.levels,
     }
+end
+
+function Meta.getMapStars(metaState, mapId)
+    if not metaState then
+        return 0
+    end
+    local normalizedMapId = tonumber(mapId) or mapId
+    return normalizeStarValue(metaState.mapStars and metaState.mapStars[normalizedMapId] or 0)
+end
+
+function Meta.setMapStars(metaState, mapId, stars)
+    if not metaState then
+        return 0, false
+    end
+    metaState.mapStars = metaState.mapStars or makeDefaultMapStars()
+
+    local normalizedMapId = tonumber(mapId) or mapId
+    local previous = Meta.getMapStars(metaState, normalizedMapId)
+    local nextStars = normalizeStarValue(stars)
+    local improved = nextStars > previous
+    if improved then
+        metaState.mapStars[normalizedMapId] = nextStars
+    end
+
+    metaState.runStars = Meta.getTotalStars(metaState)
+    return Meta.getMapStars(metaState, normalizedMapId), improved
+end
+
+function Meta.getTotalStars(metaState)
+    if not metaState then
+        return 0
+    end
+    metaState.mapStars = normalizeMapStars(metaState.mapStars, metaState.runStars or 0)
+    local totalStars = totalMapStars(metaState.mapStars)
+    metaState.runStars = totalStars
+    return totalStars
+end
+
+function Meta.getMaxStars()
+    return maxConfiguredStars()
+end
+
+function Meta.getStarBonusCount(metaState)
+    return math.min(Meta.getTotalStars(metaState), Meta.getMaxStars())
 end
 
 function Meta.computeBonuses(metaState)
@@ -91,6 +198,14 @@ function Meta.computeBonuses(metaState)
         end
     end
 
+    return bonuses
+end
+
+function Meta.computeStarBonuses(metaState)
+    local bonuses = BonusSchema.newRaw()
+    local config = C.STAR_BONUSES or {}
+    local stars = Meta.getStarBonusCount(metaState)
+    BonusSchema.applyPack(bonuses, config.bonusPack, stars)
     return bonuses
 end
 

@@ -1,5 +1,6 @@
 local C = require("src.constants")
 local Food = require("src.food_system")
+local Meta = require("src.meta_system")
 local Mutation = require("src.mutation_system")
 
 local RunEvent = {}
@@ -22,6 +23,28 @@ end
 local function getBonusRewards(state)
     local mapData = C.MAPS[state.maps.currentMapId]
     return mapData and mapData.bonusTimeRewards or C.RUN_EVENTS.fallbackBonusTimeRewards
+end
+
+local function getStarThresholds(state)
+    local mapData = C.MAPS[state.maps.currentMapId]
+    return mapData and mapData.starThresholds or C.RUN_EVENTS.fallbackStarThresholds
+end
+
+local function calculateStars(state, eventState)
+    if not (eventState.midCompleted and eventState.finalCompleted) then
+        return 0
+    end
+
+    local thresholds = getStarThresholds(state)
+    local clearTimeLeft = math.max(0, eventState.clearTimeLeft or 0)
+    local stars = 1
+    if clearTimeLeft >= thresholds.twoStarTime then
+        stars = 2
+    end
+    if clearTimeLeft >= thresholds.threeStarTime then
+        stars = 3
+    end
+    return stars
 end
 
 local function spawnPositionNearPlayer(state, radius)
@@ -72,8 +95,7 @@ function RunEvent.newRunState(mapData)
         activeTargetId = nil,
         nextTargetId = 0,
         bonusTimeEarned = 0,
-        starsEarned = 0,
-        grade = "F",
+        clearTimeLeft = nil,
         finalized = false,
     }
 end
@@ -147,7 +169,6 @@ function RunEvent.resolveEventTargetKill(state, item)
 
     if kind == "mid" and not eventState.midCompleted then
         eventState.midCompleted = true
-        eventState.starsEarned = eventState.starsEarned + 1
         RunEvent.awardBonusTime(state, "mid")
         Mutation.gainEssenceAndCheckLevel(state, item.essence * C.RUN_EVENTS.midEssenceMultiplier)
         Mutation.grantChoices(state, C.RUN_EVENTS.midChoiceReward)
@@ -156,8 +177,8 @@ function RunEvent.resolveEventTargetKill(state, item)
     end
 
     if kind == "final" and not eventState.finalCompleted then
+        eventState.clearTimeLeft = state.runTimeLeft
         eventState.finalCompleted = true
-        eventState.starsEarned = eventState.starsEarned + 1
         RunEvent.awardBonusTime(state, "final")
         Mutation.gainEssenceAndCheckLevel(state, item.essence * C.RUN_EVENTS.finalEssenceMultiplier)
         setMessage(state, "message.final_event_cleared")
@@ -213,7 +234,6 @@ function RunEvent.getHudState(state)
     end
 
     return {
-        starsEarned = eventState.starsEarned or 0,
         activeKind = eventState.activeTargetKind,
         activeLabelKey = activeLabelKey,
         bonusTimeEarned = eventState.bonusTimeEarned or 0,
@@ -225,36 +245,19 @@ end
 function RunEvent.finalize(state)
     local eventState = state.runEvent
     if not eventState or eventState.finalized then
-        return state.runGrade or "F", 0
+        return state.runStarsEarned or 0
     end
 
     RunEvent.clearActiveTarget(state)
 
-    local grade = "F"
-    if eventState.midCompleted and eventState.finalCompleted then
-        if state.runTimeLeft >= C.RUN_EVENTS.sGradeRemainingTime then
-            grade = "S"
-        else
-            grade = "A"
-        end
-    elseif eventState.finalCompleted then
-        grade = "B"
-    elseif eventState.midCompleted then
-        grade = "C"
-    end
-
-    local stars = eventState.starsEarned or 0
-    if grade == "S" then
-        stars = stars + 1
-    end
+    local stars = calculateStars(state, eventState)
+    local mapId = state.maps.currentMapId
 
     eventState.finalized = true
-    eventState.grade = grade
-    state.runGrade = grade
     state.runStarsEarned = stars
     state.runBonusTimeEarned = eventState.bonusTimeEarned or 0
-    state.meta.runStars = math.max(0, math.floor((state.meta.runStars or 0) + stars))
-    return grade, stars
+    state.runMapStarsBest, state.runStarsImproved = Meta.setMapStars(state.meta, mapId, stars)
+    return stars
 end
 
 return RunEvent
